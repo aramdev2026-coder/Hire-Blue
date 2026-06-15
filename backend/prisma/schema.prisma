@@ -1,0 +1,125 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. ADMIN USER SYSTEM (Manual Insertion)
+// ==========================================
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String // Hashed secure string
+  name      String
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// 2. CANDIDATE SCHEMA
+// ==========================================
+enum CandidateStatus {
+  PENDING_WIZARD
+  PENDING_ADMIN_CALL
+  SHORTLISTED
+  PLACED
+}
+
+model Candidate {
+  id                 String          @id @default(uuid())
+  phoneNumber1       String          @unique // Used for 2Factor Login
+  phoneNumber2       String?
+  fullName           String?
+  dob                DateTime?
+  sex                String?
+  maritalStatus      String?
+  familyPhonePrimary String?
+  familyPhoneBackup  String?
+  emailId            String?
+  secondaryEmailId   String?
+  presentAddress     String?
+  presentDistrict    String?
+  presentState       String?         // Default removed here
+  permanentAddress   String?
+  permanentDistrict  String?
+  permanentState     String?
+  
+  // Job Selection Criteria & Background
+  jobRoles           String[]        // Array handled natively by Postgres
+  preferredDistricts String[]
+  expectedSalary     String?
+  languagesKnown     String[]        // Added for storing candidate language proficiencies
+  
+  status             CandidateStatus @default(PENDING_WIZARD)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relational Arrays
+  education          CandidateEducation[]
+  technical          CandidateTechnical[]
+  experience         CandidateExperience[]
+}
+
+model CandidateEducation {
+  id          String    @id @default(uuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  institution String
+  course      String
+}
+
+model CandidateTechnical {
+  id          String    @id @default(uuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  institution String
+  course      String
+}
+
+model CandidateExperience {
+  id          String    @id @default(uuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  institution String
+  fromYear    String
+  toYear      String
+}
+
+// ==========================================
+// 3. EMPLOYER & REQUIREMENTS SCHEMA
+// ==========================================
+enum EmployerStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  REJECTED
+}
+
+model Employer {
+  id          String         @id @default(uuid())
+  companyName String
+  email       String         @unique
+  phoneNumber String         @unique
+  password    String         // Hashed secure string
+  status      EmployerStatus @default(PENDING_VERIFICATION)
+  createdAt   DateTime       @default(now())
+  
+  jobs        JobRequirement[]
+}
+
+model JobRequirement {
+  id             String   @id @default(uuid())
+  employerId     String
+  employer       Employer @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  roleTitle      String   // E.g., "Electrician"
+  salaryRange    String
+  location       String   // District target
+  maritalStatus  String   @default("No Preference")
+  educationLevel String
+  expRequired    String
+  vacanciesCount Int      @default(1)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
