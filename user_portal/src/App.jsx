@@ -12,7 +12,6 @@ export default function App() {
   const [profile,  setProfile]  = useState(null);
   const [view,     setView]     = useState('LOGIN');
 
-  // Restore session on mount
   useEffect(() => {
     if (!token || !candId) return;
     fetch(`${BACKEND}/candidate/profile/${candId}`)
@@ -23,7 +22,7 @@ export default function App() {
         setView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
       })
       .catch(() => setView('WIZARD'));
-  }, []);
+  }, [token, candId]);
 
   const handleAuthSuccess = (tok, id, ph, status, prof) => {
     localStorage.setItem('candidate_token', tok);
@@ -48,13 +47,20 @@ export default function App() {
 
   return (
     <div style={{ minHeight:'100vh', background:'#f4f4f5', fontFamily:"'Inter',system-ui,sans-serif" }}>
+      {/* 📱 RESPONSIVE CSS ENGINE INJECTED HERE */}
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Inter',system-ui,sans-serif}
-        input,select,textarea,button{font-family:inherit}
-        button{cursor:pointer}
-        @media(max-width:600px){.two-col{grid-template-columns:1fr !important}}
-        @media(max-width:600px){.hide-mobile{display:none}}
+        body{font-family:'Inter',system-ui,sans-serif; background:#f4f4f5;}
+        input,select,textarea,button{font-family:inherit;}
+        button{cursor:pointer;}
+        
+        .responsive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 16px; }
+        .responsive-table { width: 100%; border-collapse: collapse; min-width: 500px; text-align: left; }
+        
+        @media(max-width: 640px) {
+          .responsive-grid { grid-template-columns: 1fr !important; gap: 12px; }
+        }
       `}</style>
 
       <header style={{
@@ -85,8 +91,8 @@ export default function App() {
         )}
       </header>
 
-      {/* Expanded the Max-Width to fix the narrow layout constraint */}
-      <main style={{ maxWidth:1024,margin:'0 auto',padding:'28px 14px 60px' }}>
+      {/* 📏 MAX-WIDTH SET TO 850px: Optimal for resumes/forms without stretching inputs */}
+      <main style={{ maxWidth:850, margin:'0 auto', padding:'30px 16px 60px' }}>
         {view === 'LOGIN' && (
           <LoginCard backendUrl={BACKEND} onAuthSuccess={handleAuthSuccess} />
         )}
