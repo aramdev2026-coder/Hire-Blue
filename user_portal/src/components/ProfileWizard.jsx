@@ -81,8 +81,9 @@ function buildInit(init, phone) {
 
 export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, initialData, onFinalizeSubmit }) {
   const draftKey = `wiz_draft_${candidateId}`;
+  const stepKey  = `wiz_step_${candidateId}`; // Memory key for the wizard step
 
-  const [form, setForm] = useState(() => {
+  const [form, setForm] = React.useState(() => {
     try {
       const s = localStorage.getItem(draftKey);
       if (s) {
@@ -96,15 +97,23 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     return buildInit(initialData, verifiedPhone);
   });
 
-  const [step,        setStep]        = useState(1);
-  const [reviewing,   setReviewing]   = useState(false);
-  const [sameAddr,    setSameAddr]    = useState(false);
-  const [errors,      setErrors]      = useState({});
-  const [serverErr,   setServerErr]   = useState('');
-  const [saving,      setSaving]      = useState(false);
+  // Check localStorage for the saved step, otherwise default to 1
+  const [step, setStep] = React.useState(() => {
+    const savedStep = localStorage.getItem(stepKey);
+    return savedStep ? parseInt(savedStep, 10) : 1;
+  });
+  
+  const [reviewing,   setReviewing]   = React.useState(false);
+  const [sameAddr,    setSameAddr]    = React.useState(false);
+  const [errors,      setErrors]      = React.useState({});
+  const [serverErr,   setServerErr]   = React.useState('');
+  const [saving,      setSaving]      = React.useState(false);
 
-  // persist draft
-  useEffect(() => { localStorage.setItem(draftKey, JSON.stringify(form)); }, [form]);
+  // persist draft AND the current step
+  React.useEffect(() => { 
+    localStorage.setItem(draftKey, JSON.stringify(form)); 
+    localStorage.setItem(stepKey, step.toString());
+  }, [form, step, candidateId]);
 
   const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -191,7 +200,9 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         body: JSON.stringify({ candidateId }),
       });
     } catch {}
+    // Clear out the memory cache completely on completion
     localStorage.removeItem(draftKey);
+    localStorage.removeItem(stepKey);
     localStorage.setItem('candidate_status','PENDING_ADMIN_CALL');
     onFinalizeSubmit(form);
   };
@@ -280,11 +291,11 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         <button onClick={() => { setReviewing(false); setStep(1); }} style={{
           flex:1,padding:'11px 0',border:'1.5px solid #e4e4e7',
           borderRadius:8,background:'#fff',color:'#000',fontSize:14,fontWeight:700
-        }}>← Edit details</button>
+        }}>Edit details</button>
         <button onClick={handleFinalize} style={{
           flex:2,padding:'11px 0',border:'none',
           borderRadius:8,background:'#18181b',color:'#fff',fontSize:14,fontWeight:700
-        }}>Confirm & Submit ✓</button>
+        }}>Confirm & Submit</button>
       </div>
     </div>
   );
@@ -335,7 +346,8 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <Field label="Date of Birth" req error={errors.dob}>
                 <input style={errors.dob?inputErr:inputBase} type="date"
                   min="1900-01-01" max={new Date().toISOString().split('T')[0]}
-                  value={form.dob} onChange={e=>upd('dob',e.target.value)} />
+                  value={form.dob} onChange={e=>upd('dob',e.target.value)}
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()} />
               </Field>
               <div/>{/* spacer */}
               <Field label="Gender" req error={errors.sex}>
@@ -436,7 +448,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               {JOB_ROLES.map(r => {
                 const on = form.jobRoles.includes(r);
                 return <button type="button" key={r} style={chip(on,'#18181b')} onClick={()=>toggle('jobRoles',r)}>
-                  {r}{on?' ✕':''}
+                  {r}
                 </button>;
               })}
             </div>
@@ -462,7 +474,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 ? <span style={{ fontSize:12,color:'#a1a1aa',fontStyle:'italic',alignSelf:'center' }}>No districts added yet</span>
                 : form.preferredDistricts.map(d=>(
                   <button type="button" key={d} style={chip(true,'#1d4ed8')} onClick={()=>toggle('preferredDistricts',d)}>
-                    {d} ✕
+                    {d} x
                   </button>
                 ))}
             </div>
@@ -484,7 +496,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 {LANGUAGES.map(l => {
                   const on = form.languagesKnown.includes(l);
                   return <button type="button" key={l} style={chip(on,'#059669')} onClick={()=>toggle('languagesKnown',l)}>
-                    {l}{on?' ✓':''}
+                    {l}
                   </button>;
                 })}
               </div>
@@ -505,7 +517,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <thead><tr>
                 <th style={dynTh}>Institution</th>
                 <th style={dynTh}>Course / Degree</th>
-                <th style={{ ...dynTh,width:44 }}></th>
+                <th style={{ ...dynTh,width:80 }}></th>
               </tr></thead>
               <tbody>
                 {form.education.map((r,i)=>(
@@ -513,13 +525,13 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                     <td style={dynTd}><input style={dynInput} placeholder="School / College" value={r.institution} onChange={e=>updRow('education',i,'institution',e.target.value)} /></td>
                     <td style={dynTd}><input style={dynInput} placeholder="e.g. B.Sc Chemistry" value={r.course} onChange={e=>updRow('education',i,'course',e.target.value)} /></td>
                     <td style={{ ...dynTd,textAlign:'center' }}>
-                      <button type="button" onClick={()=>delRow('education',i)} style={{ background:'none',border:'none',color:'#dc2626',fontSize:18,cursor:'pointer',lineHeight:1 }}>×</button>
+                      <button type="button" onClick={()=>delRow('education',i)} style={{ background:'none',border:'none',color:'#dc2626',fontSize:13, fontWeight:700, cursor:'pointer' }}>Remove</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button type="button" onClick={()=>addRow('education')} style={{ display:'inline-flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#1d4ed8',background:'#eff6ff',border:'1.5px dashed #93c5fd',borderRadius:7,padding:'6px 12px',cursor:'pointer' }}>+ Add row</button>
+            <button type="button" onClick={()=>addRow('education')} style={{ display:'inline-flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#1d4ed8',background:'#eff6ff',border:'1.5px dashed #93c5fd',borderRadius:7,padding:'6px 12px',cursor:'pointer' }}>Add row</button>
 
             {/* Technical */}
             <div style={secHdr}>Technical Qualifications</div>
@@ -527,7 +539,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <thead><tr>
                 <th style={dynTh}>Institution</th>
                 <th style={dynTh}>Course / Certificate</th>
-                <th style={{ ...dynTh,width:44 }}></th>
+                <th style={{ ...dynTh,width:80 }}></th>
               </tr></thead>
               <tbody>
                 {form.technical.map((r,i)=>(
@@ -535,13 +547,13 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                     <td style={dynTd}><input style={dynInput} placeholder="Institute name" value={r.institution} onChange={e=>updRow('technical',i,'institution',e.target.value)} /></td>
                     <td style={dynTd}><input style={dynInput} placeholder="e.g. Tally ERP 9" value={r.course} onChange={e=>updRow('technical',i,'course',e.target.value)} /></td>
                     <td style={{ ...dynTd,textAlign:'center' }}>
-                      <button type="button" onClick={()=>delRow('technical',i)} style={{ background:'none',border:'none',color:'#dc2626',fontSize:18,cursor:'pointer',lineHeight:1 }}>×</button>
+                      <button type="button" onClick={()=>delRow('technical',i)} style={{ background:'none',border:'none',color:'#dc2626',fontSize:13, fontWeight:700, cursor:'pointer' }}>Remove</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button type="button" onClick={()=>addRow('technical')} style={{ display:'inline-flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#1d4ed8',background:'#eff6ff',border:'1.5px dashed #93c5fd',borderRadius:7,padding:'6px 12px',cursor:'pointer' }}>+ Add row</button>
+            <button type="button" onClick={()=>addRow('technical')} style={{ display:'inline-flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#1d4ed8',background:'#eff6ff',border:'1.5px dashed #93c5fd',borderRadius:7,padding:'6px 12px',cursor:'pointer' }}>Add row</button>
 
             {/* Experience */}
             <div style={secHdr}>Work Experience</div>
@@ -551,7 +563,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 <th style={dynTh}>Role</th>
                 <th style={{ ...dynTh,width:72 }}>From</th>
                 <th style={{ ...dynTh,width:72 }}>To</th>
-                <th style={{ ...dynTh,width:44 }}></th>
+                <th style={{ ...dynTh,width:80 }}></th>
               </tr></thead>
               <tbody>
                 {form.experience.map((r,i)=>(
@@ -561,13 +573,13 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                     <td style={dynTd}><input style={dynInput} type="number" placeholder="2020" value={r.fromYear} onChange={e=>updRow('experience',i,'fromYear',e.target.value)} /></td>
                     <td style={dynTd}><input style={dynInput} type="number" placeholder="2024" value={r.toYear} onChange={e=>updRow('experience',i,'toYear',e.target.value)} /></td>
                     <td style={{ ...dynTd,textAlign:'center' }}>
-                      <button type="button" onClick={()=>delRow('experience',i)} style={{ background:'none',border:'none',color:'#dc2626',fontSize:18,cursor:'pointer',lineHeight:1 }}>×</button>
+                      <button type="button" onClick={()=>delRow('experience',i)} style={{ background:'none',border:'none',color:'#dc2626',fontSize:13, fontWeight:700, cursor:'pointer' }}>Remove</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button type="button" onClick={()=>addRow('experience')} style={{ display:'inline-flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#1d4ed8',background:'#eff6ff',border:'1.5px dashed #93c5fd',borderRadius:7,padding:'6px 12px',cursor:'pointer' }}>+ Add row</button>
+            <button type="button" onClick={()=>addRow('experience')} style={{ display:'inline-flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#1d4ed8',background:'#eff6ff',border:'1.5px dashed #93c5fd',borderRadius:7,padding:'6px 12px',cursor:'pointer' }}>Add row</button>
           </>)}
         </div>
 
@@ -580,7 +592,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             ? <button type="button" onClick={()=>{setStep(s=>s-1);setErrors({});}} style={{
                 padding:'10px 18px',border:'1.5px solid #e4e4e7',borderRadius:8,
                 background:'#fff',color:'#000',fontSize:14,fontWeight:700
-              }}>← Back</button>
+              }}>Back</button>
             : <div/>}
           <button type="submit" disabled={saving} style={{
             padding:'10px 22px',border:'none',borderRadius:8,
@@ -588,7 +600,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             color:'#fff',fontSize:14,fontWeight:700,
             cursor: saving ? 'not-allowed' : 'pointer'
           }}>
-            {saving ? 'Saving…' : step===3 ? 'Review & Submit →' : 'Save & Continue →'}
+            {saving ? 'Saving…' : step===3 ? 'Review & Submit' : 'Save & Continue'}
           </button>
         </div>
       </form>
@@ -610,7 +622,7 @@ function TagReview({ label, tags, color }) {
   return (
     <div style={{ marginTop:10 }}>
       <p style={{ fontSize:11,color:'#71717a',fontWeight:600,marginBottom:5 }}>{label}</p>
-      <div style={{ display:'flex',flexWrap:'wrap',gap:5 }}>
+      <div style={{ display:'flex',flexWrap:'wrap',gap:8, alignItems:'center' }}>
         {tags.map(t => (
           <span key={t} style={{ padding:'3px 9px',borderRadius:5,fontSize:11,fontWeight:700,
             background: color==='#000'?'#f4f4f5':color==='#1d4ed8'?'#eff6ff':'#f0fdf4',

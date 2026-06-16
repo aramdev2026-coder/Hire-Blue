@@ -48,12 +48,6 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
         padding:'36px 28px 28px',
         boxShadow:'0 4px 24px rgba(0,0,0,0.09)'
       }}>
-        <div style={{
-          width:46,height:46,borderRadius:10,
-          background:'#f4f4f5',display:'flex',
-          alignItems:'center',justifyContent:'center',
-          fontSize:22,marginBottom:18
-        }}>📋</div>
 
         <h1 style={{ fontSize:22,fontWeight:800,color:'#000',letterSpacing:'-0.4px',marginBottom:6 }}>
           Candidate Portal
@@ -115,7 +109,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
               transition:'background 0.15s'
             }}
           >
-            {loading ? 'Connecting…' : 'Open my profile →'}
+            {loading ? 'Connecting…' : 'Open My Profile'}
           </button>
         </form>
 

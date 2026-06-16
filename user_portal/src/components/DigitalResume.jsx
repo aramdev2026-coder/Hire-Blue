@@ -69,7 +69,8 @@ export default function DigitalResume({ verifiedPhone, profileData: p, onTrigger
           {safeArr(p?.jobRoles).length>0 && (
             <div style={{ marginTop:10 }}>
               <p style={{ fontSize:11,color:'#71717a',fontWeight:600,marginBottom:5 }}>Job Roles</p>
-              <div style={{ display:'flex',flexWrap:'wrap',gap:5 }}>
+              {/* Added Alignments */}
+              <div style={{ display:'flex',flexWrap:'wrap',gap:8, alignItems:'center' }}>
                 {p.jobRoles.map(r=><span key={r} style={badge('#1d4ed8','#eff6ff','#bfdbfe')}>{r}</span>)}
               </div>
             </div>
@@ -77,7 +78,8 @@ export default function DigitalResume({ verifiedPhone, profileData: p, onTrigger
           {safeArr(p?.preferredDistricts).length>0 && (
             <div style={{ marginTop:10 }}>
               <p style={{ fontSize:11,color:'#71717a',fontWeight:600,marginBottom:5 }}>Preferred Districts</p>
-              <div style={{ display:'flex',flexWrap:'wrap',gap:5 }}>
+              {/* Added Alignments */}
+              <div style={{ display:'flex',flexWrap:'wrap',gap:8, alignItems:'center' }}>
                 {p.preferredDistricts.map(d=><span key={d} style={badge('#3f3f46','#f4f4f5','#e4e4e7')}>{d}</span>)}
               </div>
             </div>
@@ -85,7 +87,8 @@ export default function DigitalResume({ verifiedPhone, profileData: p, onTrigger
           {safeArr(p?.languagesKnown).length>0 && (
             <div style={{ marginTop:10 }}>
               <p style={{ fontSize:11,color:'#71717a',fontWeight:600,marginBottom:5 }}>Languages</p>
-              <div style={{ display:'flex',flexWrap:'wrap',gap:5 }}>
+              {/* Added Alignments */}
+              <div style={{ display:'flex',flexWrap:'wrap',gap:8, alignItems:'center' }}>
                 {p.languagesKnown.map(l=><span key={l} style={badge('#059669','#f0fdf4','#bbf7d0')}>{l}</span>)}
               </div>
             </div>

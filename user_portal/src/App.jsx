@@ -85,7 +85,8 @@ export default function App() {
         )}
       </header>
 
-      <main style={{ maxWidth:700,margin:'0 auto',padding:'28px 14px 60px' }}>
+      {/* Expanded the Max-Width to fix the narrow layout constraint */}
+      <main style={{ maxWidth:1024,margin:'0 auto',padding:'28px 14px 60px' }}>
         {view === 'LOGIN' && (
           <LoginCard backendUrl={BACKEND} onAuthSuccess={handleAuthSuccess} />
         )}
