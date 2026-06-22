@@ -13,7 +13,7 @@ generator client {
 model Admin {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String // Hashed secure string
+  password  String   // Hashed secure string
   name      String
   createdAt DateTime @default(now())
 }
@@ -53,6 +53,9 @@ model Candidate {
   expectedSalary     String?
   languagesKnown     String[]        // Added for storing candidate language proficiencies
   
+  // 🏢 ADDED: Tracks company name for Shortlisted and Placed candidates
+  shortlistedCompany String?
+
   status             CandidateStatus @default(PENDING_WIZARD)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
