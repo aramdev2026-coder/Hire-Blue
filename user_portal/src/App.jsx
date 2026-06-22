@@ -1,116 +1,140 @@
-import React, { useState, useEffect } from 'react';
-import LoginCard     from './components/LoginCard';
+﻿import React, { useState, useEffect } from 'react';
+import LoginCard from './components/LoginCard';
 import ProfileWizard from './components/ProfileWizard';
 import DigitalResume from './components/DigitalResume';
+import EmployerAuth from './components/EmployerAuth';
+import EmployerDashboard from './components/EmployerDashboard';
 
 const BACKEND = 'http://localhost:5000/api';
 
 export default function App() {
-  const [token,    setToken]    = useState(() => localStorage.getItem('candidate_token') || null);
-  const [candId,   setCandId]   = useState(() => localStorage.getItem('candidate_id')    || null);
-  const [phone,    setPhone]    = useState(() => localStorage.getItem('candidate_phone')  || '');
-  const [profile,  setProfile]  = useState(null);
-  const [view,     setView]     = useState('LOGIN');
+  const [portalMode, setPortalMode] = useState('CANDIDATE');
+  const [candToken, setCandToken] = useState(() => localStorage.getItem('candidate_token') || null);
+  const [candId, setCandId] = useState(() => localStorage.getItem('candidate_id') || null);
+  const [phone, setPhone] = useState(() => localStorage.getItem('candidate_phone') || '');
+  const [profile, setProfile] = useState(null);
+  const [candView, setCandView] = useState('LOGIN');
+  const [empToken, setEmpToken] = useState(() => localStorage.getItem('employer_token') || null);
+  const [empId, setEmpId] = useState(() => localStorage.getItem('employer_id') || null);
+  const [empName, setEmpName] = useState(() => localStorage.getItem('employer_name') || '');
 
   useEffect(() => {
-    if (!token || !candId) return;
+    if (!candToken || !candId) return;
     fetch(`${BACKEND}/candidate/profile/${candId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(p => {
-        if (p) setProfile(p);
-        const status = p?.status || localStorage.getItem('candidate_status');
-        setView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setProfile(data);
+        const status = data?.status || localStorage.getItem('candidate_status');
+        setCandView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
       })
-      .catch(() => setView('WIZARD'));
-  }, [token, candId]);
+      .catch(() => setCandView('WIZARD'));
+  }, [candToken, candId]);
 
-  const handleAuthSuccess = (tok, id, ph, status, prof) => {
-    localStorage.setItem('candidate_token', tok);
-    localStorage.setItem('candidate_id',    id);
-    localStorage.setItem('candidate_phone', ph);
+  const handleCandAuth = (token, id, phoneNumber, status, profileData) => {
+    localStorage.setItem('candidate_token', token);
+    localStorage.setItem('candidate_id', id);
+    localStorage.setItem('candidate_phone', phoneNumber);
     localStorage.setItem('candidate_status', status);
-    setToken(tok); setCandId(id); setPhone(ph); setProfile(prof);
-    setView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
+    setCandToken(token);
+    setCandId(id);
+    setPhone(phoneNumber);
+    setProfile(profileData);
+    setCandView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
   };
 
-  const handleFinalized = (finalData) => {
+  const handleCandFinalized = (finalData) => {
     localStorage.setItem('candidate_status', 'PENDING_ADMIN_CALL');
     setProfile(finalData);
-    setView('DASHBOARD');
+    setCandView('DASHBOARD');
+  };
+
+  const handleEmpAuth = (token, id, name) => {
+    localStorage.setItem('employer_token', token);
+    localStorage.setItem('employer_id', id);
+    localStorage.setItem('employer_name', name);
+    setEmpToken(token);
+    setEmpId(id);
+    setEmpName(name);
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    setToken(null); setCandId(null); setPhone(''); setProfile(null);
-    setView('LOGIN');
+    if (portalMode === 'CANDIDATE') {
+      localStorage.removeItem('candidate_token');
+      localStorage.removeItem('candidate_id');
+      localStorage.removeItem('candidate_phone');
+      localStorage.removeItem('candidate_status');
+      setCandToken(null);
+      setCandId(null);
+      setPhone('');
+      setProfile(null);
+      setCandView('LOGIN');
+    } else {
+      localStorage.removeItem('employer_token');
+      localStorage.removeItem('employer_id');
+      localStorage.removeItem('employer_name');
+      setEmpToken(null);
+      setEmpId(null);
+      setEmpName('');
+    }
   };
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f4f4f5', fontFamily:"'Inter',system-ui,sans-serif" }}>
-      {/* 📱 RESPONSIVE CSS ENGINE INJECTED HERE */}
-      <style>{`
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Inter',system-ui,sans-serif; background:#f4f4f5;}
-        input,select,textarea,button{font-family:inherit;}
-        button{cursor:pointer;}
-        
-        .responsive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 16px; }
-        .responsive-table { width: 100%; border-collapse: collapse; min-width: 500px; text-align: left; }
-        
-        @media(max-width: 640px) {
-          .responsive-grid { grid-template-columns: 1fr !important; gap: 12px; }
-        }
-      `}</style>
-
-      <header style={{
-        position:'sticky',top:0,zIndex:50,
-        background:'#fff',borderBottom:'1px solid #e4e4e7',
-        display:'flex',alignItems:'center',justifyContent:'space-between',
-        padding:'0 20px',height:54,
-        boxShadow:'0 1px 4px rgba(0,0,0,0.06)'
-      }}>
-        <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-          <div style={{
-            width:30,height:30,borderRadius:7,background:'#18181b',
-            display:'flex',alignItems:'center',justifyContent:'center',
-            color:'#fff',fontWeight:800,fontSize:15,flexShrink:0
-          }}>B</div>
-          <span style={{ fontWeight:700,fontSize:14,color:'#000',letterSpacing:'-0.2px' }}>
-            Blue-Collar Central
-          </span>
+    <div className="app-shell">
+      <header className="header">
+        <div className="brand">
+          <div className="brand-mark">B</div>
+          <div className="brand-copy">
+            <span className="brand-title">Blue-Collar Central</span>
+            <span className="brand-subtitle">Candidate & Employer Portal</span>
+          </div>
         </div>
-        {token && (
-          <button onClick={handleLogout} style={{
-            padding:'6px 14px',borderRadius:7,
-            border:'1px solid #fca5a5',background:'#fff1f2',
-            color:'#dc2626',fontSize:12,fontWeight:700
-          }}>
-            Logout
-          </button>
-        )}
+
+        <div className="button-group">
+          {((portalMode === 'CANDIDATE' && !candToken) || (portalMode === 'EMPLOYER' && !empToken)) && (
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => setPortalMode(portalMode === 'CANDIDATE' ? 'EMPLOYER' : 'CANDIDATE')}
+            >
+              Switch to {portalMode === 'CANDIDATE' ? 'Employer' : 'Candidate'} login
+            </button>
+          )}
+
+          {((portalMode === 'CANDIDATE' && candToken) || (portalMode === 'EMPLOYER' && empToken)) && (
+            <button type="button" className="button button-danger" onClick={handleLogout}>
+              Logout
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* 📏 MAX-WIDTH SET TO 850px: Optimal for resumes/forms without stretching inputs */}
-      <main style={{ maxWidth:850, margin:'0 auto', padding:'30px 16px 60px' }}>
-        {view === 'LOGIN' && (
-          <LoginCard backendUrl={BACKEND} onAuthSuccess={handleAuthSuccess} />
+      <main className="shell-content">
+        {portalMode === 'CANDIDATE' && (
+          <>
+            {candView === 'LOGIN' && <LoginCard backendUrl={BACKEND} onAuthSuccess={handleCandAuth} />}
+            {candView === 'WIZARD' && (
+              <ProfileWizard
+                backendUrl={BACKEND}
+                candidateId={candId}
+                verifiedPhone={phone}
+                initialData={profile}
+                onFinalizeSubmit={handleCandFinalized}
+              />
+            )}
+            {candView === 'DASHBOARD' && (
+              <DigitalResume verifiedPhone={phone} profileData={profile} onTriggerEdit={() => setCandView('WIZARD')} />
+            )}
+          </>
         )}
-        {view === 'WIZARD' && (
-          <ProfileWizard
-            backendUrl={BACKEND}
-            candidateId={candId}
-            verifiedPhone={phone}
-            initialData={profile}
-            onFinalizeSubmit={handleFinalized}
-          />
-        )}
-        {view === 'DASHBOARD' && (
-          <DigitalResume
-            verifiedPhone={phone}
-            profileData={profile}
-            onTriggerEdit={() => setView('WIZARD')}
-          />
+
+        {portalMode === 'EMPLOYER' && (
+          <>
+            {!empToken ? (
+              <EmployerAuth backendUrl={BACKEND} onAuthSuccess={handleEmpAuth} />
+            ) : (
+              <EmployerDashboard backendUrl={BACKEND} employerId={empId} companyName={empName} />
+            )}
+          </>
         )}
       </main>
     </div>
