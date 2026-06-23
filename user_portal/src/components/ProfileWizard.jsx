@@ -38,6 +38,15 @@ function Field({ label, req, error, children, span2 }) {
 
 function safeArr(v) { return Array.isArray(v) ? v : []; }
 
+function normalizeExperienceItem(item) {
+  return {
+    institution: item?.institution || '',
+    role: item?.role || '',
+    fromYear: item?.fromYear != null ? String(item.fromYear) : '',
+    toYear: item?.toYear != null ? String(item.toYear) : '',
+  };
+}
+
 // Pack the multi-line address inputs into the single stored address string.
 const composeAddr = (s1, s2) =>
   [s1, s2].map(x => (x || '').trim()).filter(Boolean).join(', ');
@@ -82,7 +91,7 @@ function buildInit(init, phone) {
     languagesKnown:     safeArr(init?.languagesKnown),
     education:  safeArr(init?.education).length  ? init.education  : [{ institution:'',course:'' }],
     technical:  safeArr(init?.technical).length  ? init.technical  : [{ institution:'',course:'' }],
-    experience: safeArr(init?.experience).length ? init.experience : [{ institution:'',role:'',fromYear:'',toYear:'' }],
+    experience: safeArr(init?.experience).length ? init.experience.map(normalizeExperienceItem) : [{ institution:'',role:'',fromYear:'',toYear:'' }],
   };
 }
 
@@ -97,6 +106,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         const p = JSON.parse(s);
         ['jobRoles','preferredDistricts','languagesKnown','education','technical','experience']
           .forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
+        p.experience = p.experience.map(normalizeExperienceItem);
         p.phoneNumber1 = verifiedPhone || p.phoneNumber1;
         // Migrate older drafts that stored a single address line into street1/street2
         if (p.presentStreet1 === undefined) {
@@ -134,6 +144,40 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     localStorage.setItem(draftKey, JSON.stringify(form)); 
     localStorage.setItem(stepKey, step.toString());
   }, [form, step, candidateId]);
+
+  // Ensure address fields are decomposed when returning to step 1
+  React.useEffect(() => {
+    if (step === 1) {
+      setForm(p => {
+        let newForm = { ...p };
+        let changed = false;
+
+        // Decompose present address if street fields are empty but composed address exists
+        if (p.presentAddress && (!p.presentStreet1 || p.presentStreet1.trim() === '')) {
+          const parts = p.presentAddress.split(', ');
+          newForm.presentStreet1 = parts[0] || '';
+          newForm.presentStreet2 = parts.slice(1).join(', ') || '';
+          if (!newForm.presentCity) {
+            newForm.presentCity = p.presentDistrict || '';
+          }
+          changed = true;
+        }
+
+        // Decompose permanent address if street fields are empty but composed address exists
+        if (p.permanentAddress && (!p.permanentStreet1 || p.permanentStreet1.trim() === '')) {
+          const parts = p.permanentAddress.split(', ');
+          newForm.permanentStreet1 = parts[0] || '';
+          newForm.permanentStreet2 = parts.slice(1).join(', ') || '';
+          if (!newForm.permanentCity) {
+            newForm.permanentCity = p.permanentDistrict || '';
+          }
+          changed = true;
+        }
+
+        return changed ? newForm : p;
+      });
+    }
+  }, [step]);
 
   const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -195,15 +239,30 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     setSaving(true);
     try {
       // Compose multi-line address into the single stored fields the backend expects
-      const payload = step === 1 ? {
-        ...form,
-        presentAddress:   composeAddr(form.presentStreet1, form.presentStreet2),
-        presentDistrict:  form.presentCity,
-        permanentAddress: sameAddr
-          ? composeAddr(form.presentStreet1, form.presentStreet2)
-          : composeAddr(form.permanentStreet1, form.permanentStreet2),
-        permanentDistrict: sameAddr ? form.presentCity : form.permanentCity,
-      } : form;
+      let payload;
+      if (step === 1) {
+        payload = {
+          ...form,
+          presentAddress:   composeAddr(form.presentStreet1, form.presentStreet2),
+          presentDistrict:  form.presentCity,
+          permanentAddress: sameAddr
+            ? composeAddr(form.presentStreet1, form.presentStreet2)
+            : composeAddr(form.permanentStreet1, form.permanentStreet2),
+          permanentDistrict: sameAddr ? form.presentCity : form.permanentCity,
+        };
+      } else if (step === 2) {
+        // Ensure arrays are sent for list fields (handle legacy string values)
+        const toArray = v => Array.isArray(v) ? v : (typeof v === 'string' ? v.split(',').map(s=>s.trim()).filter(Boolean) : []);
+        payload = {
+          ...form,
+          jobRoles: toArray(form.jobRoles),
+          preferredDistricts: toArray(form.preferredDistricts),
+          languagesKnown: toArray(form.languagesKnown),
+          expectedSalary: form.expectedSalary || '',
+        };
+      } else {
+        payload = form;
+      }
       const res = await fetch(`${backendUrl}/candidate/save-wizard-step`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -551,8 +610,8 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                     <tr key={i}>
                       <td data-label="Organisation"><input className="input input-inline" placeholder="Company" value={r.institution} onChange={e=>updRow('experience',i,'institution',e.target.value)} /></td>
                       <td data-label="Role"><input className="input input-inline" placeholder="Job Title" value={r.role||''} onChange={e=>updRow('experience',i,'role',e.target.value)} /></td>
-                      <td data-label="From"><input className="input input-inline" type="number" placeholder="2020" value={r.fromYear} onChange={e=>updRow('experience',i,'fromYear',e.target.value)} /></td>
-                      <td data-label="To"><input className="input input-inline" type="number" placeholder="2024" value={r.toYear} onChange={e=>updRow('experience',i,'toYear',e.target.value)} /></td>
+                      <td data-label="From"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.fromYear || ''} onChange={e => updRow('experience', i, 'fromYear', e.target.value.replace(/\D/g, '').slice(0,4))} /></td>
+                      <td data-label="To"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.toYear || ''} onChange={e => updRow('experience', i, 'toYear', e.target.value.replace(/\D/g, '').slice(0,4))} /></td>
                       <td data-label=" " className="text-center">
                         <button type="button" className="button button-ghost button-small" onClick={()=>delRow('experience',i)}>Remove</button>
                       </td>

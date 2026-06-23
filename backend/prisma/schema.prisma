@@ -115,10 +115,10 @@ model JobRequirement {
   employer       Employer @relation(fields: [employerId], references: [id], onDelete: Cascade)
   roleTitle      String   // E.g., "Electrician"
   salaryRange    String
-  location       String   // District target
+  location       String[] // One or more target districts
   maritalStatus  String   @default("No Preference")
   educationLevel String
-  expRequired    String
+  expRequired    Int      @default(0) // 0=Any, 1-10, 11=10+
   vacanciesCount Int      @default(1)
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())

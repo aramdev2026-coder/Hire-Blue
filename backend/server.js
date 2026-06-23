@@ -178,10 +178,10 @@ app.post('/api/employer/jobs', async (req, res) => {
       employerId,
       roleTitle: job.roleTitle,
       salaryRange: job.salaryRange,
-      location: job.location,
+      location: Array.isArray(job.location) ? job.location : (job.location ? [job.location] : []),
       maritalStatus: job.maritalStatus,
       educationLevel: job.educationLevel,
-      expRequired: job.expRequired
+      expRequired: typeof job.expRequired === 'number' ? job.expRequired : 0
     }));
 
     await prisma.jobRequirement.createMany({ data: jobData });
@@ -202,16 +202,17 @@ app.get('/api/employer/orders/:employerId', async (req, res) => {
 
     // BLIND MATCHING ENGINE: Fetch anonymized candidates for each job
     const enrichedJobs = await Promise.all(jobs.map(async (job) => {
+      // job.location is now String[] — match if candidate's preferredDistricts
+      // overlap with ANY of the job's target districts.
+      const locationFilter = (job.location || []).length > 0
+        ? { preferredDistricts: { hasSome: job.location } }
+        : {}; // no location filter if employer selected none
+
       const matches = await prisma.candidate.findMany({
         where: {
           status: { not: 'PENDING_WIZARD' },
           jobRoles: { has: job.roleTitle },
-          // Simple location matching (if candidate selected "All" or the specific district)
-          OR: [
-             { preferredDistricts: { has: job.location } },
-             { preferredDistricts: { has: 'All Locations' } },
-             { preferredDistricts: { isEmpty: true } } // Fallback
-          ]
+          ...locationFilter
         },
         include: { education: true, experience: true }
       });

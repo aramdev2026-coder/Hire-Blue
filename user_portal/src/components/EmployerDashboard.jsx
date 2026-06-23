@@ -2,13 +2,37 @@ import React, { useState, useEffect } from 'react';
 
 const PRESET_ROLES = ['Delivery Staff','Driver','Supervisor','Sales Rep','Accountant','Store In-Charge','Data Entry','M/c Operator','Packing / Checking','Production Follow-up'];
 
+const TN_DISTRICTS = ['Ariyalur','Chengalpattu','Chennai','Coimbatore','Cuddalore','Dharmapuri',
+  'Dindigul','Erode','Kallakurichi','Kancheepuram','Karur','Krishnagiri','Madurai',
+  'Mayiladuthurai','Nagapattinam','Namakkal','Nilgiris','Perambalur','Pudukkottai',
+  'Ramanathapuram','Ranipet','Salem','Sivaganga','Tenkasi','Thanjavur','Theni',
+  'Thoothukudi','Tiruchirappalli','Tirunelveli','Tirupathur','Tiruppur','Tiruvallur',
+  'Tiruvannamalai','Tiruvarur','Vellore','Viluppuram','Virudhunagar'];
+
+const EXP_OPTIONS = [
+  { value: 0, label: 'Any Experience' },
+  { value: 1, label: '1 Year' },
+  { value: 2, label: '2 Years' },
+  { value: 3, label: '3 Years' },
+  { value: 4, label: '4 Years' },
+  { value: 5, label: '5 Years' },
+  { value: 6, label: '6 Years' },
+  { value: 7, label: '7 Years' },
+  { value: 8, label: '8 Years' },
+  { value: 9, label: '9 Years' },
+  { value: 10, label: '10 Years' },
+  { value: 11, label: '10+ Years' },
+];
+
 const MARKET_TRENDS_AUTOFILL = {
   salaryRange: '₹15,000 - ₹20,000',
-  location: 'Coimbatore',
+  location: ['Coimbatore'],
   maritalStatus: 'No Preference',
   educationLevel: '12th Pass / ITI',
-  expRequired: '1 - 2 Years'
+  expRequired: 2
 };
+
+const EMPTY_DETAILS = { salaryRange:'', location:[], maritalStatus:'', educationLevel:'', expRequired:0 };
 
 export default function EmployerDashboard({ backendUrl, employerId, companyName }) {
   const [activeMenu, setActiveMenu] = useState('POST_JOBS'); // 'POST_JOBS' or 'ORDERS'
@@ -44,7 +68,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
     const role = roleInput.trim();
     if (!role || addedRoles.includes(role)) return;
     setAddedRoles(prev => [...prev, role]);
-    setJobDetails(prev => ({ ...prev, [role]: prev[role] || { salaryRange:'', location:'', maritalStatus:'', educationLevel:'', expRequired:'' } }));
+    setJobDetails(prev => ({ ...prev, [role]: prev[role] || { ...EMPTY_DETAILS } }));
     setRoleInput('');
   };
 
@@ -80,7 +104,15 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
     if (addedRoles.length === 0) return;
     setIsSubmitting(true);
     const roleToPublish = addedRoles[activeTab];
-    const payload = [{ roleTitle: roleToPublish, ...jobDetails[roleToPublish] }];
+    const details = jobDetails[roleToPublish] || {};
+    const normalized = {
+      ...details,
+      // ensure location is an array
+      location: Array.isArray(details.location) ? details.location : (details.location ? [details.location] : []),
+      // ensure expRequired is a number
+      expRequired: typeof details.expRequired === 'number' ? details.expRequired : (parseInt(details.expRequired, 10) || 0),
+    };
+    const payload = [{ roleTitle: roleToPublish, ...normalized }];
 
     try {
       const res = await fetch(`${backendUrl}/employer/jobs`, {
@@ -159,7 +191,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                       onClick={() => {
                         if (!addedRoles.includes(r)) {
                           setAddedRoles(prev => [...prev, r]);
-                          setJobDetails(prev => ({ ...prev, [r]: prev[r] || { salaryRange:'', location:'', maritalStatus:'', educationLevel:'', expRequired:'' } }));
+                          setJobDetails(prev => ({ ...prev, [r]: prev[r] || { ...EMPTY_DETAILS } }));
                         }
                       }}
                     >
@@ -246,7 +278,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
 
                     {(() => {
                       const activeRole = addedRoles[activeTab] || addedRoles[0];
-                      const details = jobDetails[activeRole] || { salaryRange:'', location:'', maritalStatus:'', educationLevel:'', expRequired:'' };
+                      const details = jobDetails[activeRole] || { salaryRange: '', location: [], maritalStatus: '', educationLevel: '', expRequired: 0 };
                       return (
                         <div className="responsive-grid">
                           <div className="field">
@@ -262,9 +294,9 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                             <label className="field-label">Location</label>
                             <input
                               className="input"
-                              value={details.location || ''}
-                              onChange={e => handleDetailChange(activeRole, 'location', e.target.value)}
-                              placeholder="e.g. Coimbatore"
+                              value={Array.isArray(details.location) ? details.location.join(', ') : (details.location || '')}
+                              onChange={e => handleDetailChange(activeRole, 'location', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                              placeholder="e.g. Coimbatore, Salem"
                             />
                           </div>
                           <div className="field">
@@ -293,9 +325,14 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                             <label className="field-label">Experience Required</label>
                             <input
                               className="input"
-                              value={details.expRequired || ''}
-                              onChange={e => handleDetailChange(activeRole, 'expRequired', e.target.value)}
-                              placeholder="e.g. 2 Years"
+                              type="number"
+                              min="0"
+                              value={typeof details.expRequired === 'number' && details.expRequired > 0 ? details.expRequired : (details.expRequired === 0 ? 0 : '')}
+                              onChange={e => {
+                                const v = e.target.value === '' ? 0 : parseInt(e.target.value, 10) || 0;
+                                handleDetailChange(activeRole, 'expRequired', v);
+                              }}
+                              placeholder="e.g. 2"
                             />
                           </div>
                         </div>
@@ -336,7 +373,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                       <div>
                         <h3>{order.roleTitle}</h3>
                         <div className="order-card__meta">
-                          <span>Location: {order.location}</span>
+                          <span>Location: {Array.isArray(order.location) ? order.location.join(', ') : (order.location || '—')}</span>
                           <span>Salary: {order.salaryRange}</span>
                           <span>Education: {order.educationLevel}</span>
                         </div>
@@ -361,7 +398,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                               <div className="candidate-card__meta">
                                 <span><strong>Exp:</strong> {c.experienceYears}</span>
                                 <span><strong>Edu:</strong> {c.topEducation}</span>
-                                <span><strong>Base:</strong> {c.location} | {c.gender}</span>
+                                <span><strong>Base:</strong> {Array.isArray(c.location) ? c.location.join(', ') : (c.location || '—')} | {c.gender}</span>
                               </div>
                               <div className="candidate-actions">
                                 <button type="button" className="button button-secondary button-small">Request Unblind</button>
