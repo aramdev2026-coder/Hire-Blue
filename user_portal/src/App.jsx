@@ -5,7 +5,7 @@ import DigitalResume from './components/DigitalResume';
 import EmployerAuth from './components/EmployerAuth';
 import EmployerDashboard from './components/EmployerDashboard';
 
-const BACKEND = 'https://hire-blue.onrender.com';
+const BACKEND = 'https://hire-blue.onrender.com/api';
 
 export default function App() {
   const [portalMode, setPortalMode] = useState('CANDIDATE');
