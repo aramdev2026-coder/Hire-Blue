@@ -52,16 +52,22 @@ const composeAddr = (s1, s2) =>
   [s1, s2].map(x => (x || '').trim()).filter(Boolean).join(', ');
 
 function buildInit(init, phone) {
-  const splitAddr = (full) => {
+  const splitAddr = (full, street1, street2) => {
     const raw = full || '';
     if (raw.includes(', ')) {
       const parts = raw.split(', ');
       return { street1: parts[0] || '', street2: parts.slice(1).join(', ') };
     }
-    return { street1: raw, street2: '' };
+    if (full) {
+      return { street1: raw, street2: '' };
+    }
+    return { street1: street1 || '', street2: street2 || '' };
   };
-  const present = splitAddr(init?.presentAddress);
-  const permanent = splitAddr(init?.permanentAddress);
+  const present = splitAddr(init?.presentAddress, init?.presentStreet1, init?.presentStreet2);
+  const permanent = splitAddr(init?.permanentAddress, init?.permanentStreet1, init?.permanentStreet2);
+
+  const fallbackPresentAddress = composeAddr(init?.presentStreet1, init?.presentStreet2);
+  const fallbackPermanentAddress = composeAddr(init?.permanentStreet1, init?.permanentStreet2);
 
   return {
     fullName:           init?.fullName           || '',
@@ -76,15 +82,15 @@ function buildInit(init, phone) {
     secondaryEmailId:   init?.secondaryEmailId   || '',
     presentStreet1:     present.street1,
     presentStreet2:     present.street2,
-    presentCity:        init?.presentDistrict    || '',
+    presentCity:        init?.presentCity || init?.presentDistrict || '',
     presentState:       init?.presentState       || 'Tamil Nadu',
     permanentStreet1:   permanent.street1,
     permanentStreet2:   permanent.street2,
-    permanentCity:      init?.permanentDistrict  || '',
+    permanentCity:      init?.permanentCity || init?.permanentDistrict || '',
     permanentState:     init?.permanentState     || 'Tamil Nadu',
     // Keep legacy composed fields in sync for the backend / resume view
-    presentAddress:     init?.presentAddress     || '',
-    permanentAddress:   init?.permanentAddress   || '',
+    presentAddress:     init?.presentAddress     || fallbackPresentAddress,
+    permanentAddress:   init?.permanentAddress   || fallbackPermanentAddress,
     jobRoles:           safeArr(init?.jobRoles),
     preferredDistricts: safeArr(init?.preferredDistricts),
     expectedSalary:     init?.expectedSalary     || '',
@@ -269,6 +275,19 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         body: JSON.stringify({ candidateId, sectionIndex: step, updatedPayload: payload }),
       });
       if (!res.ok) throw new Error('Could not save.');
+      if (step === 1) {
+        const composedPresentAddress = composeAddr(form.presentStreet1, form.presentStreet2);
+        const composedPermanentAddress = sameAddr
+          ? composedPresentAddress
+          : composeAddr(form.permanentStreet1, form.permanentStreet2);
+        setForm(p => ({
+          ...p,
+          presentAddress: composedPresentAddress,
+          presentDistrict: p.presentCity,
+          permanentAddress: composedPermanentAddress,
+          permanentDistrict: sameAddr ? p.presentCity : p.permanentCity,
+        }));
+      }
     } catch (err) {
       setServerErr('Could not connect to server. Check your backend.');
       setSaving(false);
@@ -289,7 +308,15 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     } catch {}
     localStorage.removeItem(draftKey);
     localStorage.removeItem(stepKey);
-    onFinalizeSubmit(form);
+    onFinalizeSubmit({
+      ...form,
+      presentAddress: composeAddr(form.presentStreet1, form.presentStreet2),
+      presentDistrict: form.presentCity,
+      permanentAddress: sameAddr
+        ? composeAddr(form.presentStreet1, form.presentStreet2)
+        : composeAddr(form.permanentStreet1, form.permanentStreet2),
+      permanentDistrict: sameAddr ? form.presentCity : form.permanentCity,
+    });
   };
 
   // ── REVIEW UI (LEFT ALIGNED) ───────────────────────────────────────────────
