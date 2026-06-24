@@ -7,7 +7,7 @@ import CandidatesDirectory from './components/CandidatesDirectory';
 import RequirementsTracker from './components/RequirementsTracker';
 import MatchEngine from './components/MatchEngine';
 
-const API_BASE_URL = 'https://hire-blue.onrender.com/api';
+const API_BASE_URL = 'http://localhost:5000';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('verification');
