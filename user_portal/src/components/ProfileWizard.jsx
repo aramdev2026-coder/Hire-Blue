@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const JOB_ROLES = ['Garments','Merchandiser','Office Assistant','HR Manager','Store In-Charge',
+const INITIAL_JOB_ROLES = ['Garments','Merchandiser','Office Assistant','HR Manager','Store In-Charge',
   'Marketing Staff','Delivery Staff','M/c Operator','Driver','Follow-up','Data Entry',
   'Quality Controller','Sales Rep','Supervisor','Documentation','Accountant',
   'Packing / Checking','Production Follow-up'];
@@ -16,7 +16,6 @@ const TN_DISTRICTS = ['Ariyalur','Chengalpattu','Chennai','Coimbatore','Cuddalor
 const STEP_NAMES = ['Personal Details','Job Preferences','Education & Experience'];
 
 function Lbl({ children, req }) {
-
   return (
     <label className="field-label">
       {children}{req && <span className="required-star"> *</span>}
@@ -47,7 +46,6 @@ function normalizeExperienceItem(item) {
   };
 }
 
-// Pack the multi-line address inputs into the single stored address string.
 const composeAddr = (s1, s2) =>
   [s1, s2].map(x => (x || '').trim()).filter(Boolean).join(', ');
 
@@ -88,7 +86,6 @@ function buildInit(init, phone) {
     permanentStreet2:   permanent.street2,
     permanentCity:      init?.permanentCity || init?.permanentDistrict || '',
     permanentState:     init?.permanentState     || 'Tamil Nadu',
-    // Keep legacy composed fields in sync for the backend / resume view
     presentAddress:     init?.presentAddress     || fallbackPresentAddress,
     permanentAddress:   init?.permanentAddress   || fallbackPermanentAddress,
     jobRoles:           safeArr(init?.jobRoles),
@@ -104,6 +101,19 @@ function buildInit(init, phone) {
 export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, initialData, onFinalizeSubmit }) {
   const draftKey = `wiz_draft_${candidateId}`;
   const stepKey  = `wiz_step_${candidateId}`;
+  const rolesKey = `wiz_custom_roles_${candidateId}`;
+
+  // DYNAMIC ROLES STATE (Loads hardcoded presets + any custom variants added earlier)
+  const [wizardRoles, setWizardRoles] = useState(() => {
+    try {
+      const saved = localStorage.getItem(rolesKey);
+      return saved ? JSON.parse(saved) : INITIAL_JOB_ROLES;
+    } catch {
+      return INITIAL_JOB_ROLES;
+    }
+  });
+
+  const [customRoleInput, setCustomRoleInput] = useState('');
 
   const [form, setForm] = React.useState(() => {
     try {
@@ -114,7 +124,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           .forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
         p.experience = p.experience.map(normalizeExperienceItem);
         p.phoneNumber1 = verifiedPhone || p.phoneNumber1;
-        // Migrate older drafts that stored a single address line into street1/street2
         if (p.presentStreet1 === undefined) {
           const parts = (p.presentAddress || '').split(', ');
           p.presentStreet1 = parts[0] || '';
@@ -135,6 +144,21 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     return buildInit(initialData, verifiedPhone);
   });
 
+  // Automatically ensure that if the initial data contains values not in standard presets, they display as options
+  useEffect(() => {
+    if (form.jobRoles && form.jobRoles.length > 0) {
+      setWizardRoles(prev => {
+        const missing = form.jobRoles.filter(role => !prev.includes(role));
+        if (missing.length > 0) {
+          const combined = [...prev, ...missing];
+          localStorage.setItem(rolesKey, JSON.stringify(combined));
+          return combined;
+        }
+        return prev;
+      });
+    }
+  }, [form.jobRoles]);
+
   const [step, setStep] = React.useState(() => {
     const savedStep = localStorage.getItem(stepKey);
     return savedStep ? parseInt(savedStep, 10) : 1;
@@ -151,14 +175,12 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     localStorage.setItem(stepKey, step.toString());
   }, [form, step, candidateId]);
 
-  // Ensure address fields are decomposed when returning to step 1
   React.useEffect(() => {
     if (step === 1) {
       setForm(p => {
         let newForm = { ...p };
         let changed = false;
 
-        // Decompose present address if street fields are empty but composed address exists
         if (p.presentAddress && (!p.presentStreet1 || p.presentStreet1.trim() === '')) {
           const parts = p.presentAddress.split(', ');
           newForm.presentStreet1 = parts[0] || '';
@@ -169,7 +191,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           changed = true;
         }
 
-        // Decompose permanent address if street fields are empty but composed address exists
         if (p.permanentAddress && (!p.permanentStreet1 || p.permanentStreet1.trim() === '')) {
           const parts = p.permanentAddress.split(', ');
           newForm.permanentStreet1 = parts[0] || '';
@@ -213,6 +234,29 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   }));
   const delRow = (tbl, i) => setForm(p => ({ ...p, [tbl]: p[tbl].filter((_,j) => j!==i) }));
 
+  // --- HANDLER FOR CANDIDATE CUSTOM ROLE FIELDS ---
+  const handleAddCustomRole = () => {
+    const role = customRoleInput.trim();
+    if (!role) return;
+
+    // Append custom role to the available array options state if unique
+    if (!wizardRoles.some(r => r.toLowerCase() === role.toLowerCase())) {
+      const nextRoles = [...wizardRoles, role];
+      setWizardRoles(nextRoles);
+      localStorage.setItem(rolesKey, JSON.stringify(nextRoles));
+    }
+
+    // Automatically check / select the role item in the jobRoles payload field
+    if (!form.jobRoles.includes(role)) {
+      setForm(prev => ({
+        ...prev,
+        jobRoles: [...prev.jobRoles, role]
+      }));
+    }
+
+    setCustomRoleInput('');
+  };
+
   const validate = () => {
     const e = {};
     if (step === 1) {
@@ -244,7 +288,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     if (!validate()) return;
     setSaving(true);
     try {
-      // Compose multi-line address into the single stored fields the backend expects
       let payload;
       if (step === 1) {
         payload = {
@@ -257,7 +300,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           permanentDistrict: sameAddr ? form.presentCity : form.permanentCity,
         };
       } else if (step === 2) {
-        // Ensure arrays are sent for list fields (handle legacy string values)
         const toArray = v => Array.isArray(v) ? v : (typeof v === 'string' ? v.split(',').map(s=>s.trim()).filter(Boolean) : []);
         payload = {
           ...form,
@@ -308,6 +350,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     } catch {}
     localStorage.removeItem(draftKey);
     localStorage.removeItem(stepKey);
+    localStorage.removeItem(rolesKey);
     onFinalizeSubmit({
       ...form,
       presentAddress: composeAddr(form.presentStreet1, form.presentStreet2),
@@ -319,7 +362,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     });
   };
 
-  // ── REVIEW UI (LEFT ALIGNED) ───────────────────────────────────────────────
   if (reviewing) return (
     <div className="review-card">
       <div className="review-header">
@@ -328,7 +370,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       </div>
       <div className="panel-body panel-body--compact">
         
-        {/* Personal Details */}
         <div className="section-heading">Personal Details</div>
         <div className="responsive-grid section-divider">
           <RV label="Full Name"      val={form.fullName} />
@@ -345,16 +386,14 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           </div>
         </div>
 
-        {/* Job Preferences */}
         <div className="section-heading">Job Preferences</div>
         <div className="section-divider">
           <RV label="Monthly Salary Expectation" val={form.expectedSalary} />
-          <TagReview label="Job Roles"   tags={form.jobRoles}           color="#000" />
+          <TagReview label="Job Roles"   tags={form.jobRoles}          color="#000" />
           <TagReview label="Districts"   tags={form.preferredDistricts} color="#1d4ed8" />
           <TagReview label="Languages"   tags={form.languagesKnown}     color="#059669" />
         </div>
 
-        {/* Tables */}
         {form.education.some(r=>r.institution) && <>
           <div className="section-heading">Education</div>
           <div className="table-wrapper">
@@ -390,7 +429,6 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     </div>
   );
 
-  // ── WIZARD UI ──────────────────────────────────────────────────────────────
   return (
     <div className="wizard-card">
       <div className="wizard-header">
@@ -514,19 +552,47 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <div className="field-label-row">
               <Lbl req>Job Roles</Lbl>
               <div className="field-inline-actions">
-                <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[...JOB_ROLES])}>Select all</button>
+                <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[...wizardRoles])}>Select all</button>
                 <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[])}>Clear</button>
               </div>
             </div>
+            
+            {/* CHIP ROLES COMPONENT LAYOUT DISPLAY */}
             <div className={`tag-panel${errors.jobRoles ? ' has-error' : ''}`}>
-              {JOB_ROLES.map(r => {
+              {wizardRoles.map(r => {
                 const on = form.jobRoles.includes(r);
                 return <button type="button" key={r} className={`tag-chip${on ? ' selected' : ''}`} onClick={()=>toggle('jobRoles',r)}>{r}</button>;
               })}
             </div>
             <Err msg={errors.jobRoles} />
 
-            <div className="field-label-row">
+            {/* 🛠️ INTEGRATED CUSTOM ROLE SYSTEM INPUT ROW BAR */}
+            <div className="field mt-12" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
+                Can't find your Job Preference? Type it here to create a new option:
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  className="input"
+                  style={{ flex: 1, padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                  placeholder="e.g. Garments, Production Operator, Technician..."
+                  value={customRoleInput}
+                  onChange={e => setCustomRoleInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomRole(); } }}
+                />
+                <button
+                  type="button"
+                  className="button button-primary shadow-xs"
+                  style={{ whiteSpace: 'nowrap', padding: '6px 14px' }}
+                  onClick={handleAddCustomRole}
+                >
+                  + Add Custom Role
+                </button>
+              </div>
+            </div>
+
+            <div className="field-label-row mt-16">
               <Lbl req>Preferred Districts</Lbl>
               <div className="field-inline-actions">
                 <button type="button" className="button button-ghost button-small" onClick={()=>upd('preferredDistricts',[...TN_DISTRICTS])}>All</button>

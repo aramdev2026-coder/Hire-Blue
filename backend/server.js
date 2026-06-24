@@ -202,7 +202,7 @@ app.post('/api/employer/jobs', async (req, res) => {
       location: Array.isArray(job.location) ? job.location : (job.location ? [job.location] : []),
       maritalStatus: job.maritalStatus,
       educationLevel: job.educationLevel,
-      expRequired: typeof job.expRequired === 'number' ? job.expRequired : 0
+      expRequired: typeof job.expRequired === 'number' ? job.expRequired : (parseInt(job.expRequired, 10) || 0)
     }));
 
     await prisma.jobRequirement.createMany({ data: jobData });
@@ -223,21 +223,15 @@ app.get('/api/employer/orders/:employerId', async (req, res) => {
     });
 
     const enrichedJobs = await Promise.all(jobs.map(async (job) => {
-      // job.location is now String[] — match if candidate's preferredDistricts
-      // overlap with ANY of the job's target districts.
-      const locationFilter = (job.location || []).length > 0
-        ? { preferredDistricts: { hasSome: job.location } }
-        : {}; // no location filter if employer selected none
-
       const matches = await prisma.candidate.findMany({
         where: {
           status: { not: 'PENDING_WIZARD' },
           jobRoles: { has: job.roleTitle },
-          // OR: [
-          //    { preferredDistricts: { has: job.location } },
-          //    { preferredDistricts: { has: 'All Locations' } },
-          //    { preferredDistricts: { isEmpty: true } }
-          // ]
+          OR: [
+            { preferredDistricts: { hasSome: (job.location || []).length > 0 ? job.location : [] } },
+            { preferredDistricts: { has: 'All Locations' } },
+            { preferredDistricts: { isEmpty: true } }
+          ]
         },
         include: { education: true, experience: true }
       });
@@ -245,7 +239,7 @@ app.get('/api/employer/orders/:employerId', async (req, res) => {
       const anonymizedMatches = matches.map(c => {
         let totalExp = 0;
         c.experience.forEach(exp => {
-          if(exp.fromYear && exp.toYear) totalExp += (parseInt(exp.toYear) - parseInt(exp.fromYear));
+          if(exp.fromYear && exp.toYear) totalExp += (parseInt(exp.toYear, 10) - parseInt(exp.fromYear, 10));
         });
 
         const topEdu = c.education.length > 0 ? c.education[0].course : 'Not Specified';
@@ -404,8 +398,12 @@ app.get('/api/admin/jobs', async (req, res) => {
     const { location, employerId } = req.query;
     const filters = { isActive: true };
     
-    if (location) filters.location = location;
-    if (employerId) filters.employerId = employerId;
+    if (location) {
+      filters.location = { has: location };
+    }
+    if (employerId) {
+      filters.employerId = employerId;
+    }
 
     const jobs = await prisma.jobRequirement.findMany({
       where: filters,
@@ -447,8 +445,10 @@ app.get('/api/admin/jobs/:id/matches', async (req, res) => {
     const candidates = await prisma.candidate.findMany({
       where: {
         status: { in: ['PENDING_ADMIN_CALL', 'PENDING_WIZARD'] },
-        preferredDistricts: { has: job.location },
         jobRoles: { hasSome: [job.roleTitle] },
+        preferredDistricts: {
+          hasSome: (job.location || []).length > 0 ? job.location : []
+        }
       },
       include: { experience: true },
     });

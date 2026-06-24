@@ -167,7 +167,6 @@ export default function App() {
     }
   };
 
-  // 🔄 UPDATED: Captures companyName and updates the payload body to synchronize with PostgreSQL
   const updateCandidateStatus = async (candidateId, newStatus, companyName = null) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/candidates/${candidateId}/status`, {
@@ -175,7 +174,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           status: newStatus, 
-          shortlistedCompany: companyName // 👈 Sends string payload to Express server.js body parser
+          shortlistedCompany: companyName 
         }),
       });
       if (!response.ok) throw new Error('Failed to update candidate');
@@ -189,14 +188,21 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-slate-50 font-sans text-slate-800 antialiased overflow-hidden">
+    /* 🛠️ FIXED MAIN CONTAINER BREAKPOINT MATRIX 
+       Swaps structural layout axis seamlessly based on screen width parameters.
+    */
+    <div className="flex flex-col md:flex-row h-screen w-screen bg-slate-50 font-sans text-slate-800 antialiased overflow-hidden">
       
+      {/* Dynamic Drawer Sidebar View */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* COMPONENT INTERFACE STACK PANELS */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
+        {/* Responsive Header Component */}
         <Header activeTab={activeTab} />
 
+        {/* Floating Absulated Toast Alerts Notification Layer */}
         <Toast 
           error={error} 
           successMessage={successMessage} 
@@ -204,7 +210,8 @@ export default function App() {
           setSuccessMessage={setSuccessMessage} 
         />
 
-        <div className="flex-1 overflow-y-auto p-8">
+        {/* FLUID APPLICATION VIEWPORT DISPLAY LAYOUT */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
           {activeTab === 'verification' && (
             <CompanyVerification 
               employers={employers} 

@@ -177,8 +177,12 @@ export default function RequirementsTracker({ jobs, loading }) {
                 </div>
                 
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-500 px-1">
-                  <div>📍 Location Boundaries: <span className="text-slate-800">{job.location}</span></div>
-                  <div>⏳ Target Experience: <span className="text-slate-800">{job.expRequired}</span></div>
+                  {/* 🔄 Array Display Safe Check (Converts layout array down to formatted text string output) */}
+                  <div>📍 Location Boundaries: <span className="text-slate-800">{Array.isArray(job.location) ? job.location.join(', ') : job.location || 'Not Specified'}</span></div>
+                  
+                  {/* ⏳ Schema Numeric Value Format Check (Converts Int parameters to readable text context) */}
+                  <div>⏳ Target Experience: <span className="text-slate-800">{job.expRequired === 0 ? 'Fresher / Any' : `${job.expRequired} Years`}</span></div>
+                  
                   <div className="text-slate-400 font-mono text-[10px]">ORDER_REF: #{job.id.slice(0, 8)}</div>
                 </div>
               </div>
