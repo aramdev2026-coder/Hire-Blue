@@ -8,24 +8,67 @@ generator client {
 }
 
 // ==========================================
-// 1. ADMIN USER SYSTEM (Manual Insertion)
+// 1. ADMIN USER SYSTEM (with role hierarchy)
 // ==========================================
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  SUB_ADMIN
+}
+
 model Admin {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // Hashed secure string
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String    // Hashed secure string
   name      String
-  createdAt DateTime @default(now())
+  phone     String?
+  role      AdminRole @default(ADMIN)
+  region    String?   // Optional, for territory-based sub admins
+  isActive  Boolean   @default(true)   // Soft-disable instead of deleting
+  createdById String?
+  createdBy   Admin?    @relation("AdminCreatedBy", fields: [createdById], references: [id])
+  createdAdmins Admin[] @relation("AdminCreatedBy")
+
+  // Back-relations (opposite sides of relations defined on other models)
+  candidatesCreated   Candidate[]         @relation("CandidateCreatedBy")
+  candidatesAssigned  Candidate[]         @relation("CandidateAssignedTo")
+  communicationLogs   CommunicationLog[]
+  statusChanges       StatusHistory[]
+  assignmentsMade     AssignmentLog[]     @relation("AssignmentLogAssignedBy")
+  assignmentsReceived AssignmentLog[]     @relation("AssignmentLogAssignedTo")
+  approvedEmployers   Employer[]
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
 }
 
 // ==========================================
 // 2. CANDIDATE SCHEMA
 // ==========================================
 enum CandidateStatus {
+  NEW
   PENDING_WIZARD
   PENDING_ADMIN_CALL
+  CONTACT_ATTEMPTED
+  UNREACHABLE
+  INTERESTED
+  NOT_INTERESTED
+  DOCUMENTS_PENDING
+  VERIFIED
   SHORTLISTED
+  INTERVIEW_SCHEDULED
+  SELECTED
   PLACED
+  REJECTED_BY_EMPLOYER
+  ON_HOLD
+  BLACKLISTED
+  INACTIVE
+}
+
+enum CandidateSource {
+  USER_PORTAL
+  SUB_ADMIN
+  ADMIN
+  SUPER_ADMIN
 }
 
 model Candidate {
@@ -53,17 +96,34 @@ model Candidate {
   expectedSalary     String?
   languagesKnown     String[]        // Added for storing candidate language proficiencies
   
-  // 🏢 ADDED: Tracks company name for Shortlisted and Placed candidates
-  shortlistedCompany String?
+  // 🏢 Shortlisting now links to a real JobRequirement (referential integrity)
+  shortlistedJobId String?
+  shortlistedJob   JobRequirement? @relation(fields: [shortlistedJobId], references: [id])
 
   status             CandidateStatus @default(PENDING_WIZARD)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
+  // 🏷️ Source tagging & ownership
+  source        CandidateSource @default(USER_PORTAL)
+  createdById   String?
+  createdBy     Admin?    @relation("CandidateCreatedBy", fields: [createdById], references: [id])
+  assignedToId  String?
+  assignedTo    Admin?    @relation("CandidateAssignedTo", fields: [assignedToId], references: [id])
+
   // Relational Arrays
   education          CandidateEducation[]
   technical          CandidateTechnical[]
   experience         CandidateExperience[]
+
+  // 📋 Audit-trail relations
+  communicationLogs CommunicationLog[]
+  statusHistory     StatusHistory[]
+  assignmentLogs     AssignmentLog[]
+
+  @@index([assignedToId])
+  @@index([status])
+  @@index([source])
 }
 
 model CandidateEducation {
@@ -92,12 +152,55 @@ model CandidateExperience {
 }
 
 // ==========================================
-// 3. EMPLOYER & REQUIREMENTS SCHEMA
+// 3. AUDIT-TRAIL MODELS
+// ==========================================
+model CommunicationLog {
+  id          String    @id @default(uuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      Admin     @relation(fields: [authorId], references: [id])
+  note        String
+  callbackAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([candidateId])
+}
+
+model StatusHistory {
+  id          String           @id @default(uuid())
+  candidateId String
+  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  fromStatus  CandidateStatus?
+  toStatus    CandidateStatus
+  changedById String
+  changedBy   Admin            @relation(fields: [changedById], references: [id])
+  changedAt   DateTime         @default(now())
+
+  @@index([candidateId])
+}
+
+model AssignmentLog {
+  id           String    @id @default(uuid())
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  assignedToId String
+  assignedTo   Admin     @relation("AssignmentLogAssignedTo", fields: [assignedToId], references: [id])
+  assignedById String
+  assignedBy   Admin     @relation("AssignmentLogAssignedBy", fields: [assignedById], references: [id])
+  assignedAt   DateTime  @default(now())
+
+  @@index([candidateId])
+}
+
+// ==========================================
+// 4. EMPLOYER & REQUIREMENTS SCHEMA
 // ==========================================
 enum EmployerStatus {
   PENDING_VERIFICATION
   ACTIVE
   REJECTED
+  SUSPENDED   // For revoking access after activation, not just at signup
 }
 
 model Employer {
@@ -108,6 +211,10 @@ model Employer {
   password    String         // Hashed secure string
   status      EmployerStatus @default(PENDING_VERIFICATION)
   createdAt   DateTime       @default(now())
+
+  approvedById String?
+  approvedBy   Admin?   @relation(fields: [approvedById], references: [id])
+  approvedAt   DateTime?
   
   jobs        JobRequirement[]
 }
@@ -125,4 +232,6 @@ model JobRequirement {
   vacanciesCount Int      @default(1)
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
+
+  shortlistedCandidates Candidate[]
 }

@@ -1254,3 +1254,71 @@ button { cursor: pointer; }
   /* Inline inputs become full-width rows inside each card */
   .table-editable .input.input-inline { min-height: 44px; }
 }
+
+/* Autocomplete Dropdown Hover Styling */
+.search-dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+}
+.search-dropdown-item.custom-add-item:hover {
+  background-color: #dbeafe !important;
+}
+
+/* Print Media Query Rules for Downloading PDF */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+  
+  /* Hide headers, footers, buttons, switch elements, and wizard panels */
+  header,
+  .header,
+  .button-group,
+  .panel-actions,
+  .no-print,
+  .resume-footer,
+  .resume-action,
+  .wizard-card,
+  .review-card,
+  .login-card,
+  #center,
+  #next-steps,
+  #spacer {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Display ONLY the digital resume card */
+  .app-shell,
+  .shell-content {
+    background: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .resume-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  .resume-card * {
+    visibility: visible !important;
+  }
+
+  /* Optimize page layout for printing */
+  @page {
+    size: auto;
+    margin: 15mm;
+  }
+}

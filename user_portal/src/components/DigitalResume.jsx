@@ -1,12 +1,48 @@
-﻿import React from 'react';
+import React from 'react';
 
 export default function DigitalResume({ verifiedPhone, profileData: p, onTriggerEdit }) {
   const safeArr = v => Array.isArray(v) ? v : [];
 
+  const downloadTextResume = () => {
+    const text = `
+DIGITAL RESUME - ${p?.fullName || 'Candidate'}
+Mobile: +91 ${verifiedPhone}
+Email: ${p?.emailId || '—'}
+Date of Birth: ${p?.dob ? new Date(p.dob).toLocaleDateString('en-IN') : '—'}
+Gender: ${p?.sex || '—'}
+Marital Status: ${p?.maritalStatus || '—'}
+Present Address: ${[p?.presentAddress, p?.presentDistrict, p?.presentState].filter(Boolean).join(', ')}
+Permanent Address: ${[p?.permanentAddress, p?.permanentDistrict, p?.permanentState].filter(Boolean).join(', ')}
+
+JOB PREFERENCES:
+Expected Monthly Salary: ${p?.expectedSalary || '—'}
+Job Roles: ${safeArr(p?.jobRoles).join(', ') || '—'}
+Preferred Districts: ${safeArr(p?.preferredDistricts).join(', ') || '—'}
+Languages Known: ${safeArr(p?.languagesKnown).join(', ') || '—'}
+
+EDUCATION:
+${safeArr(p?.education).filter(r => r.institution).map((r, i) => `${i + 1}. ${r.institution} - ${r.course}`).join('\n') || 'None'}
+
+TECHNICAL QUALIFICATIONS:
+${safeArr(p?.technical).filter(r => r.institution).map((r, i) => `${i + 1}. ${r.institution} - ${r.course}`).join('\n') || 'None'}
+
+WORK EXPERIENCE:
+${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r.institution} (${r.role || 'Role'}) - From ${r.fromYear} to ${r.toYear}`).join('\n') || 'None'}
+    `.trim();
+
+    const element = document.createElement("a");
+    const file = new Blob([text], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `${(p?.fullName || 'resume').replace(/\s+/g, '_')}_resume.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <div className="resume-card">
       <div className="resume-hero">
-        <div className="resume-hero-tag">
+        <div className="resume-hero-tag no-print">
           <span className="status-dot" />
           Pending placement call
         </div>
@@ -157,10 +193,18 @@ export default function DigitalResume({ verifiedPhone, profileData: p, onTrigger
       </div>
 
       <div className="resume-footer">
-        <p>Your data is securely finalized. Administrators will review your preferences shortly.</p>
-        <button type="button" className="button button-primary resume-action" onClick={onTriggerEdit}>
-          Edit Profile
-        </button>
+        <p className="no-print">Your data is securely finalized. Administrators will review your preferences shortly.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '1rem' }} className="no-print">
+          <button type="button" className="button button-primary resume-action" onClick={onTriggerEdit}>
+            Edit Profile
+          </button>
+          <button type="button" className="button button-secondary resume-action" onClick={() => window.print()}>
+            Download PDF
+          </button>
+          <button type="button" className="button button-ghost resume-action" onClick={downloadTextResume}>
+            Download TXT
+          </button>
+        </div>
       </div>
     </div>
   );

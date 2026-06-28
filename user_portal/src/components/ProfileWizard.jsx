@@ -1,12 +1,107 @@
 import React, { useState, useEffect } from 'react';
 
-const INITIAL_JOB_ROLES = ['Garments','Merchandiser','Office Assistant','HR Manager','Store In-Charge',
-  'Marketing Staff','Delivery Staff','M/c Operator','Driver','Follow-up','Data Entry',
-  'Quality Controller','Sales Rep','Supervisor','Documentation','Accountant',
-  'Packing / Checking','Production Follow-up'];
+export const ALL_JOB_ROLES = [
+  "Agricultural Laborer",
+  "Aircraft Mechanic",
+  "Assembly Line Worker",
+  "Assembly Technician",
+  "Auto Body Repair Technician",
+  "Auto Mechanic",
+  "Automotive Painter",
+  "Baker",
+  "Blaster",
+  "Boiler Operator",
+  "Butcher",
+  "CNC Machine Operator",
+  "Carpenter",
+  "Concrete Finisher",
+  "Crane Operator",
+  "Delivery Executive",
+  "Diesel Mechanic",
+  "Dispatcher",
+  "Drilling Machine Operator",
+  "Drywall Installer",
+  "Dyeing Machine Operator",
+  "Electrician",
+  "Elevator Mechanic",
+  "Embroidery Machine Operator",
+  "Event Crew",
+  "Fabric Cutter",
+  "Facility Manager",
+  "Farm Equipment Operator",
+  "Fire and Safety Officer",
+  "Fitter",
+  "Fleet Maintenance Supervisor",
+  "Forklift Operator",
+  "Foundry Worker",
+  "General Laborer",
+  "Groundskeeper",
+  "HVAC Technician",
+  "Heavy Equipment Operator",
+  "Heavy Truck Driver",
+  "Housekeeper",
+  "Industrial Electrician",
+  "Industrial Painter",
+  "Injection Molding Operator",
+  "Inventory Clerk",
+  "Ironworker",
+  "Irrigation Technician",
+  "Janitor",
+  "Kitchen Helper",
+  "Light Vehicle Driver",
+  "Line Cook",
+  "Loader / Unloader",
+  "Logistics Coordinator",
+  "Machinist",
+  "Maintenance Technician",
+  "Mason",
+  "Material Handler",
+  "Miner",
+  "Packaging Operator",
+  "Painter",
+  "Picker and Packer",
+  "Plumber",
+  "Production Supervisor",
+  "Quality Control Inspector",
+  "Roofer",
+  "Scaffolder",
+  "Security Guard",
+  "Sewing Machine Operator",
+  "Site Supervisor",
+  "Surveyor Assistant",
+  "Tailor",
+  "Tire Technician",
+  "Tool and Die Maker",
+  "Turner",
+  "Waiter",
+  "Warehouse Associate",
+  "Weaver",
+  "Welder"
+];
+
+const HIGH_DEMAND_ROLES = [
+  'Merchandiser',
+  'Office Assistant',
+  'HR Manager',
+  'Store In-Charge',
+  'Marketing Staff',
+  'Delivery Staff',
+  'M/c Operator',
+  'Driver',
+  'Follow-up',
+  'Data Entry',
+  'Quality Controller',
+  'Sales Rep',
+  'Supervisor',
+  'Documentation',
+  'Accountant',
+  'Packing / Checking',
+  'Production Follow-up'
+];
+
 const SALARY_RANGES = ['₹10,000 – ₹15,000','₹15,000 – ₹20,000','₹20,000 – ₹25,000',
   '₹25,000 – ₹30,000','₹30,000 – ₹35,000','₹35,000 – ₹40,000'];
-const LANGUAGES = ['Tamil','English','Hindi','Malayalam','Telugu','Kannada'];
+const LANGUAGES = ['Tamil','English','Hindi','Malayalam','Telugu','Kannada','Bengali','Marathi','Gujarati','Punjabi','Odia','Assamese','Urdu','Sanskrit','Konkani','Kashmiri'];
 const TN_DISTRICTS = ['Ariyalur','Chengalpattu','Chennai','Coimbatore','Cuddalore','Dharmapuri',
   'Dindigul','Erode','Kallakurichi','Kancheepuram','Karur','Krishnagiri','Madurai',
   'Mayiladuthurai','Nagapattinam','Namakkal','Nilgiris','Perambalur','Pudukkottai',
@@ -107,13 +202,14 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const [wizardRoles, setWizardRoles] = useState(() => {
     try {
       const saved = localStorage.getItem(rolesKey);
-      return saved ? JSON.parse(saved) : INITIAL_JOB_ROLES;
+      return saved ? JSON.parse(saved) : HIGH_DEMAND_ROLES;
     } catch {
-      return INITIAL_JOB_ROLES;
+      return HIGH_DEMAND_ROLES;
     }
   });
 
   const [customRoleInput, setCustomRoleInput] = useState('');
+  const [roleQuery, setRoleQuery] = useState('');
 
   const [form, setForm] = React.useState(() => {
     try {
@@ -235,34 +331,53 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const delRow = (tbl, i) => setForm(p => ({ ...p, [tbl]: p[tbl].filter((_,j) => j!==i) }));
 
   // --- HANDLER FOR CANDIDATE CUSTOM ROLE FIELDS ---
-  const handleAddCustomRole = () => {
-    const role = customRoleInput.trim();
-    if (!role) return;
+  const handleSelectRole = (role) => {
+    const trimmed = role.trim();
+    if (!trimmed) return;
 
     // Append custom role to the available array options state if unique
-    if (!wizardRoles.some(r => r.toLowerCase() === role.toLowerCase())) {
-      const nextRoles = [...wizardRoles, role];
-      setWizardRoles(nextRoles);
-      localStorage.setItem(rolesKey, JSON.stringify(nextRoles));
+    if (!ALL_JOB_ROLES.some(r => r.toLowerCase() === trimmed.toLowerCase())) {
+      if (!wizardRoles.some(r => r.toLowerCase() === trimmed.toLowerCase())) {
+        const nextRoles = [...wizardRoles, trimmed];
+        setWizardRoles(nextRoles);
+        localStorage.setItem(rolesKey, JSON.stringify(nextRoles));
+      }
     }
 
     // Automatically check / select the role item in the jobRoles payload field
-    if (!form.jobRoles.includes(role)) {
+    if (!form.jobRoles.includes(trimmed)) {
       setForm(prev => ({
         ...prev,
-        jobRoles: [...prev.jobRoles, role]
+        jobRoles: [...prev.jobRoles, trimmed]
       }));
     }
 
-    setCustomRoleInput('');
+    setRoleQuery('');
   };
 
   const validate = () => {
     const e = {};
     if (step === 1) {
       if (!form.fullName.trim())       e.fullName        = 'Full name is required';
-      if (!form.dob)                   e.dob             = 'Date of birth is required';
-      else if (new Date(form.dob).getFullYear() < 1900) e.dob = 'Year cannot be before 1900';
+      if (!form.dob) {
+        e.dob = 'Date of birth is required';
+      } else {
+        const birthDate = new Date(form.dob);
+        const dobYear = birthDate.getFullYear();
+        if (dobYear < 1900) {
+          e.dob = 'Year cannot be before 1900';
+        } else {
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          if (age < 18) {
+            e.dob = 'You must be at least 18 years old';
+          }
+        }
+      }
       if (!form.sex)                   e.sex             = 'Please select a gender';
       if (!form.maritalStatus)         e.maritalStatus   = 'Please select marital status';
       if (!form.presentStreet1.trim()) e.presentStreet1  = 'Street address is required';
@@ -552,44 +667,156 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <div className="field-label-row">
               <Lbl req>Job Roles</Lbl>
               <div className="field-inline-actions">
-                <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[...wizardRoles])}>Select all</button>
-                <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[])}>Clear</button>
+                <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[])}>Clear All</button>
               </div>
             </div>
-            
-            {/* CHIP ROLES COMPONENT LAYOUT DISPLAY */}
-            <div className={`tag-panel${errors.jobRoles ? ' has-error' : ''}`}>
-              {wizardRoles.map(r => {
-                const on = form.jobRoles.includes(r);
-                return <button type="button" key={r} className={`tag-chip${on ? ' selected' : ''}`} onClick={()=>toggle('jobRoles',r)}>{r}</button>;
-              })}
-            </div>
-            <Err msg={errors.jobRoles} />
 
-            {/* 🛠️ INTEGRATED CUSTOM ROLE SYSTEM INPUT ROW BAR */}
-            <div className="field mt-12" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            {/* Common/High Demand Roles (Quick Select) */}
+            <div style={{ marginBottom: '1.25rem' }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
-                Can't find your Job Preference? Type it here to create a new option:
+                🔥 Common Job Roles (High Demand) - Click to select:
+              </span>
+              <div className="tag-panel" style={{ minHeight: 'auto', padding: '12px', background: '#f8fafc' }}>
+                {HIGH_DEMAND_ROLES.map(r => {
+                  const on = form.jobRoles.includes(r);
+                  return (
+                    <button
+                      type="button"
+                      key={r}
+                      className={`tag-chip${on ? ' selected' : ''}`}
+                      onClick={() => toggle('jobRoles', r)}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Autocomplete Search Bar */}
+            <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
+                🔍 Search & Add Custom Roles:
               </span>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="text"
                   className="input"
-                  style={{ flex: 1, padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                  placeholder="e.g. Garments, Production Operator, Technician..."
-                  value={customRoleInput}
-                  onChange={e => setCustomRoleInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomRole(); } }}
+                  style={{ flex: 1, padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                  placeholder="Type to search roles (e.g. Electrician, Carpenter, Welder)..."
+                  value={roleQuery}
+                  onChange={e => setRoleQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (roleQuery.trim()) {
+                        handleSelectRole(roleQuery);
+                      }
+                    }
+                  }}
                 />
-                <button
-                  type="button"
-                  className="button button-primary shadow-xs"
-                  style={{ whiteSpace: 'nowrap', padding: '6px 14px' }}
-                  onClick={handleAddCustomRole}
-                >
-                  + Add Custom Role
-                </button>
               </div>
+
+              {/* Autocomplete Dropdown List */}
+              {roleQuery.trim() && (() => {
+                const trimmedQuery = roleQuery.trim().toLowerCase();
+                const allSearchableRoles = [...new Set([...ALL_JOB_ROLES, ...wizardRoles])];
+                const filteredSuggestions = allSearchableRoles.filter(r =>
+                  r.toLowerCase().startsWith(trimmedQuery)
+                );
+                const isExactMatch = allSearchableRoles.some(r => r.toLowerCase() === trimmedQuery);
+
+                return (
+                  <div className="search-dropdown-menu" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 100,
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    marginTop: '4px'
+                  }}>
+                    {filteredSuggestions.map(r => {
+                      const isSelected = form.jobRoles.includes(r);
+                      return (
+                        <div
+                          key={r}
+                          className="search-dropdown-item"
+                          style={{
+                            padding: '10px 14px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f1f5f9',
+                            background: isSelected ? '#f8fafc' : '#ffffff',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '14px',
+                            fontWeight: 500
+                          }}
+                          onClick={() => handleSelectRole(r)}
+                        >
+                          <span style={{ color: '#1e293b' }}>{r}</span>
+                          {isSelected && (
+                            <span style={{ color: 'var(--primary)', fontSize: '12px', fontWeight: 600 }}>✓ Selected</span>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Incremental add custom role row if not exact match */}
+                    {!isExactMatch && (
+                      <div
+                        className="search-dropdown-item custom-add-item"
+                        style={{
+                          padding: '10px 14px',
+                          cursor: 'pointer',
+                          background: '#eff6ff',
+                          color: '#1d4ed8',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          borderBottom: 'none'
+                        }}
+                        onClick={() => handleSelectRole(roleQuery)}
+                      >
+                        + Add "{roleQuery.trim()}" as a new role
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Selected Roles List */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
+                Selected Job Roles ({form.jobRoles.length}):
+              </span>
+              {form.jobRoles.length === 0 ? (
+                <div style={{ padding: '12px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '6px', fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                  No roles selected yet. Use the quick select options or search above to add your job preferences.
+                </div>
+              ) : (
+                <div className="tag-panel" style={{ minHeight: 'auto', padding: '12px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                  {form.jobRoles.map(r => (
+                    <button
+                      type="button"
+                      key={r}
+                      className="tag-chip selected"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      onClick={() => toggle('jobRoles', r)}
+                    >
+                      {r}
+                      <span style={{ fontSize: '14px', marginLeft: '2px', fontWeight: 'normal' }}>×</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <Err msg={errors.jobRoles} />
             </div>
 
             <div className="field-label-row mt-16">

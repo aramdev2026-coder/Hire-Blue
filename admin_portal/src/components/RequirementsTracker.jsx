@@ -6,22 +6,18 @@ export default function RequirementsTracker({ jobs, loading }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL_ROLES');
 
-  // 1. Dynamic Extraction Engine: Collect all unique roles present across the current incoming jobs array
   const uniqueRoles = Array.from(
     new Set(jobs.map((job) => job.roleTitle).filter(Boolean))
   ).sort();
 
-  // 2. Grouping & Compiling Engine: Converts flat orders into an structured map containing folder meta-aggregates
   const groupedCompanies = jobs.reduce((acc, job) => {
-    const companyName = job.employer?.companyName || 'Unknown Company';
+    const companyName = job.employerName || job.employer?.companyName || 'Unknown Company';
     const roleTitle = job.roleTitle || '';
 
-    // Filter Step A: If a specific role filter is active, skip any job order that doesn't match it
     if (roleFilter !== 'ALL_ROLES' && roleTitle !== roleFilter) {
       return acc;
     }
 
-    // Filter Step B: If a text search query is entered, match against the corporate client name string
     if (searchQuery && !companyName.toLowerCase().includes(searchQuery.toLowerCase())) {
       return acc;
     }
@@ -42,7 +38,6 @@ export default function RequirementsTracker({ jobs, loading }) {
     return acc;
   }, {});
 
-  // Convert compiled dictionary map back into an array list for grid rendering
   const companyFolders = Object.values(groupedCompanies);
 
   if (loading) {
@@ -63,12 +58,8 @@ export default function RequirementsTracker({ jobs, loading }) {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      
-      {/* GLOBAL MANAGEMENT TOOLBAR (Only displays on the main directory list map) */}
       {!selectedCompany && (
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-4 border border-slate-200 rounded-xl shadow-xs">
-          
-          {/* Real-time Folder Name String Search Input */}
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input 
@@ -76,17 +67,16 @@ export default function RequirementsTracker({ jobs, loading }) {
               placeholder="Search across company folders..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
           </div>
 
-          {/* Dynamic Job Name Demand Filter Menu */}
           <div className="relative w-full sm:w-auto flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full sm:w-64 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full sm:w-64 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             >
               <option value="ALL_ROLES">All Roles Demand (Show All)</option>
               {uniqueRoles.map((role) => (
@@ -99,7 +89,6 @@ export default function RequirementsTracker({ jobs, loading }) {
         </div>
       )}
 
-      {/* STAGE 1: COMPACT GRID PROFILE VIEW */}
       {!selectedCompany ? (
         <div className="space-y-4">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -145,8 +134,6 @@ export default function RequirementsTracker({ jobs, loading }) {
           )}
         </div>
       ) : (
-        
-        // STAGE 2: INSULATED SINGLE COMPANY SELECTION BLOCK
         <div className="space-y-4">
           <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
             <button
@@ -177,12 +164,8 @@ export default function RequirementsTracker({ jobs, loading }) {
                 </div>
                 
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-500 px-1">
-                  {/* 🔄 Array Display Safe Check (Converts layout array down to formatted text string output) */}
                   <div>📍 Location Boundaries: <span className="text-slate-800">{Array.isArray(job.location) ? job.location.join(', ') : job.location || 'Not Specified'}</span></div>
-                  
-                  {/* ⏳ Schema Numeric Value Format Check (Converts Int parameters to readable text context) */}
                   <div>⏳ Target Experience: <span className="text-slate-800">{job.expRequired === 0 ? 'Fresher / Any' : `${job.expRequired} Years`}</span></div>
-                  
                   <div className="text-slate-400 font-mono text-[10px]">ORDER_REF: #{job.id.slice(0, 8)}</div>
                 </div>
               </div>

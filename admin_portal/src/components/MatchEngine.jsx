@@ -21,12 +21,12 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                 }
               }}
               value={selectedJob?.id || ''}
-              className="w-full max-w-md px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full max-w-md px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             >
               <option value="">Choose a job...</option>
               {jobs.map((job) => (
                 <option key={job.id} value={job.id}>
-                  {job.roleTitle} - {job.employer?.companyName || 'Unknown Employer'}
+                  {job.roleTitle} - {job.employerName || job.employer?.companyName || 'Unknown Employer'}
                 </option>
               ))}
             </select>
@@ -34,8 +34,6 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
 
           {selectedJob && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              
-              {/* CURRENT ACTIVE JOB REQUIREMENT PARAMS PANEL */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between border-t-4 border-t-emerald-600 sticky top-4">
                 <div className="space-y-4">
                   <div>
@@ -44,7 +42,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                   </div>
                   
                   <div className="text-xs space-y-2 text-slate-600 bg-slate-50 border border-slate-100 p-3 rounded-lg">
-                    <p><strong>Company:</strong> {selectedJob.employer?.companyName || 'Unknown'}</p>
+                    <p><strong>Company:</strong> {selectedJob.employerName || selectedJob.employer?.companyName || 'Unknown'}</p>
                     <p><strong>Target Boundary:</strong> {Array.isArray(selectedJob.location) ? selectedJob.location.join(', ') : selectedJob.location || 'Not Specified'}</p>
                     <p><strong>Experience Mandate:</strong> {selectedJob.expRequired === 0 ? 'Fresher / Any' : `${selectedJob.expRequired} Years`}</p>
                     <p><strong>Salary Range:</strong> {selectedJob.salaryRange}</p>
@@ -53,7 +51,6 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                 </div>
               </div>
 
-              {/* CANDIDATE DATA MATCH STREAM */}
               <div className="space-y-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Algorithmic Base Matches Found ({matchedCandidates.length})</p>
                 {matchedCandidates.length === 0 ? (
@@ -74,7 +71,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                         <p className="text-xs font-mono mt-1 font-bold text-slate-700">📞 {candidate.phoneNumber1}</p>
                       </div>
                       <button 
-                        onClick={() => onUpdateStatus(candidate.id, 'SHORTLISTED')}
+                        onClick={() => onUpdateStatus(candidate.id, 'SHORTLISTED', selectedJob.id)}
                         className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 sm:py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer shadow-xs text-center"
                       >
                         Shortlist
@@ -83,7 +80,6 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                   ))
                 )}
               </div>
-              
             </div>
           )}
         </>

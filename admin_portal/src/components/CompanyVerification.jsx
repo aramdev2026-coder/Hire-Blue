@@ -8,7 +8,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
         💡 <strong>Awaiting Action:</strong> These employers have signed up and cannot view candidate arrays until approved.
       </div>
 
-      {/* Tabs / Filters */}
       <div className="flex flex-wrap gap-2">
         <button 
           onClick={() => setFilter('PENDING_VERIFICATION')}
@@ -40,7 +39,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
         </div>
       ) : (
         <>
-          {/* RESPONSIVE LAYOUT FOR MOBILE DEVICES */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {employers.map((employer) => (
               <div key={employer.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
@@ -83,7 +81,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
             ))}
           </div>
 
-          {/* TABLE INTERFACE FOR DESKTOP SCREEN RESOLUTIONS */}
           <div className="hidden md:block bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
             <table className="w-full text-left border-collapse">
               <thead>

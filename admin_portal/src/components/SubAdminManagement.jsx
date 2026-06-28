@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import { Users, Plus, Edit2, UserX, Loader } from 'lucide-react';
+import AdminAccountForm from './AdminAccountForm';
+import { validateSubAdminAccount } from '../utils/validation';
+
+const EMPTY = { name: '', email: '', phone: '', password: '', region: '' };
+
+export default function SubAdminManagement({
+  subAdmins, loading, readOnly, onCreate, onUpdate, onDeactivate,
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
+  const [reassignTo, setReassignTo] = useState('');
+  const [deactivating, setDeactivating] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setForm(EMPTY);
+    setEditing(null);
+    setShowForm(false);
+    setErrors({});
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validation = validateSubAdminAccount(form, { editing: !!editing });
+    setErrors(validation);
+    if (Object.keys(validation).length) return;
+
+    setSubmitting(true);
+    try {
+      if (editing) await onUpdate(editing.id, form);
+      else await onCreate(form);
+      resetForm();
+    } catch (err) {
+      setErrors({ form: err.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const startEdit = (sa) => {
+    setEditing(sa);
+    setForm({ name: sa.name, email: sa.email, phone: sa.phone || '', password: '', region: sa.region || '' });
+    setErrors({});
+    setShowForm(true);
+  };
+
+  const handleDeactivate = async (sa) => {
+    if (!window.confirm(`Deactivate ${sa.name}?`)) return;
+    setSubmitting(true);
+    try {
+      await onDeactivate(sa.id, reassignTo || null);
+      setDeactivating(null);
+      setReassignTo('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5 text-indigo-600" />
+          <h3 className="font-bold text-lg">Sub-Admin Management</h3>
+          {readOnly && (
+            <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">View Only</span>
+          )}
+        </div>
+        {!readOnly && (
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="flex items-center gap-1.5 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Add Sub Admin
+          </button>
+        )}
+      </div>
+
+      {errors.form && (
+        <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{errors.form}</div>
+      )}
+
+      {showForm && !readOnly && (
+        <AdminAccountForm
+          form={form}
+          setForm={setForm}
+          errors={errors}
+          editing={!!editing}
+          showDistrict
+          onSubmit={handleSubmit}
+          onCancel={resetForm}
+          submitting={submitting}
+          submitLabel={editing ? 'Update Sub Admin' : 'Create Sub Admin'}
+        />
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader className="w-6 h-6 animate-spin text-indigo-600" /></div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="p-3">Name</th>
+                <th className="p-3">District</th>
+                <th className="p-3">Phone</th>
+                <th className="p-3">Assigned</th>
+                <th className="p-3">Added</th>
+                <th className="p-3">Placed</th>
+                <th className="p-3">Last Login</th>
+                <th className="p-3">Status</th>
+                {!readOnly && <th className="p-3">Actions</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {subAdmins.map((sa) => (
+                <tr key={sa.id} className="hover:bg-slate-50">
+                  <td className="p-3 font-medium">{sa.name}</td>
+                  <td className="p-3">{sa.region || '—'}</td>
+                  <td className="p-3 text-xs font-mono">{sa.phone || '—'}</td>
+                  <td className="p-3">{sa.assignedCount ?? 0}</td>
+                  <td className="p-3">{sa.addedCount ?? 0}</td>
+                  <td className="p-3">{sa.placedCount ?? 0}</td>
+                  <td className="p-3 text-xs">{sa.lastLoginAt ? new Date(sa.lastLoginAt).toLocaleDateString() : 'Never'}</td>
+                  <td className="p-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${sa.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {sa.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  {!readOnly && sa.isActive && (
+                    <td className="p-3 space-x-1">
+                      <button onClick={() => startEdit(sa)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeactivating(sa)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"><UserX className="w-4 h-4" /></button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {deactivating && !readOnly && (
+        <div className="fixed inset-0 bg-slate-950/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full space-y-4">
+            <h4 className="font-bold">Deactivate {deactivating.name}</h4>
+            <p className="text-sm text-slate-600">If they have open candidates, select a replacement sub-admin for reassignment.</p>
+            <select value={reassignTo} onChange={(e) => setReassignTo(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <option value="">No reassignment needed / select replacement</option>
+              {subAdmins.filter((s) => s.isActive && s.id !== deactivating.id).map((sa) => (
+                <option key={sa.id} value={sa.id}>{sa.name} ({sa.region})</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button onClick={() => handleDeactivate(deactivating)} disabled={submitting} className="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer disabled:opacity-60">Deactivate</button>
+              <button onClick={() => setDeactivating(null)} className="bg-slate-100 px-4 py-2 rounded-lg text-sm cursor-pointer">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
