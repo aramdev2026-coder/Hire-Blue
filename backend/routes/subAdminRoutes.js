@@ -3,7 +3,7 @@ import { authenticateAdmin, requireRole } from '../middleware/auth.js';
 import { serializeCandidateForSubAdmin } from '../utils/serializers.js';
 import { updateCandidateStatus, SUB_ADMIN_FORBIDDEN } from '../services/candidateService.js';
 import { createFullCandidate } from '../services/createCandidate.js';
-import { validateCandidateInput, normalizePhone } from '../utils/validation.js';
+import { validateCandidateInput, normalizePhone, sanitizeString } from '../utils/validation.js';
 
 export default function createSubAdminRoutes(prisma) {
   const router = express.Router();
@@ -27,7 +27,7 @@ export default function createSubAdminRoutes(prisma) {
         candidates = candidates.filter((c) =>
           c.fullName?.toLowerCase().includes(q) ||
           c.phoneNumber1?.includes(search) ||
-          c.id?.includes(search),
+          String(c.id).includes(search),
         );
       }
 
@@ -65,6 +65,11 @@ export default function createSubAdminRoutes(prisma) {
         return res.status(409).json({ error: 'A candidate with this phone number already exists' });
       }
 
+      // Sanitize string inputs
+      body.fullName = sanitizeString(body.fullName, 100);
+      body.presentAddress = body.presentAddress ? sanitizeString(body.presentAddress, 500) : null;
+      body.permanentAddress = body.permanentAddress ? sanitizeString(body.permanentAddress, 500) : null;
+
       const candidate = await createFullCandidate(
         prisma,
         {
@@ -85,19 +90,21 @@ export default function createSubAdminRoutes(prisma) {
   });
 
   router.put('/candidates/:id/status', async (req, res) => {
-    const { id } = req.params;
+    const candidateId = parseInt(req.params.id, 10);
+    if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
     const { status, note } = req.body;
 
     try {
       const candidate = await prisma.candidate.findFirst({
-        where: { id, assignedToId: req.admin.id },
+        where: { id: candidateId, assignedToId: req.admin.id },
       });
       if (!candidate) {
         return res.status(404).json({ error: 'Candidate not found or not assigned to you' });
       }
 
       const updated = await updateCandidateStatus(prisma, {
-        candidateId: id,
+        candidateId,
         status,
         changedById: req.admin.id,
         note,
@@ -113,16 +120,23 @@ export default function createSubAdminRoutes(prisma) {
   });
 
   router.post('/candidates/:id/notes', async (req, res) => {
-    const { id } = req.params;
+    const candidateId = parseInt(req.params.id, 10);
+    if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
     const { note, callbackScheduledFor } = req.body;
 
     if (!note?.trim()) {
       return res.status(400).json({ error: 'note is required' });
     }
 
+    // Limit note length
+    if (note.length > 2000) {
+      return res.status(400).json({ error: 'Note must be at most 2000 characters' });
+    }
+
     try {
       const candidate = await prisma.candidate.findFirst({
-        where: { id, assignedToId: req.admin.id },
+        where: { id: candidateId, assignedToId: req.admin.id },
       });
       if (!candidate) {
         return res.status(404).json({ error: 'Candidate not found or not assigned to you' });
@@ -130,9 +144,9 @@ export default function createSubAdminRoutes(prisma) {
 
       const log = await prisma.communicationLog.create({
         data: {
-          candidateId: id,
+          candidateId,
           authorId: req.admin.id,
-          note: note.trim(),
+          note: sanitizeString(note.trim(), 2000),
           callbackAt: callbackScheduledFor ? new Date(callbackScheduledFor) : null,
         },
         include: { author: { select: { id: true, name: true } } },
@@ -146,17 +160,19 @@ export default function createSubAdminRoutes(prisma) {
   });
 
   router.get('/candidates/:id/notes', async (req, res) => {
-    const { id } = req.params;
+    const candidateId = parseInt(req.params.id, 10);
+    if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
     try {
       const candidate = await prisma.candidate.findFirst({
-        where: { id, assignedToId: req.admin.id },
+        where: { id: candidateId, assignedToId: req.admin.id },
       });
       if (!candidate) {
         return res.status(404).json({ error: 'Candidate not found or not assigned to you' });
       }
 
       const logs = await prisma.communicationLog.findMany({
-        where: { candidateId: id },
+        where: { candidateId },
         include: { author: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
       });

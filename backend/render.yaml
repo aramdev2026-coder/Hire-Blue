@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: hireblue-backend
+    env: node
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TWO_FACTOR_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

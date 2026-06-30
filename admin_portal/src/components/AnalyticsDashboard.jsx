@@ -131,7 +131,7 @@ export default function AnalyticsDashboard() {
               <div className="flex flex-wrap gap-1">
                 {list.slice(0, 10).map((c) => (
                   <span key={c.id} className="text-[10px] bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 rounded">
-                    {c.fullName || c.id.slice(0, 6)} · {c.idleDays}d
+                    {c.fullName || String(c.id).slice(0, 6)} · {c.idleDays}d
                   </span>
                 ))}
               </div>

@@ -1,6 +1,18 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET || 'super_secret_session_key_99';
+// ─── Startup guard: JWT_SECRET must be set ───────────────────────────
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET || SECRET === 'YOUR_FALLBACK_SECURE_LONG_JWT_STRING_HEX') {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ FATAL: JWT_SECRET is not set or is using the placeholder value. Set a strong secret in .env');
+    process.exit(1);
+  } else {
+    console.warn('⚠️  WARNING: JWT_SECRET is not set. Using an insecure development fallback. DO NOT deploy like this.');
+  }
+}
+
+// Use env secret or a dev-only fallback (never in production — guarded above)
+const EFFECTIVE_SECRET = SECRET || '__DEV_ONLY_INSECURE_FALLBACK__';
 
 export function authenticateAdmin(req, res, next) {
   const header = req.headers.authorization;
@@ -9,7 +21,7 @@ export function authenticateAdmin(req, res, next) {
   }
   try {
     const token = header.slice(7);
-    const payload = jwt.verify(token, SECRET);
+    const payload = jwt.verify(token, EFFECTIVE_SECRET);
     if (!['SUPER_ADMIN', 'ADMIN', 'SUB_ADMIN'].includes(payload.role)) {
       return res.status(403).json({ error: 'Invalid admin token' });
     }
@@ -29,4 +41,4 @@ export function requireRole(roles) {
   };
 }
 
-export { SECRET };
+export { EFFECTIVE_SECRET as SECRET };

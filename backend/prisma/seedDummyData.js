@@ -1,21 +1,28 @@
+// ─────────────────────────────────────────────────────────────
 // Dummy data definitions for prisma/seed.js
+// All test data for the Blue-Collar Central Platform
+// ─────────────────────────────────────────────────────────────
+
 export const TN_DISTRICTS = [
   'Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Tiruchirappalli', 'Tiruppur', 'Erode', 'Vellore',
+  'Thanjavur', 'Dindigul', 'Krishnagiri', 'Dharmapuri',
 ];
 
 export const JOB_ROLES = [
   'Electrician', 'Driver', 'Office Assistant', 'Accountant', 'Supervisor',
   'Data Entry', 'Delivery Staff', 'Quality Controller', 'M/c Operator',
+  'Plumber', 'Welding Technician', 'Security Guard', 'Housekeeping',
 ];
 
 export const SALARY_RANGES = [
   '₹10,000 – ₹15,000', '₹15,000 – ₹20,000', '₹20,000 – ₹25,000', '₹25,000 – ₹30,000',
 ];
 
-export const LANGUAGES = ['Tamil', 'English', 'Hindi'];
+export const LANGUAGES = ['Tamil', 'English', 'Hindi', 'Telugu', 'Kannada'];
 
 export const TEST_PASSWORD = 'Test@123';
 
+// ─── Admin Users ─────────────────────────────────────────────
 export const ADMINS = [
   {
     email: 'admin@bluecollar.in',
@@ -45,8 +52,16 @@ export const ADMINS = [
     role: 'SUB_ADMIN',
     region: 'Coimbatore',
   },
+  {
+    email: 'subadmin.madurai@bluecollar.in',
+    name: 'Karthik Raja (Madurai)',
+    phone: '9000000005',
+    role: 'SUB_ADMIN',
+    region: 'Madurai',
+  },
 ];
 
+// ─── Employers ───────────────────────────────────────────────
 export const EMPLOYERS = [
   {
     key: 'apex',
@@ -85,6 +100,7 @@ export const EMPLOYERS = [
   },
 ];
 
+// ─── Job Requirements ────────────────────────────────────────
 export const JOBS = [
   {
     employerKey: 'apex',
@@ -105,6 +121,16 @@ export const JOBS = [
     educationLevel: '12th Pass',
     expRequired: 1,
     vacanciesCount: 2,
+  },
+  {
+    employerKey: 'apex',
+    roleTitle: 'Supervisor',
+    salaryRange: '₹25,000 – ₹30,000',
+    location: ['Chennai'],
+    maritalStatus: 'No Preference',
+    educationLevel: 'Diploma',
+    expRequired: 3,
+    vacanciesCount: 1,
   },
   {
     employerKey: 'sunrise',
@@ -146,10 +172,22 @@ export const JOBS = [
     expRequired: 1,
     vacanciesCount: 4,
   },
+  {
+    employerKey: 'green',
+    roleTitle: 'Plumber',
+    salaryRange: '₹15,000 – ₹20,000',
+    location: ['Salem', 'Krishnagiri'],
+    maritalStatus: 'No Preference',
+    educationLevel: 'ITI',
+    expRequired: 2,
+    vacanciesCount: 3,
+  },
 ];
 
+// ─── Candidates (20 across all statuses and sources) ─────────
 // phoneNumber1 must be unique — use 98xxxxxxxx range
 export const CANDIDATES = [
+  // === USER_PORTAL source ===
   {
     phone: '9876500001',
     fullName: 'Arun Kumar',
@@ -171,28 +209,6 @@ export const CANDIDATES = [
     assignedSubAdminEmail: 'subadmin.chennai@bluecollar.in',
   },
   {
-    phone: '9876500003',
-    fullName: 'Suresh Babu',
-    district: 'Coimbatore',
-    roles: ['Driver', 'Delivery Staff'],
-    salary: '₹15,000 – ₹20,000',
-    status: 'SHORTLISTED',
-    source: 'SUB_ADMIN',
-    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
-    shortlistedJobEmployerKey: 'sunrise',
-    shortlistedJobRole: 'Driver',
-  },
-  {
-    phone: '9876500004',
-    fullName: 'Kavitha R',
-    district: 'Coimbatore',
-    roles: ['Data Entry', 'Office Assistant'],
-    salary: '₹15,000 – ₹20,000',
-    status: 'PLACED',
-    source: 'SUB_ADMIN',
-    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
-  },
-  {
     phone: '9876500005',
     fullName: 'Rajesh M',
     district: 'Madurai',
@@ -200,27 +216,7 @@ export const CANDIDATES = [
     salary: '₹25,000 – ₹30,000',
     status: 'CONTACT_ATTEMPTED',
     source: 'USER_PORTAL',
-    assignedSubAdminEmail: 'subadmin.chennai@bluecollar.in',
-  },
-  {
-    phone: '9876500006',
-    fullName: 'Divya S',
-    district: 'Salem',
-    roles: ['M/c Operator'],
-    salary: '₹15,000 – ₹20,000',
-    status: 'INTERESTED',
-    source: 'ADMIN',
-    assignedSubAdminEmail: null,
-  },
-  {
-    phone: '9876500007',
-    fullName: 'Mohan Raj',
-    district: 'Erode',
-    roles: ['Driver'],
-    salary: '₹15,000 – ₹20,000',
-    status: 'DOCUMENTS_PENDING',
-    source: 'SUB_ADMIN',
-    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
+    assignedSubAdminEmail: 'subadmin.madurai@bluecollar.in',
   },
   {
     phone: '9876500008',
@@ -245,16 +241,6 @@ export const CANDIDATES = [
     shortlistedJobRole: 'Electrician',
   },
   {
-    phone: '9876500010',
-    fullName: 'Priya N',
-    district: 'Vellore',
-    roles: ['Office Assistant'],
-    salary: '₹10,000 – ₹15,000',
-    status: 'NEW',
-    source: 'SUB_ADMIN',
-    assignedSubAdminEmail: 'subadmin.chennai@bluecollar.in',
-  },
-  {
     phone: '9876500011',
     fullName: 'Karthik S',
     district: 'Tiruchirappalli',
@@ -263,6 +249,71 @@ export const CANDIDATES = [
     status: 'ON_HOLD',
     source: 'USER_PORTAL',
     assignedSubAdminEmail: null,
+  },
+  {
+    phone: '9876500013',
+    fullName: 'Deepak R',
+    district: 'Thanjavur',
+    roles: ['Data Entry', 'Office Assistant'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'INTERESTED',
+    source: 'USER_PORTAL',
+    assignedSubAdminEmail: 'subadmin.madurai@bluecollar.in',
+  },
+  {
+    phone: '9876500014',
+    fullName: 'Saranya K',
+    district: 'Chennai',
+    roles: ['Office Assistant'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'SELECTED',
+    source: 'USER_PORTAL',
+    assignedSubAdminEmail: 'subadmin.chennai@bluecollar.in',
+    shortlistedJobEmployerKey: 'apex',
+    shortlistedJobRole: 'Quality Controller',
+  },
+  // === SUB_ADMIN source ===
+  {
+    phone: '9876500003',
+    fullName: 'Suresh Babu',
+    district: 'Coimbatore',
+    roles: ['Driver', 'Delivery Staff'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'SHORTLISTED',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
+    shortlistedJobEmployerKey: 'sunrise',
+    shortlistedJobRole: 'Driver',
+  },
+  {
+    phone: '9876500004',
+    fullName: 'Kavitha R',
+    district: 'Coimbatore',
+    roles: ['Data Entry', 'Office Assistant'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'PLACED',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
+  },
+  {
+    phone: '9876500007',
+    fullName: 'Mohan Raj',
+    district: 'Erode',
+    roles: ['Driver'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'DOCUMENTS_PENDING',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
+  },
+  {
+    phone: '9876500010',
+    fullName: 'Priya N',
+    district: 'Vellore',
+    roles: ['Office Assistant'],
+    salary: '₹10,000 – ₹15,000',
+    status: 'NEW',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.chennai@bluecollar.in',
   },
   {
     phone: '9876500012',
@@ -274,6 +325,81 @@ export const CANDIDATES = [
     source: 'SUB_ADMIN',
     assignedSubAdminEmail: 'subadmin.chennai@bluecollar.in',
   },
+  {
+    phone: '9876500015',
+    fullName: 'Senthil Kumar',
+    district: 'Salem',
+    roles: ['M/c Operator', 'Plumber'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'VERIFIED',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
+  },
+  {
+    phone: '9876500016',
+    fullName: 'Mahalakshmi V',
+    district: 'Madurai',
+    roles: ['Quality Controller'],
+    salary: '₹20,000 – ₹25,000',
+    status: 'NOT_INTERESTED',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.madurai@bluecollar.in',
+  },
+  // === ADMIN source ===
+  {
+    phone: '9876500006',
+    fullName: 'Divya S',
+    district: 'Salem',
+    roles: ['M/c Operator'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'INTERESTED',
+    source: 'ADMIN',
+    assignedSubAdminEmail: null,
+  },
+  {
+    phone: '9876500017',
+    fullName: 'Gopal Krishnan',
+    district: 'Dindigul',
+    roles: ['Welding Technician'],
+    salary: '₹20,000 – ₹25,000',
+    status: 'VERIFIED',
+    source: 'ADMIN',
+    assignedSubAdminEmail: 'subadmin.madurai@bluecollar.in',
+  },
+  {
+    phone: '9876500018',
+    fullName: 'Ramya T',
+    district: 'Krishnagiri',
+    roles: ['Housekeeping', 'Office Assistant'],
+    salary: '₹10,000 – ₹15,000',
+    status: 'BLACKLISTED',
+    source: 'ADMIN',
+    assignedSubAdminEmail: null,
+    blacklistNote: 'Provided fraudulent identity documents during verification.',
+  },
+  // === Edge cases ===
+  {
+    phone: '9876500019',
+    fullName: 'Thangavel M',
+    district: 'Dharmapuri',
+    roles: ['Security Guard'],
+    salary: '₹10,000 – ₹15,000',
+    status: 'INACTIVE',
+    source: 'USER_PORTAL',
+    assignedSubAdminEmail: null,
+  },
+  {
+    phone: '9876500020',
+    fullName: 'Revathi S',
+    district: 'Coimbatore',
+    roles: ['Data Entry'],
+    salary: '₹15,000 – ₹20,000',
+    status: 'REJECTED_BY_EMPLOYER',
+    source: 'SUB_ADMIN',
+    assignedSubAdminEmail: 'subadmin.coimbatore@bluecollar.in',
+    shortlistedJobEmployerKey: 'sunrise',
+    shortlistedJobRole: 'Delivery Staff',
+  },
 ];
 
 export const CANDIDATE_PROFILE_DEFAULTS = {
@@ -282,3 +408,9 @@ export const CANDIDATE_PROFILE_DEFAULTS = {
   presentState: 'Tamil Nadu',
   permanentState: 'Tamil Nadu',
 };
+
+// Female name patterns for auto-detecting sex field
+export const FEMALE_NAME_PATTERNS = [
+  'Meena', 'Kavitha', 'Divya', 'Lakshmi', 'Priya', 'Anitha',
+  'Saranya', 'Mahalakshmi', 'Ramya', 'Revathi',
+];

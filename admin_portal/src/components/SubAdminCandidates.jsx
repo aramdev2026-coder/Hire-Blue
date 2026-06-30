@@ -153,7 +153,7 @@ export default function SubAdminCandidates({
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] font-mono text-emerald-600">#{candidate.id.slice(0, 8)}</p>
+                  <p className="text-[11px] font-mono text-emerald-600">#{candidate.id}</p>
                   <div className="text-xs text-slate-600 mt-1 space-y-0.5">
                     <p><strong>Mobile:</strong> {candidate.phoneNumber1}</p>
                     <p><strong>District:</strong> {candidate.presentDistrict || 'N/A'}</p>

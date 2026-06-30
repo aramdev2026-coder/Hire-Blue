@@ -7,11 +7,34 @@ export const TN_DISTRICTS = [
   'Tiruvannamalai', 'Tiruvarur', 'Vellore', 'Viluppuram', 'Virudhunagar',
 ];
 
+// ─── Field Length Limits ─────────────────────────────────────────────
+const MAX_LENGTHS = {
+  fullName: 100,
+  email: 254,       // RFC 5321
+  phone: 15,
+  address: 500,
+  district: 50,
+  state: 50,
+  salary: 50,
+  companyName: 200,
+  password: 128,
+  note: 2000,
+  institution: 200,
+  course: 200,
+  roleTitle: 100,
+  salaryRange: 100,
+  region: 50,
+};
+
+export { MAX_LENGTHS };
+
+// ─── Core validators ─────────────────────────────────────────────────
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[6-9]\d{9}$/;
 
 export function isValidEmail(email) {
-  return EMAIL_RE.test(String(email || '').trim().toLowerCase());
+  const val = String(email || '').trim().toLowerCase();
+  return EMAIL_RE.test(val) && val.length <= MAX_LENGTHS.email;
 }
 
 export function isValidPhone(phone, { required = false } = {}) {
@@ -29,22 +52,58 @@ export function isValidDistrict(district) {
   return TN_DISTRICTS.includes(district);
 }
 
+// ─── String sanitizer — strips HTML to prevent stored XSS ───────────
+export function sanitizeString(value, maxLength = 500) {
+  if (!value || typeof value !== 'string') return value;
+  return value
+    .replace(/<[^>]*>/g, '')   // Strip HTML tags
+    .replace(/[<>]/g, '')      // Remove stray angle brackets
+    .trim()
+    .slice(0, maxLength);
+}
+
+// ─── Length enforcer ─────────────────────────────────────────────────
+function checkLength(value, field, label) {
+  const max = MAX_LENGTHS[field] || 500;
+  if (value && typeof value === 'string' && value.length > max) {
+    return `${label || field} must be at most ${max} characters`;
+  }
+  return null;
+}
+
+// ─── Admin account validation ────────────────────────────────────────
 export function validateAdminAccountInput({ name, email, phone, password, region }, { editing = false, requireRegion = false } = {}) {
   const errors = [];
   if (!name?.trim()) errors.push('Name is required');
+  else {
+    const lenErr = checkLength(name, 'fullName', 'Name');
+    if (lenErr) errors.push(lenErr);
+  }
   if (!email?.trim()) errors.push('Email is required');
   else if (!isValidEmail(email)) errors.push('Invalid email address');
   if (phone?.trim() && !isValidPhone(phone)) errors.push('Phone must be a valid 10-digit Indian mobile number');
   if (!editing && !password?.trim()) errors.push('Password is required');
-  else if (password?.trim() && password.length < 6) errors.push('Password must be at least 6 characters');
+  else if (password?.trim()) {
+    if (password.length < 8) errors.push('Password must be at least 8 characters');
+    if (password.length > MAX_LENGTHS.password) errors.push(`Password must be at most ${MAX_LENGTHS.password} characters`);
+    if (!/[A-Z]/.test(password)) errors.push('Password must contain at least one uppercase letter');
+    if (!/[a-z]/.test(password)) errors.push('Password must contain at least one lowercase letter');
+    if (!/\d/.test(password)) errors.push('Password must contain at least one digit');
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('Password must contain at least one special character');
+  }
   if (requireRegion && region && !isValidDistrict(region)) errors.push('Invalid district selected');
   if (requireRegion && !region?.trim()) errors.push('District is required');
   return errors;
 }
 
+// ─── Candidate input validation ──────────────────────────────────────
 export function validateCandidateInput(body) {
   const errors = [];
   if (!body.fullName?.trim()) errors.push('Full name is required');
+  else {
+    const lenErr = checkLength(body.fullName, 'fullName', 'Full name');
+    if (lenErr) errors.push(lenErr);
+  }
   if (!isValidPhone(body.phoneNumber1, { required: true })) {
     errors.push('Primary phone must be a valid 10-digit Indian mobile number');
   }
@@ -66,5 +125,32 @@ export function validateCandidateInput(body) {
     const invalid = body.preferredDistricts.filter((d) => d !== 'All Locations' && !TN_DISTRICTS.includes(d));
     if (invalid.length) errors.push('Invalid preferred district(s)');
   }
+
+  // Address length checks
+  ['presentAddress', 'permanentAddress'].forEach((field) => {
+    const lenErr = checkLength(body[field], 'address', field);
+    if (lenErr) errors.push(lenErr);
+  });
+
+  return errors;
+}
+
+// ─── Employer input validation ───────────────────────────────────────
+export function validateEmployerInput({ companyName, email, phoneNumber, password }) {
+  const errors = [];
+  if (!companyName?.trim()) errors.push('Company name is required');
+  else {
+    const lenErr = checkLength(companyName, 'companyName', 'Company name');
+    if (lenErr) errors.push(lenErr);
+  }
+  if (!email?.trim()) errors.push('Email is required');
+  else if (!isValidEmail(email)) errors.push('Invalid email address');
+  if (!phoneNumber?.trim()) errors.push('Phone number is required');
+  else if (!isValidPhone(phoneNumber, { required: true })) {
+    errors.push('Phone must be a valid 10-digit Indian mobile number');
+  }
+  if (!password?.trim()) errors.push('Password is required');
+  else if (password.length < 8) errors.push('Password must be at least 8 characters');
+  else if (password.length > MAX_LENGTHS.password) errors.push(`Password must be at most ${MAX_LENGTHS.password} characters`);
   return errors;
 }

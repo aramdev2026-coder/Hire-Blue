@@ -29,7 +29,7 @@ export default function Login({ onLoginSuccess }) {
           <div className="inline-flex p-3 bg-emerald-100 rounded-xl">
             <Lock className="w-8 h-8 text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Blue-Collar Central</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Aram FTC</h1>
           <p className="text-sm text-slate-500">Admin Portal — Secure Sign In</p>
         </div>
 

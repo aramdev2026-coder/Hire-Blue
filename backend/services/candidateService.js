@@ -20,7 +20,13 @@ export async function updateCandidateStatus(prisma, { candidateId, status, short
     throw Object.assign(new Error('A note is required when blacklisting a candidate'), { statusCode: 400 });
   }
 
-  const existing = await prisma.candidate.findUnique({ where: { id: candidateId } });
+  // candidateId is now an integer
+  const id = typeof candidateId === 'string' ? parseInt(candidateId, 10) : candidateId;
+  if (isNaN(id)) {
+    throw Object.assign(new Error('Invalid candidate ID'), { statusCode: 400 });
+  }
+
+  const existing = await prisma.candidate.findUnique({ where: { id } });
   if (!existing) {
     throw Object.assign(new Error('Candidate not found'), { statusCode: 404 });
   }
@@ -29,10 +35,10 @@ export async function updateCandidateStatus(prisma, { candidateId, status, short
   if (shortlistedJobId !== undefined) data.shortlistedJobId = shortlistedJobId;
 
   const [candidate] = await prisma.$transaction([
-    prisma.candidate.update({ where: { id: candidateId }, data }),
+    prisma.candidate.update({ where: { id }, data }),
     prisma.statusHistory.create({
       data: {
-        candidateId,
+        candidateId: id,
         fromStatus: existing.status,
         toStatus: status,
         changedById,
@@ -40,7 +46,7 @@ export async function updateCandidateStatus(prisma, { candidateId, status, short
     }),
     ...(status === 'BLACKLISTED' && note
       ? [prisma.communicationLog.create({
-          data: { candidateId, authorId: changedById, note: note.trim() },
+          data: { candidateId: id, authorId: changedById, note: note.trim() },
         })]
       : []),
   ]);
@@ -65,7 +71,8 @@ export async function assignCandidates(prisma, { candidateIds, subAdminId, subAd
   }
 
   const ops = [];
-  candidateIds.forEach((candidateId, index) => {
+  candidateIds.forEach((rawId, index) => {
+    const candidateId = typeof rawId === 'string' ? parseInt(rawId, 10) : rawId;
     const assignToId = strategy === 'ROUND_ROBIN'
       ? targetIds[index % targetIds.length]
       : targetIds[0];

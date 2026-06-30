@@ -3,6 +3,7 @@ import { authenticateAdmin, requireRole } from '../middleware/auth.js';
 import {
   enrichCandidateWithSourceLabel,
 } from '../utils/serializers.js';
+import { sanitizeString } from '../utils/validation.js';
 import {
   updateCandidateStatus,
   assignCandidates,
@@ -78,7 +79,7 @@ export default function createAdminRoutes(prisma) {
         candidates = candidates.filter((c) =>
           c.fullName?.toLowerCase().includes(q) ||
           c.phoneNumber1?.includes(search) ||
-          c.id?.includes(search),
+          String(c.id).includes(search),
         );
       }
 
@@ -105,6 +106,12 @@ export default function createAdminRoutes(prisma) {
 
   router.post('/candidates/assign', async (req, res) => {
     const { candidateIds, subAdminId, subAdminIds, strategy } = req.body;
+
+    // Validate candidateIds are integers
+    if (!Array.isArray(candidateIds) || candidateIds.some(id => typeof id !== 'number' || !Number.isInteger(id))) {
+      return res.status(400).json({ error: 'candidateIds must be an array of integers' });
+    }
+
     try {
       const result = await assignCandidates(prisma, {
         candidateIds,
@@ -123,8 +130,11 @@ export default function createAdminRoutes(prisma) {
 
   router.get('/candidates/:id', async (req, res) => {
     try {
+      const candidateId = parseInt(req.params.id, 10);
+      if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
       const candidate = await prisma.candidate.findUnique({
-        where: { id: req.params.id },
+        where: { id: candidateId },
         include: {
           education: true,
           technical: true,
@@ -162,13 +172,13 @@ export default function createAdminRoutes(prisma) {
       const source = req.admin.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN';
       const candidate = await prisma.candidate.create({
         data: {
-          fullName,
+          fullName: sanitizeString(fullName, 100),
           phoneNumber1,
           phoneNumber2: phoneNumber2 || null,
-          presentDistrict: presentDistrict || null,
+          presentDistrict: presentDistrict ? sanitizeString(presentDistrict, 50) : null,
           jobRoles: Array.isArray(jobRoles) ? jobRoles : [],
           preferredDistricts: Array.isArray(preferredDistricts) ? preferredDistricts : [],
-          expectedSalary: expectedSalary || null,
+          expectedSalary: expectedSalary ? sanitizeString(expectedSalary, 50) : null,
           languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : [],
           status: 'NEW',
           source,
@@ -193,12 +203,14 @@ export default function createAdminRoutes(prisma) {
   });
 
   router.put('/candidates/:id/status', async (req, res) => {
-    const { id } = req.params;
+    const candidateId = parseInt(req.params.id, 10);
+    if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
     const { status, shortlistedJobId, note } = req.body;
 
     try {
       const updated = await updateCandidateStatus(prisma, {
-        candidateId: id,
+        candidateId,
         status,
         shortlistedJobId,
         changedById: req.admin.id,

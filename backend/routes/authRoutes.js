@@ -1,67 +1,79 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { SECRET } from '../middleware/auth.js';
+import rateLimit from 'express-rate-limit';
+import env from '../config/env.js';
+import AppError from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { verifyPassword } from '../utils/password.js';
 import { serializeAdminUser } from '../utils/serializers.js';
 
 export default function createAuthRoutes(prisma) {
   const router = express.Router();
 
-  router.post('/login', async (req, res) => {
+  // Rate limiting for login — 5 attempts per 15 min per IP
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: env.NODE_ENV === 'production' ? 5 : 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  });
+
+  router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+      throw new AppError('Email and password are required', 400);
     }
 
-    try {
-      const admin = await prisma.admin.findUnique({ where: { email } });
-      if (!admin || !admin.isActive) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+    const admin = await prisma.admin.findUnique({ where: { email: email.trim().toLowerCase() } });
 
-      const valid = await verifyPassword(password, admin.password);
-      if (!valid) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      await prisma.admin.update({
-        where: { id: admin.id },
-        data: { lastLoginAt: new Date() },
-      });
-
-      const token = jwt.sign(
-        { id: admin.id, role: admin.role, email: admin.email, name: admin.name },
-        SECRET,
-        { expiresIn: '8h' },
-      );
-
-      res.json({
-        success: true,
-        token,
-        user: serializeAdminUser(admin),
-      });
-    } catch (err) {
-      console.error('Admin login error:', err.message);
-      res.status(500).json({ error: 'Login failed' });
+    // 🛡️ Generic error message — don't reveal whether email exists
+    if (!admin || !admin.isActive) {
+      throw new AppError('Invalid credentials', 401);
     }
-  });
 
-  router.get('/me', async (req, res) => {
+    const valid = await verifyPassword(password, admin.password);
+    if (!valid) {
+      throw new AppError('Invalid credentials', 401);
+    }
+
+    await prisma.admin.update({
+      where: { id: admin.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    const token = jwt.sign(
+      { id: admin.id, role: admin.role, email: admin.email, name: admin.name },
+      env.JWT_SECRET,
+      { expiresIn: '8h' },
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: serializeAdminUser(admin),
+    });
+  }));
+
+  router.get('/me', asyncHandler(async (req, res) => {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Authentication required' });
+      throw new AppError('Authentication required', 401);
     }
+    
     try {
-      const payload = jwt.verify(header.slice(7), SECRET);
+      const payload = jwt.verify(header.slice(7), env.JWT_SECRET);
       const admin = await prisma.admin.findUnique({ where: { id: payload.id } });
       if (!admin || !admin.isActive) {
-        return res.status(401).json({ error: 'Invalid session' });
+        throw new AppError('Invalid session', 401);
       }
       res.json({ success: true, user: serializeAdminUser(admin) });
-    } catch {
-      res.status(401).json({ error: 'Invalid or expired token' });
+    } catch (err) {
+      // Re-throw if it's already an AppError (from invalid session), otherwise wrap token errors
+      if (err.isOperational) throw err;
+      throw new AppError('Invalid or expired token', 401);
     }
-  });
+  }));
 
   return router;
 }

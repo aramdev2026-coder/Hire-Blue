@@ -188,7 +188,7 @@ export default function CandidatesDirectory({
                         <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 ml-1" title="Duplicate phone" />
                       )}
                     </h4>
-                    <p className="text-[11px] font-mono font-bold text-emerald-600 mt-0.5">#{candidate.id.slice(0, 8)}</p>
+                    <p className="text-[11px] font-mono font-bold text-emerald-600 mt-0.5">#{candidate.id}</p>
                     <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full border ${sourceBadgeClass(candidate.sourceLabel)}`}>
                       {candidate.sourceLabel || candidate.source}
                     </span>
@@ -288,7 +288,7 @@ export default function CandidatesDirectory({
               <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
                 {candidates.map((candidate) => (
                   <tr key={candidate.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-mono text-xs text-emerald-600 font-bold">#{candidate.id.slice(0, 8)}</td>
+                    <td className="p-4 font-mono text-xs text-emerald-600 font-bold">#{candidate.id}</td>
                     <td className="p-4 font-semibold text-slate-900">{candidate.fullName || 'N/A'}</td>
                     <td className="p-4 font-mono">{candidate.phoneNumber1}</td>
                     <td className="p-4">
