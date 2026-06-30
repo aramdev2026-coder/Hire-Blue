@@ -26,8 +26,13 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
       // Fetch existing profile
       let profile = null;
       try {
-        const pr = await fetch(`${backendUrl}/candidate/profile/${data.candidateId}`);
-        if (pr.ok) profile = await pr.json();
+        const pr = await fetch(`${backendUrl}/candidate/profile/${data.candidateId}`, {
+          headers: { Authorization: `Bearer ${data.token}` }
+        });
+        if (pr.ok) {
+          const resObj = await pr.json();
+          profile = resObj.candidate; // Since the backend returns { success: true, candidate }
+        }
       } catch {}
 
       const status = profile?.status ?? data.profileStatus;

@@ -53,10 +53,16 @@ export default function App() {
     fetch(`${BACKEND}/candidate/profile/${candId}`, {
       headers: { Authorization: `Bearer ${candToken}` },
     })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res.status === 401) {
+          handleLogoutCandidate();
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      })
       .then((data) => {
-        if (data) setProfile(data);
-        const status = data?.status || localStorage.getItem('candidate_status');
+        if (data?.candidate) setProfile(data.candidate);
+        const status = data?.candidate?.status || localStorage.getItem('candidate_status');
         setCandView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
       })
       .catch(() => setCandView('WIZARD'));

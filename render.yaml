@@ -2,6 +2,7 @@ services:
   - type: web
     name: hireblue-backend
     env: node
+    rootDir: backend
     buildCommand: npm install && npx prisma generate
     startCommand: npm run start:prod
     envVars:

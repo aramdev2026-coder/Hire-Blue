@@ -94,9 +94,9 @@ export async function apiFetch(path, options = {}, role = null) {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   const response = await fetch(url, { ...options, headers });
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     logout();
-    throw new Error('Session expired. Please log in again.');
+    throw new Error('Session expired or insufficient permissions. Please log in again.');
   }
 
   const data = await response.json().catch(() => ({}));

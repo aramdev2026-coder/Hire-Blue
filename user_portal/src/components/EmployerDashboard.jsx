@@ -56,8 +56,13 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
   const fetchOrders = async () => {
     setIsLoadingOrders(true);
     try {
-      const res = await fetch(`${backendUrl}/employer/orders/${employerId}`);
-      if (res.ok) setOrders(await res.json());
+      const res = await fetch(`${backendUrl}/employer/orders/${employerId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('employer_token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.jobs || []);
+      }
     } catch (e) { console.error('Failed to fetch orders'); }
     setIsLoadingOrders(false);
   };
@@ -116,7 +121,11 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
 
     try {
       const res = await fetch(`${backendUrl}/employer/jobs`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('employer_token')}`
+        },
         body: JSON.stringify({ employerId, jobs: payload })
       });
       if (res.ok) {
@@ -143,7 +152,10 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
   const deleteOrder = async (orderId) => {
     if (!window.confirm('Delete this requisition? This will mark it inactive.')) return;
     try {
-      const res = await fetch(`${backendUrl}/employer/orders/${orderId}`, { method: 'DELETE' });
+      const res = await fetch(`${backendUrl}/employer/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('employer_token')}` }
+      });
       if (res.ok) {
         fetchOrders();
       } else {

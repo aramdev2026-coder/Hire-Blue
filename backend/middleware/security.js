@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
 
-const SECRET = process.env.JWT_SECRET || '__DEV_ONLY_INSECURE_FALLBACK__';
+const SECRET = env.JWT_SECRET;
 
 // ─────────────────────────────────────────────────────────────────────
 // 🛡️ Input Sanitization — prevent NoSQL/prototype-pollution attacks
@@ -56,6 +57,7 @@ export function sanitizeBody(req, res, next) {
 export function authenticateCandidate(req, res, next) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
+    console.error('[AUTH] No bearer token found');
     return res.status(401).json({ error: 'Authentication required' });
   }
 
@@ -64,16 +66,18 @@ export function authenticateCandidate(req, res, next) {
     const payload = jwt.verify(token, SECRET);
 
     if (payload.role !== 'CANDIDATE') {
+      console.error('[AUTH] Token role is not CANDIDATE. Role:', payload.role);
       return res.status(403).json({ error: 'Invalid candidate token' });
     }
 
     req.candidate = {
-      id: payload.id,   // Now an integer (auto-incremented)
+      id: payload.id,
       phone: payload.phone,
       role: payload.role,
     };
     next();
-  } catch {
+  } catch (err) {
+    console.error('[AUTH] JWT verification failed:', err.message, 'Secret used:', SECRET.substring(0, 5) + '...');
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }

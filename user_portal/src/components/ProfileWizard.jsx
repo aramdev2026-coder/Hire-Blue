@@ -99,16 +99,16 @@ const HIGH_DEMAND_ROLES = [
   'Production Follow-up'
 ];
 
-const SALARY_RANGES = ['₹10,000 – ₹15,000','₹15,000 – ₹20,000','₹20,000 – ₹25,000',
-  '₹25,000 – ₹30,000','₹30,000 – ₹35,000','₹35,000 – ₹40,000'];
-const LANGUAGES = ['Tamil','English','Hindi','Malayalam','Telugu','Kannada','Bengali','Marathi','Gujarati','Punjabi','Odia','Assamese','Urdu','Sanskrit','Konkani','Kashmiri'];
-const TN_DISTRICTS = ['Ariyalur','Chengalpattu','Chennai','Coimbatore','Cuddalore','Dharmapuri',
-  'Dindigul','Erode','Kallakurichi','Kancheepuram','Karur','Krishnagiri','Madurai',
-  'Mayiladuthurai','Nagapattinam','Namakkal','Nilgiris','Perambalur','Pudukkottai',
-  'Ramanathapuram','Ranipet','Salem','Sivaganga','Tenkasi','Thanjavur','Theni',
-  'Thoothukudi','Tiruchirappalli','Tirunelveli','Tirupathur','Tiruppur','Tiruvallur',
-  'Tiruvannamalai','Tiruvarur','Vellore','Viluppuram','Virudhunagar'];
-const STEP_NAMES = ['Personal Details','Job Preferences','Education & Experience'];
+const SALARY_RANGES = ['₹10,000 – ₹15,000', '₹15,000 – ₹20,000', '₹20,000 – ₹25,000',
+  '₹25,000 – ₹30,000', '₹30,000 – ₹35,000', '₹35,000 – ₹40,000'];
+const LANGUAGES = ['Tamil', 'English', 'Hindi', 'Malayalam', 'Telugu', 'Kannada', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Odia', 'Assamese', 'Urdu', 'Sanskrit', 'Konkani', 'Kashmiri'];
+const TN_DISTRICTS = ['Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 'Dharmapuri',
+  'Dindigul', 'Erode', 'Kallakurichi', 'Kancheepuram', 'Karur', 'Krishnagiri', 'Madurai',
+  'Mayiladuthurai', 'Nagapattinam', 'Namakkal', 'Nilgiris', 'Perambalur', 'Pudukkottai',
+  'Ramanathapuram', 'Ranipet', 'Salem', 'Sivaganga', 'Tenkasi', 'Thanjavur', 'Theni',
+  'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 'Tirupathur', 'Tiruppur', 'Tiruvallur',
+  'Tiruvannamalai', 'Tiruvarur', 'Vellore', 'Viluppuram', 'Virudhunagar'];
+const STEP_NAMES = ['Personal Details', 'Job Preferences', 'Education & Experience'];
 
 function Lbl({ children, req }) {
   return (
@@ -163,39 +163,39 @@ function buildInit(init, phone) {
   const fallbackPermanentAddress = composeAddr(init?.permanentStreet1, init?.permanentStreet2);
 
   return {
-    fullName:           init?.fullName           || '',
-    dob:                init?.dob ? new Date(init.dob).toISOString().split('T')[0] : '',
-    sex:                init?.sex                || '',
-    maritalStatus:      init?.maritalStatus      || '',
-    phoneNumber1:       phone                    || '',
-    phoneNumber2:       init?.phoneNumber2       || '',
+    fullName: init?.fullName || '',
+    dob: init?.dob ? new Date(init.dob).toISOString().split('T')[0] : '',
+    sex: init?.sex || '',
+    maritalStatus: init?.maritalStatus || '',
+    phoneNumber1: phone || '',
+    phoneNumber2: init?.phoneNumber2 || '',
     familyPhonePrimary: init?.familyPhonePrimary || '',
-    familyPhoneBackup:  init?.familyPhoneBackup  || '',
-    emailId:            init?.emailId            || '',
-    secondaryEmailId:   init?.secondaryEmailId   || '',
-    presentStreet1:     present.street1,
-    presentStreet2:     present.street2,
-    presentCity:        init?.presentCity || init?.presentDistrict || '',
-    presentState:       init?.presentState       || 'Tamil Nadu',
-    permanentStreet1:   permanent.street1,
-    permanentStreet2:   permanent.street2,
-    permanentCity:      init?.permanentCity || init?.permanentDistrict || '',
-    permanentState:     init?.permanentState     || 'Tamil Nadu',
-    presentAddress:     init?.presentAddress     || fallbackPresentAddress,
-    permanentAddress:   init?.permanentAddress   || fallbackPermanentAddress,
-    jobRoles:           safeArr(init?.jobRoles),
+    familyPhoneBackup: init?.familyPhoneBackup || '',
+    emailId: init?.emailId || '',
+    secondaryEmailId: init?.secondaryEmailId || '',
+    presentStreet1: present.street1,
+    presentStreet2: present.street2,
+    presentCity: init?.presentCity || init?.presentDistrict || '',
+    presentState: init?.presentState || 'Tamil Nadu',
+    permanentStreet1: permanent.street1,
+    permanentStreet2: permanent.street2,
+    permanentCity: init?.permanentCity || init?.permanentDistrict || '',
+    permanentState: init?.permanentState || 'Tamil Nadu',
+    presentAddress: init?.presentAddress || fallbackPresentAddress,
+    permanentAddress: init?.permanentAddress || fallbackPermanentAddress,
+    jobRoles: safeArr(init?.jobRoles),
     preferredDistricts: safeArr(init?.preferredDistricts),
-    expectedSalary:     init?.expectedSalary     || '',
-    languagesKnown:     safeArr(init?.languagesKnown),
-    education:  safeArr(init?.education).length  ? init.education  : [{ institution:'',course:'' }],
-    technical:  safeArr(init?.technical).length  ? init.technical  : [{ institution:'',course:'' }],
-    experience: safeArr(init?.experience).length ? init.experience.map(normalizeExperienceItem) : [{ institution:'',role:'',fromYear:'',toYear:'' }],
+    expectedSalary: init?.expectedSalary || '',
+    languagesKnown: safeArr(init?.languagesKnown),
+    education: safeArr(init?.education).length ? init.education : [{ institution: '', course: '' }],
+    technical: safeArr(init?.technical).length ? init.technical : [{ institution: '', course: '' }],
+    experience: safeArr(init?.experience).length ? init.experience.map(normalizeExperienceItem) : [{ institution: '', role: '', fromYear: '', toYear: '' }],
   };
 }
 
 export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, initialData, onFinalizeSubmit }) {
   const draftKey = `wiz_draft_${candidateId}`;
-  const stepKey  = `wiz_step_${candidateId}`;
+  const stepKey = `wiz_step_${candidateId}`;
   const rolesKey = `wiz_custom_roles_${candidateId}`;
 
   // DYNAMIC ROLES STATE (Loads hardcoded presets + any custom variants added earlier)
@@ -216,7 +216,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       const s = localStorage.getItem(draftKey);
       if (s) {
         const p = JSON.parse(s);
-        ['jobRoles','preferredDistricts','languagesKnown','education','technical','experience']
+        ['jobRoles', 'preferredDistricts', 'languagesKnown', 'education', 'technical', 'experience']
           .forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
         p.experience = p.experience.map(normalizeExperienceItem);
         p.phoneNumber1 = verifiedPhone || p.phoneNumber1;
@@ -236,7 +236,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         }
         return p;
       }
-    } catch {}
+    } catch { }
     return buildInit(initialData, verifiedPhone);
   });
 
@@ -259,15 +259,15 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     const savedStep = localStorage.getItem(stepKey);
     return savedStep ? parseInt(savedStep, 10) : 1;
   });
-  
-  const [reviewing,   setReviewing]   = React.useState(false);
-  const [sameAddr,    setSameAddr]    = React.useState(false);
-  const [errors,      setErrors]      = React.useState({});
-  const [serverErr,   setServerErr]   = React.useState('');
-  const [saving,      setSaving]      = React.useState(false);
 
-  React.useEffect(() => { 
-    localStorage.setItem(draftKey, JSON.stringify(form)); 
+  const [reviewing, setReviewing] = React.useState(false);
+  const [sameAddr, setSameAddr] = React.useState(false);
+  const [errors, setErrors] = React.useState({});
+  const [serverErr, setServerErr] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    localStorage.setItem(draftKey, JSON.stringify(form));
     localStorage.setItem(stepKey, step.toString());
   }, [form, step, candidateId]);
 
@@ -310,14 +310,14 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       ...p,
       permanentStreet1: p.presentStreet1,
       permanentStreet2: p.presentStreet2,
-      permanentCity:    p.presentCity,
-      permanentState:   p.presentState,
+      permanentCity: p.presentCity,
+      permanentState: p.presentState,
     }));
   };
 
   const toggle = (key, val) => setForm(p => {
     const a = p[key];
-    return { ...p, [key]: a.includes(val) ? a.filter(x => x!==val) : [...a, val] };
+    return { ...p, [key]: a.includes(val) ? a.filter(x => x !== val) : [...a, val] };
   });
 
   const updRow = (tbl, i, f, v) => setForm(p => {
@@ -326,9 +326,9 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   });
   const addRow = (tbl) => setForm(p => ({
     ...p, [tbl]: [...p[tbl],
-      tbl === 'experience' ? { institution:'',role:'',fromYear:'',toYear:'' } : { institution:'',course:'' }]
+    tbl === 'experience' ? { institution: '', role: '', fromYear: '', toYear: '' } : { institution: '', course: '' }]
   }));
-  const delRow = (tbl, i) => setForm(p => ({ ...p, [tbl]: p[tbl].filter((_,j) => j!==i) }));
+  const delRow = (tbl, i) => setForm(p => ({ ...p, [tbl]: p[tbl].filter((_, j) => j !== i) }));
 
   // --- HANDLER FOR CANDIDATE CUSTOM ROLE FIELDS ---
   const handleSelectRole = (role) => {
@@ -358,7 +358,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const validate = () => {
     const e = {};
     if (step === 1) {
-      if (!form.fullName.trim())       e.fullName        = 'Full name is required';
+      if (!form.fullName.trim()) e.fullName = 'Full name is required';
       if (!form.dob) {
         e.dob = 'Date of birth is required';
       } else {
@@ -378,20 +378,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           }
         }
       }
-      if (!form.sex)                   e.sex             = 'Please select a gender';
-      if (!form.maritalStatus)         e.maritalStatus   = 'Please select marital status';
-      if (!form.presentStreet1.trim()) e.presentStreet1  = 'Street address is required';
-      if (!form.presentCity)           e.presentCity     = 'City / Town is required';
+      if (!form.sex) e.sex = 'Please select a gender';
+      if (!form.maritalStatus) e.maritalStatus = 'Please select marital status';
+      if (!form.presentStreet1.trim()) e.presentStreet1 = 'Street address is required';
+      if (!form.presentCity) e.presentCity = 'City / Town is required';
       if (!sameAddr) {
-        if (!form.permanentStreet1.trim()) e.permanentStreet1  = 'Street address is required';
-        if (!form.permanentCity)           e.permanentCity     = 'City / Town is required';
+        if (!form.permanentStreet1.trim()) e.permanentStreet1 = 'Street address is required';
+        if (!form.permanentCity) e.permanentCity = 'City / Town is required';
       }
     }
     if (step === 2) {
-      if (!form.jobRoles.length)           e.jobRoles           = 'Select at least one job role';
+      if (!form.jobRoles.length) e.jobRoles = 'Select at least one job role';
       if (!form.preferredDistricts.length) e.preferredDistricts = 'Select at least one district';
-      if (!form.expectedSalary)            e.expectedSalary     = 'Salary expectation is required';
-      if (!form.languagesKnown.length)     e.languagesKnown     = 'Select at least one language';
+      if (!form.expectedSalary) e.expectedSalary = 'Salary expectation is required';
+      if (!form.languagesKnown.length) e.languagesKnown = 'Select at least one language';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -407,15 +407,15 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       if (step === 1) {
         payload = {
           ...form,
-          presentAddress:   composeAddr(form.presentStreet1, form.presentStreet2),
-          presentDistrict:  form.presentCity,
+          presentAddress: composeAddr(form.presentStreet1, form.presentStreet2),
+          presentDistrict: form.presentCity,
           permanentAddress: sameAddr
             ? composeAddr(form.presentStreet1, form.presentStreet2)
             : composeAddr(form.permanentStreet1, form.permanentStreet2),
           permanentDistrict: sameAddr ? form.presentCity : form.permanentCity,
         };
       } else if (step === 2) {
-        const toArray = v => Array.isArray(v) ? v : (typeof v === 'string' ? v.split(',').map(s=>s.trim()).filter(Boolean) : []);
+        const toArray = v => Array.isArray(v) ? v : (typeof v === 'string' ? v.split(',').map(s => s.trim()).filter(Boolean) : []);
         payload = {
           ...form,
           jobRoles: toArray(form.jobRoles),
@@ -427,8 +427,11 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         payload = form;
       }
       const res = await fetch(`${backendUrl}/candidate/save-wizard-step`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('candidate_token')}`
+        },
         body: JSON.stringify({ candidateId, sectionIndex: step, updatedPayload: payload }),
       });
       if (!res.ok) throw new Error('Could not save.');
@@ -458,11 +461,14 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const handleFinalize = async () => {
     try {
       await fetch(`${backendUrl}/candidate/finalize`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('candidate_token')}`
+        },
         body: JSON.stringify({ candidateId }),
       });
-    } catch {}
+    } catch { }
     localStorage.removeItem(draftKey);
     localStorage.removeItem(stepKey);
     localStorage.removeItem(rolesKey);
@@ -484,13 +490,13 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         <div className="review-copy">Check everything before submitting.</div>
       </div>
       <div className="panel-body panel-body--compact">
-        
+
         <div className="section-heading">Personal Details</div>
         <div className="responsive-grid section-divider">
-          <RV label="Full Name"      val={form.fullName} />
-          <RV label="Mobile"         val={`+91 ${form.phoneNumber1}`} />
-          <RV label="Date of Birth"  val={form.dob} />
-          <RV label="Gender"         val={form.sex} />
+          <RV label="Full Name" val={form.fullName} />
+          <RV label="Mobile" val={`+91 ${form.phoneNumber1}`} />
+          <RV label="Date of Birth" val={form.dob} />
+          <RV label="Gender" val={form.sex} />
           <RV label="Marital Status" val={form.maritalStatus} />
           {form.emailId && <RV label="Email" val={form.emailId} />}
           <div className="span-full">
@@ -504,35 +510,35 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         <div className="section-heading">Job Preferences</div>
         <div className="section-divider">
           <RV label="Monthly Salary Expectation" val={form.expectedSalary} />
-          <TagReview label="Job Roles"   tags={form.jobRoles}          color="#000" />
-          <TagReview label="Districts"   tags={form.preferredDistricts} color="#1d4ed8" />
-          <TagReview label="Languages"   tags={form.languagesKnown}     color="#059669" />
+          <TagReview label="Job Roles" tags={form.jobRoles} color="#000" />
+          <TagReview label="Districts" tags={form.preferredDistricts} color="#1d4ed8" />
+          <TagReview label="Languages" tags={form.languagesKnown} color="#059669" />
         </div>
 
-        {form.education.some(r=>r.institution) && <>
+        {form.education.some(r => r.institution) && <>
           <div className="section-heading">Education</div>
           <div className="table-wrapper">
             <table className="responsive-table">
               <thead><tr><th className="table-cell--small">#</th><th>Institution</th><th>Course</th></tr></thead>
-              <tbody>{form.education.filter(r=>r.institution).map((r,i)=>(
-                <tr key={i}><td>{i+1}</td><td>{r.institution}</td><td>{r.course}</td></tr>
+              <tbody>{form.education.filter(r => r.institution).map((r, i) => (
+                <tr key={i}><td>{i + 1}</td><td>{r.institution}</td><td>{r.course}</td></tr>
               ))}</tbody>
             </table>
           </div>
         </>}
-        {form.experience.some(r=>r.institution) && <>
+        {form.experience.some(r => r.institution) && <>
           <div className="section-heading mt-16">Work Experience</div>
           <div className="table-wrapper">
             <table className="responsive-table">
               <thead><tr><th className="table-cell--small">#</th><th>Organisation</th><th>Role</th><th className="table-cell--xsmall">From</th><th className="table-cell--xsmall">To</th></tr></thead>
-              <tbody>{form.experience.filter(r=>r.institution).map((r,i)=>(
-                <tr key={i}><td>{i+1}</td><td>{r.institution}</td><td>{r.role}</td><td>{r.fromYear}</td><td>{r.toYear}</td></tr>
+              <tbody>{form.experience.filter(r => r.institution).map((r, i) => (
+                <tr key={i}><td>{i + 1}</td><td>{r.institution}</td><td>{r.role}</td><td>{r.fromYear}</td><td>{r.toYear}</td></tr>
               ))}</tbody>
             </table>
           </div>
         </>}
       </div>
-      
+
       <div className="panel-actions">
         <button type="button" className="button button-ghost" onClick={() => { setReviewing(false); setStep(1); }}>
           Back to edit
@@ -549,10 +555,10 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       <div className="wizard-header">
         <div>
           <div className="wizard-step-label">Step {step} of 3</div>
-          <div className="wizard-title">{STEP_NAMES[step-1]}</div>
+          <div className="wizard-title">{STEP_NAMES[step - 1]}</div>
         </div>
         <div className="step-indicator">
-          {[1,2,3].map(s => (
+          {[1, 2, 3].map(s => (
             <span key={s} className={`step-dot ${s <= step ? 'step-dot--active' : ''} ${s === step ? 'step-dot--current' : s < step ? 'step-dot--prev' : 'step-dot--next'}`} />
           ))}
         </div>
@@ -566,7 +572,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <div className="responsive-grid">
               <Field label="Full Name" req error={errors.fullName}>
                 <input className={`input${errors.fullName ? ' input-error' : ''}`} type="text" placeholder="e.g. Arun Kumar"
-                  value={form.fullName} onChange={e=>upd('fullName',e.target.value)} autoFocus />
+                  value={form.fullName} onChange={e => upd('fullName', e.target.value)} autoFocus />
               </Field>
               <Field label="Verified Mobile">
                 <input className="input input-readonly" readOnly disabled value={`+91 ${form.phoneNumber1}`} />
@@ -574,34 +580,34 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <Field label="Date of Birth" req error={errors.dob}>
                 <input className={`input${errors.dob ? ' input-error' : ''}`} type="date"
                   min="1900-01-01" max={new Date().toISOString().split('T')[0]}
-                  value={form.dob} onChange={e=>upd('dob',e.target.value)}
+                  value={form.dob} onChange={e => upd('dob', e.target.value)}
                   onClick={(e) => e.target.showPicker && e.target.showPicker()} />
               </Field>
               <Field label="Gender" req error={errors.sex}>
-                <select className={`select${errors.sex ? ' select-error' : ''}`} value={form.sex} onChange={e=>upd('sex',e.target.value)}>
+                <select className={`select${errors.sex ? ' select-error' : ''}`} value={form.sex} onChange={e => upd('sex', e.target.value)}>
                   <option value="">Select</option><option>Male</option><option>Female</option><option>Prefer not to say</option>
                 </select>
               </Field>
               <Field label="Marital Status" req error={errors.maritalStatus}>
-                <select className={`select${errors.maritalStatus ? ' select-error' : ''}`} value={form.maritalStatus} onChange={e=>upd('maritalStatus',e.target.value)}>
+                <select className={`select${errors.maritalStatus ? ' select-error' : ''}`} value={form.maritalStatus} onChange={e => upd('maritalStatus', e.target.value)}>
                   <option value="">Select</option><option>Single</option><option>Married</option><option>Widowed</option><option>Divorced</option>
                 </select>
               </Field>
               <Field label="Alternate Mobile">
                 <input className="input" type="tel" maxLength={10} placeholder="Optional"
-                  value={form.phoneNumber2} onChange={e=>upd('phoneNumber2',e.target.value.replace(/\D/g,''))} />
+                  value={form.phoneNumber2} onChange={e => upd('phoneNumber2', e.target.value.replace(/\D/g, ''))} />
               </Field>
               <Field label="Family Contact">
                 <input className="input" type="tel" maxLength={10} placeholder="Optional"
-                  value={form.familyPhonePrimary} onChange={e=>upd('familyPhonePrimary',e.target.value.replace(/\D/g,''))} />
+                  value={form.familyPhonePrimary} onChange={e => upd('familyPhonePrimary', e.target.value.replace(/\D/g, ''))} />
               </Field>
               <Field label="Email Address">
                 <input className="input" type="email" placeholder="Optional"
-                  value={form.emailId} onChange={e=>upd('emailId',e.target.value)} />
+                  value={form.emailId} onChange={e => upd('emailId', e.target.value)} />
               </Field>
               <Field label="Secondary Email">
                 <input className="input" type="email" placeholder="Optional"
-                  value={form.secondaryEmailId} onChange={e=>upd('secondaryEmailId',e.target.value)} />
+                  value={form.secondaryEmailId} onChange={e => upd('secondaryEmailId', e.target.value)} />
               </Field>
             </div>
 
@@ -609,19 +615,19 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <Field label="Street Address 1" req error={errors.presentStreet1}>
               <input className={`input${errors.presentStreet1 ? ' input-error' : ''}`} type="text"
                 placeholder="House/Building Number and Street Name"
-                value={form.presentStreet1} onChange={e=>upd('presentStreet1',e.target.value)} />
+                value={form.presentStreet1} onChange={e => upd('presentStreet1', e.target.value)} />
             </Field>
             <Field label="Street Address 2">
               <input className="input" type="text"
                 placeholder="Apartment, Suite, Unit, or Floor Number (Optional)"
-                value={form.presentStreet2} onChange={e=>upd('presentStreet2',e.target.value)} />
+                value={form.presentStreet2} onChange={e => upd('presentStreet2', e.target.value)} />
             </Field>
             <div className="responsive-grid">
               <Field label="City / Town" req error={errors.presentCity}>
                 <select className={`select${errors.presentCity ? ' select-error' : ''}`}
-                  value={form.presentCity} onChange={e=>upd('presentCity',e.target.value)}>
+                  value={form.presentCity} onChange={e => upd('presentCity', e.target.value)}>
                   <option value="">Select city / town</option>
-                  {TN_DISTRICTS.map(d=><option key={d}>{d}</option>)}
+                  {TN_DISTRICTS.map(d => <option key={d}>{d}</option>)}
                 </select>
               </Field>
               <Field label="State / Province / Region">
@@ -630,7 +636,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             </div>
 
             <label className="checkbox-label">
-              <input type="checkbox" checked={sameAddr} onChange={e=>syncAddr(e.target.checked)} className="checkbox-input" />
+              <input type="checkbox" checked={sameAddr} onChange={e => syncAddr(e.target.checked)} className="checkbox-input" />
               <span className="checkbox-copy">
                 Permanent address is same as present address
               </span>
@@ -641,40 +647,40 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <Field label="Street Address 1" req error={errors.permanentStreet1}>
                 <input className={`input${errors.permanentStreet1 ? ' input-error' : ''}`} type="text"
                   placeholder="House/Building Number and Street Name"
-                  value={form.permanentStreet1} onChange={e=>upd('permanentStreet1',e.target.value)} />
+                  value={form.permanentStreet1} onChange={e => upd('permanentStreet1', e.target.value)} />
               </Field>
               <Field label="Street Address 2">
                 <input className="input" type="text"
                   placeholder="Apartment, Suite, Unit, or Floor Number (Optional)"
-                  value={form.permanentStreet2} onChange={e=>upd('permanentStreet2',e.target.value)} />
+                  value={form.permanentStreet2} onChange={e => upd('permanentStreet2', e.target.value)} />
               </Field>
               <div className="responsive-grid">
                 <Field label="City / Town" req error={errors.permanentCity}>
                   <select className={`select${errors.permanentCity ? ' select-error' : ''}`}
-                    value={form.permanentCity} onChange={e=>upd('permanentCity',e.target.value)}>
+                    value={form.permanentCity} onChange={e => upd('permanentCity', e.target.value)}>
                     <option value="">Select city / town</option>
-                    {TN_DISTRICTS.map(d=><option key={d}>{d}</option>)}
+                    {TN_DISTRICTS.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </Field>
                 <Field label="State / Province / Region">
                   <input className="input input-readonly" readOnly value="Tamil Nadu" disabled />
                 </Field>
               </div>
-            </>) }
+            </>)}
           </>)}
 
           {step === 2 && (<>
             <div className="field-label-row">
               <Lbl req>Job Roles</Lbl>
               <div className="field-inline-actions">
-                <button type="button" className="button button-ghost button-small" onClick={()=>upd('jobRoles',[])}>Clear All</button>
+                <button type="button" className="button button-ghost button-small" onClick={() => upd('jobRoles', [])}>Clear All</button>
               </div>
             </div>
 
             {/* Common/High Demand Roles (Quick Select) */}
             <div style={{ marginBottom: '1.25rem' }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
-                🔥 Common Job Roles (High Demand) - Click to select:
+                Common Job Roles (High Demand) - Click to select:
               </span>
               <div className="tag-panel" style={{ minHeight: 'auto', padding: '12px', background: '#f8fafc' }}>
                 {HIGH_DEMAND_ROLES.map(r => {
@@ -696,7 +702,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             {/* Autocomplete Search Bar */}
             <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
-                🔍 Search & Add Custom Roles:
+                Search & Add Custom Roles:
               </span>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
@@ -822,20 +828,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <div className="field-label-row mt-16">
               <Lbl req>Preferred Districts</Lbl>
               <div className="field-inline-actions">
-                <button type="button" className="button button-ghost button-small" onClick={()=>upd('preferredDistricts',[...TN_DISTRICTS])}>All</button>
-                <button type="button" className="button button-ghost button-small" onClick={()=>upd('preferredDistricts',[])}>Clear</button>
+                <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [...TN_DISTRICTS])}>All</button>
+                <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [])}>Clear</button>
               </div>
             </div>
             <select className={`select${errors.preferredDistricts ? ' select-error' : ''}`} value=""
-              onChange={e=>e.target.value&&toggle('preferredDistricts',e.target.value)}>
+              onChange={e => e.target.value && toggle('preferredDistricts', e.target.value)}>
               <option value="">Add a district…</option>
-              {TN_DISTRICTS.filter(d=>!form.preferredDistricts.includes(d)).map(d=><option key={d}>{d}</option>)}
+              {TN_DISTRICTS.filter(d => !form.preferredDistricts.includes(d)).map(d => <option key={d}>{d}</option>)}
             </select>
             <div className={`tag-panel${errors.preferredDistricts ? ' has-error' : ''}`}>
-              {form.preferredDistricts.length===0
+              {form.preferredDistricts.length === 0
                 ? <span className="field-note">No districts added yet</span>
-                : form.preferredDistricts.map(d=>(
-                  <button type="button" key={d} className="tag-chip selected" onClick={()=>toggle('preferredDistricts',d)}>
+                : form.preferredDistricts.map(d => (
+                  <button type="button" key={d} className="tag-chip selected" onClick={() => toggle('preferredDistricts', d)}>
                     {d} x
                   </button>
                 ))}
@@ -845,9 +851,9 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <div className="mt-12">
               <Field label="Monthly Salary Expectation" req error={errors.expectedSalary}>
                 <select className={`select${errors.expectedSalary ? ' select-error' : ''}`}
-                  value={form.expectedSalary} onChange={e=>upd('expectedSalary',e.target.value)}>
+                  value={form.expectedSalary} onChange={e => upd('expectedSalary', e.target.value)}>
                   <option value="">Select a range</option>
-                  {SALARY_RANGES.map(r=><option key={r}>{r}</option>)}
+                  {SALARY_RANGES.map(r => <option key={r}>{r}</option>)}
                 </select>
               </Field>
             </div>
@@ -857,7 +863,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <div className={`tag-panel${errors.languagesKnown ? ' has-error' : ''}`}>
                 {LANGUAGES.map(l => {
                   const on = form.languagesKnown.includes(l);
-                  return <button type="button" key={l} className={`tag-chip${on ? ' selected' : ''}`} onClick={()=>toggle('languagesKnown',l)}>{l}</button>;
+                  return <button type="button" key={l} className={`tag-chip${on ? ' selected' : ''}`} onClick={() => toggle('languagesKnown', l)}>{l}</button>;
                 })}
               </div>
               <Err msg={errors.languagesKnown} />
@@ -878,19 +884,19 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                   <th className="table-cell--small"></th>
                 </tr></thead>
                 <tbody>
-                  {form.education.map((r,i)=>(
+                  {form.education.map((r, i) => (
                     <tr key={i}>
-                      <td data-label="Institution"><input className="input input-inline" placeholder="School / College" value={r.institution} onChange={e=>updRow('education',i,'institution',e.target.value)} /></td>
-                      <td data-label="Course / Degree"><input className="input input-inline" placeholder="e.g. B.Sc Chemistry" value={r.course} onChange={e=>updRow('education',i,'course',e.target.value)} /></td>
+                      <td data-label="Institution"><input className="input input-inline" placeholder="School / College" value={r.institution} onChange={e => updRow('education', i, 'institution', e.target.value)} /></td>
+                      <td data-label="Course / Degree"><input className="input input-inline" placeholder="e.g. B.Sc Chemistry" value={r.course} onChange={e => updRow('education', i, 'course', e.target.value)} /></td>
                       <td data-label=" " className="text-center">
-                        <button type="button" className="button button-ghost button-small" onClick={()=>delRow('education',i)}>Remove</button>
+                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('education', i)}>Remove</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" className="button button-ghost button-small" onClick={()=>addRow('education')}>Add Row</button>
+            <button type="button" className="button button-ghost button-small" onClick={() => addRow('education')}>Add Row</button>
 
             <div className="section-heading">Technical Qualifications</div>
             <div className="table-wrapper">
@@ -901,19 +907,19 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                   <th className="table-cell--small"></th>
                 </tr></thead>
                 <tbody>
-                  {form.technical.map((r,i)=>(
+                  {form.technical.map((r, i) => (
                     <tr key={i}>
-                      <td data-label="Institution"><input className="input input-inline" placeholder="Institute name" value={r.institution} onChange={e=>updRow('technical',i,'institution',e.target.value)} /></td>
-                      <td data-label="Course / Certificate"><input className="input input-inline" placeholder="e.g. Tally ERP" value={r.course} onChange={e=>updRow('technical',i,'course',e.target.value)} /></td>
+                      <td data-label="Institution"><input className="input input-inline" placeholder="Institute name" value={r.institution} onChange={e => updRow('technical', i, 'institution', e.target.value)} /></td>
+                      <td data-label="Course / Certificate"><input className="input input-inline" placeholder="e.g. Tally ERP" value={r.course} onChange={e => updRow('technical', i, 'course', e.target.value)} /></td>
                       <td data-label=" " className="text-center">
-                        <button type="button" className="button button-ghost button-small" onClick={()=>delRow('technical',i)}>Remove</button>
+                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('technical', i)}>Remove</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" className="button button-ghost button-small" onClick={()=>addRow('technical')}>Add Row</button>
+            <button type="button" className="button button-ghost button-small" onClick={() => addRow('technical')}>Add Row</button>
 
             <div className="section-heading">Work Experience</div>
             <div className="table-wrapper">
@@ -926,31 +932,31 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                   <th className="table-cell--small"></th>
                 </tr></thead>
                 <tbody>
-                  {form.experience.map((r,i)=>(
+                  {form.experience.map((r, i) => (
                     <tr key={i}>
-                      <td data-label="Organisation"><input className="input input-inline" placeholder="Company" value={r.institution} onChange={e=>updRow('experience',i,'institution',e.target.value)} /></td>
-                      <td data-label="Role"><input className="input input-inline" placeholder="Job Title" value={r.role||''} onChange={e=>updRow('experience',i,'role',e.target.value)} /></td>
-                      <td data-label="From"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.fromYear || ''} onChange={e => updRow('experience', i, 'fromYear', e.target.value.replace(/\D/g, '').slice(0,4))} /></td>
-                      <td data-label="To"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.toYear || ''} onChange={e => updRow('experience', i, 'toYear', e.target.value.replace(/\D/g, '').slice(0,4))} /></td>
+                      <td data-label="Organisation"><input className="input input-inline" placeholder="Company" value={r.institution} onChange={e => updRow('experience', i, 'institution', e.target.value)} /></td>
+                      <td data-label="Role"><input className="input input-inline" placeholder="Job Title" value={r.role || ''} onChange={e => updRow('experience', i, 'role', e.target.value)} /></td>
+                      <td data-label="From"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.fromYear || ''} onChange={e => updRow('experience', i, 'fromYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
+                      <td data-label="To"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.toYear || ''} onChange={e => updRow('experience', i, 'toYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
                       <td data-label=" " className="text-center">
-                        <button type="button" className="button button-ghost button-small" onClick={()=>delRow('experience',i)}>Remove</button>
+                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('experience', i)}>Remove</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" className="button button-ghost button-small" onClick={()=>addRow('experience')}>Add Row</button>
+            <button type="button" className="button button-ghost button-small" onClick={() => addRow('experience')}>Add Row</button>
           </>)}
         </div>
 
         <div className="panel-actions">
           {step > 1
-            ? <button type="button" className="button button-ghost" onClick={()=>{setStep(s=>s-1);setErrors({});}}>Back</button>
-            : <div/>
+            ? <button type="button" className="button button-ghost" onClick={() => { setStep(s => s - 1); setErrors({}); }}>Back</button>
+            : <div />
           }
           <button type="submit" disabled={saving} className="button button-primary">
-            {saving ? 'Saving…' : step===3 ? 'Review' : 'Save & Continue'}
+            {saving ? 'Saving…' : step === 3 ? 'Review' : 'Save & Continue'}
           </button>
         </div>
       </form>
