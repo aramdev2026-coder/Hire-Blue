@@ -38,7 +38,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
       const status = profile?.status ?? data.profileStatus;
       onAuthSuccess(data.token, data.candidateId, phone, status, profile);
     } catch {
-      setError('Cannot reach server on port 5000. Make sure it is running.');
+      setError('Cannot reach server. Make sure it is running.');
     } finally {
       setLoading(false);
     }

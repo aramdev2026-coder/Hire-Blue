@@ -41,16 +41,22 @@ app.use(helmet({
 }));
 
 // CORS
-const allowedOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim());
+const allowedOrigins = [
+  'https://aramftc.com',
+  'https://www.aramftc.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Body parser with payload limit
@@ -80,6 +86,8 @@ const authLimiter = rateLimit({
 // ============================================================================
 // 🛣️ ROUTES
 // ============================================================================
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/admin/auth', authLimiter, createAuthRoutes(prisma));
 app.use('/api/sub-admin', createSubAdminRoutes(prisma));
