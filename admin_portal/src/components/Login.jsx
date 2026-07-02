@@ -26,9 +26,7 @@ export default function Login({ onLoginSuccess }) {
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-emerald-100 rounded-xl">
-            <Lock className="w-8 h-8 text-emerald-600" />
-          </div>
+          <img src="/favicon.png" alt="Aram FTC Logo" className="w-16 h-16 mx-auto object-contain rounded-xl mb-2" />
           <h1 className="text-2xl font-bold text-slate-900">Aram FTC</h1>
           <p className="text-sm text-slate-500">Admin Portal — Sign In</p>
         </div>

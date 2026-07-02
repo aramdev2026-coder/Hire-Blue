@@ -46,8 +46,8 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
 
   return (
     <div className="auth-shell">
-      <div className="auth-card">
-
+      <div className="auth-card text-center">
+        <img src="/favicon.png" alt="Aram FTC Logo" className="brand-logo" style={{ margin: '0 auto 16px', display: 'block' }} />
         <h1 className="auth-title">Candidate Portal</h1>
         <p className="auth-copy">Enter your mobile number to open or continue your profile.</p>
 

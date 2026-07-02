@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginCard from './components/LoginCard';
 import ProfileWizard from './components/ProfileWizard';
 import DigitalResume from './components/DigitalResume';
@@ -128,7 +128,7 @@ export default function App() {
     <div className="app-shell">
       <header className="header">
         <div className="brand">
-          <div className="brand-mark">B</div>
+          <img src="/favicon.png" alt="Aram Logo" className="brand-logo" />
           <div className="brand-copy">
             <span className="brand-title">Aram FTC</span>
             <span className="brand-subtitle">Candidate & Employer Portal</span>

@@ -40,23 +40,39 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-// CORS
-const allowedOrigins = [
+// CORS Configuration
+const defaultOrigins = [
   'https://aramftc.com',
   'https://www.aramftc.com',
+  'https://aramftcadmin.netlify.app',
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:5174',
 ];
+
+let allowedOrigins = [...defaultOrigins];
+
+if (env.CORS_ORIGINS) {
+  const envOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+  allowedOrigins = Array.from(new Set([...allowedOrigins, ...envOrigins]));
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps, postman, curl)
+    if (!origin) {
+      return callback(null, true);
     }
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Body parser with payload limit
