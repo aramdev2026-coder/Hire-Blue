@@ -30,7 +30,7 @@ export default function Login({ onLoginSuccess }) {
             <Lock className="w-8 h-8 text-emerald-600" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Aram FTC</h1>
-          <p className="text-sm text-slate-500">Admin Portal — Secure Sign In</p>
+          <p className="text-sm text-slate-500">Admin Portal — Sign In</p>
         </div>
 
         {error && (

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
 export default function LoginCard({ backendUrl, onAuthSuccess }) {
-  const [phone,   setPhone]   = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [error, setError] = useState('');
 
   const submit = async (e) => {
     e.preventDefault();
@@ -15,10 +15,10 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
     setLoading(true);
     try {
       // Sandbox: skip real OTP, call verify directly
-      const res  = await fetch(`${backendUrl}/auth/verify-otp`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ phoneNumber:phone, otpCode:'123456', otpSessionId:'SANDBOX_SESSION_ACTIVE' }),
+      const res = await fetch(`${backendUrl}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone, otpCode: '123456', otpSessionId: 'SANDBOX_SESSION_ACTIVE' }),
       });
       const data = await res.json();
       if (!data.success) { setError(data.error || 'Login failed. Try again.'); return; }
@@ -33,7 +33,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
           const resObj = await pr.json();
           profile = resObj.candidate; // Since the backend returns { success: true, candidate }
         }
-      } catch {}
+      } catch { }
 
       const status = profile?.status ?? data.profileStatus;
       onAuthSuccess(data.token, data.candidateId, phone, status, profile);
@@ -77,7 +77,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
         </form>
 
         <div className="notice-box">
-          <strong>Sandbox mode:</strong> OTP is skipped. Any 10-digit number works.
+          <strong>Sandbox mode:</strong> OTP is skipped. Any 10-digit valid phonenumber works.
         </div>
       </div>
     </div>
