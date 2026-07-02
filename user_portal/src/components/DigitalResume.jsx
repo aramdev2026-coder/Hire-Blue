@@ -86,7 +86,7 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
                   <span key={r} className="badge badge--primary">{r}</span>
                 ))}
               </div>
-              <p className="print-only print-text-list">{p.jobRoles.join(', ')}</p>
+              <p className="print-only print-text-list">{p.jobRoles.join('  •  ')}</p>
             </div>
           )}
 
@@ -98,7 +98,7 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
                   <span key={d} className="badge badge--muted">{d}</span>
                 ))}
               </div>
-              <p className="print-only print-text-list">{p.preferredDistricts.join(', ')}</p>
+              <p className="print-only print-text-list">{p.preferredDistricts.join('  •  ')}</p>
             </div>
           )}
 
@@ -110,7 +110,7 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
                   <span key={l} className="badge badge--success">{l}</span>
                 ))}
               </div>
-              <p className="print-only print-text-list">{p.languagesKnown.join(', ')}</p>
+              <p className="print-only print-text-list">{p.languagesKnown.join('  •  ')}</p>
             </div>
           )}
         </div>
