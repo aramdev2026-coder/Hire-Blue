@@ -938,9 +938,16 @@ button { cursor: pointer; }
 .table-section { display: grid; gap: 20px; }
 
 .table-wrapper {
-  overflow: visible;
-  border: 1px solid var(--border);
+  overflow-x: auto;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+@media (min-width: 721px) {
+  .table-wrapper--visible {
+    overflow: visible !important;
+  }
 }
 
 .table-card { overflow: hidden; }

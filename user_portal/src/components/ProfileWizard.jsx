@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export const ALL_JOB_ROLES = [
+const ALL_JOB_ROLES = [
   "Agricultural Laborer",
   "Aircraft Mechanic",
   "Assembly Line Worker",
@@ -1125,7 +1125,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             </div>
 
             <div className="section-heading">Educational Qualifications</div>
-            <div className="table-wrapper">
+            <div className="table-wrapper table-wrapper--visible">
               <table className="responsive-table table-editable">
                 <thead><tr>
                   <th>Institution</th>
