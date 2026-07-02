@@ -259,6 +259,18 @@ const TN_COLLEGES = [
   "Government Industrial Training Institute (ITI), Trichy"
 ];
 
+const normalizeEducationItem = (item) => {
+  if (!item) return { institution: '', customInstitution: '', course: '', customCourse: '' };
+  const isStandardCol = TN_COLLEGES.includes(item.institution);
+  const isStandardCourse = COURSE_DEGREES.includes(item.course);
+  return {
+    institution: isStandardCol ? item.institution : (item.institution ? "Other" : ""),
+    customInstitution: isStandardCol ? "" : (item.institution || ""),
+    course: isStandardCourse ? item.course : (item.course ? "Other" : ""),
+    customCourse: isStandardCourse ? "" : (item.course || "")
+  };
+};
+
 const STEP_NAMES = ['Personal Details', 'Job Preferences', 'Education & Experience'];
 
 function Lbl({ children, req }) {
@@ -338,7 +350,7 @@ function buildInit(init, phone) {
     preferredDistricts: safeArr(init?.preferredDistricts),
     expectedSalary: init?.expectedSalary || '₹15,000 - ₹25,000',
     languagesKnown: safeArr(init?.languagesKnown),
-    education: safeArr(init?.education).length ? init.education : [{ institution: '', course: '' }],
+    education: safeArr(init?.education).length ? init.education.map(normalizeEducationItem) : [{ institution: '', customInstitution: '', course: '', customCourse: '' }],
     technical: safeArr(init?.technical).length ? init.technical : [{ institution: '', course: '' }],
     experience: safeArr(init?.experience).length ? init.experience.map(normalizeExperienceItem) : [{ institution: '', role: '', fromYear: '', toYear: '' }],
   };
@@ -369,6 +381,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         const p = JSON.parse(s);
         ['jobRoles', 'preferredDistricts', 'languagesKnown', 'education', 'technical', 'experience']
           .forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
+        p.education = p.education.map(normalizeEducationItem);
         p.experience = p.experience.map(normalizeExperienceItem);
         p.phoneNumber1 = verifiedPhone || p.phoneNumber1;
         if (p.presentStreet1 === undefined) {
@@ -478,7 +491,10 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   });
   const addRow = (tbl) => setForm(p => ({
     ...p, [tbl]: [...p[tbl],
-    tbl === 'experience' ? { institution: '', role: '', fromYear: '', toYear: '' } : { institution: '', course: '' }]
+    tbl === 'experience' 
+      ? { institution: '', role: '', fromYear: '', toYear: '' } 
+      : { institution: '', customInstitution: '', course: '', customCourse: '' }
+    ]
   }));
   const delRow = (tbl, i) => setForm(p => ({ ...p, [tbl]: p[tbl].filter((_, j) => j !== i) }));
 
@@ -588,7 +604,13 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           expectedSalary: form.expectedSalary || '',
         };
       } else {
-        payload = form;
+        payload = {
+          ...form,
+          education: (form.education || []).map(r => ({
+            institution: r.institution === "Other" ? (r.customInstitution || "Other") : r.institution,
+            course: r.course === "Other" ? (r.customCourse || "Other") : r.course
+          }))
+        };
       }
       const res = await fetch(`${backendUrl}/candidate/save-wizard-step`, {
         method: 'POST',
@@ -638,6 +660,10 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     localStorage.removeItem(rolesKey);
     onFinalizeSubmit({
       ...form,
+      education: (form.education || []).map(r => ({
+        institution: r.institution === "Other" ? (r.customInstitution || "Other") : r.institution,
+        course: r.course === "Other" ? (r.customCourse || "Other") : r.course
+      })),
       presentAddress: composeAddr(form.presentStreet1, form.presentStreet2),
       presentDistrict: form.presentCity,
       permanentAddress: sameAddr
@@ -685,7 +711,11 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <table className="responsive-table">
               <thead><tr><th className="table-cell--small">#</th><th>Institution</th><th>Course</th></tr></thead>
               <tbody>{form.education.filter(r => r.institution).map((r, i) => (
-                <tr key={i}><td>{i + 1}</td><td>{r.institution}</td><td>{r.course}</td></tr>
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td>{r.institution === "Other" ? (r.customInstitution || "Other") : r.institution}</td>
+                  <td>{r.course === "Other" ? (r.customCourse || "Other") : r.course}</td>
+                </tr>
               ))}</tbody>
             </table>
           </div>
@@ -1109,17 +1139,24 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                         <input
                           type="text"
                           className="input input-inline"
-                          placeholder="Search college or type your own"
+                          placeholder="Search college..."
                           value={r.institution}
-                          onChange={e => updRow('education', i, 'institution', e.target.value)}
+                          onChange={e => {
+                            updRow('education', i, 'institution', e.target.value);
+                            if (!e.target.value) {
+                              updRow('education', i, 'customInstitution', '');
+                            }
+                          }}
                           onFocus={() => setActiveColSuggestIdx(i)}
                           onBlur={() => setTimeout(() => setActiveColSuggestIdx(null), 250)}
                           autoComplete="off"
                         />
-                        {activeColSuggestIdx === i && r.institution.trim() && (() => {
-                          const query = r.institution.trim().toLowerCase();
-                          const suggestions = TN_COLLEGES.filter(c => c.toLowerCase().includes(query)).slice(0, 5);
-                          if (suggestions.length === 0) return null;
+                        {activeColSuggestIdx === i && (() => {
+                          const query = (r.institution || '').trim().toLowerCase();
+                          const suggestions = query && query !== 'other'
+                            ? TN_COLLEGES.filter(c => c.toLowerCase().includes(query)).slice(0, 5)
+                            : TN_COLLEGES.slice(0, 5);
+
                           return (
                             <div className="search-dropdown-menu" style={{
                               position: 'absolute',
@@ -1131,45 +1168,77 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                               border: '1px solid #cbd5e1',
                               borderRadius: '6px',
                               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                              maxHeight: '180px',
+                              maxHeight: '220px',
                               overflowY: 'auto'
                             }}>
                               {suggestions.map(s => (
                                 <div
                                   key={s}
+                                  className="search-dropdown-item"
                                   style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', fontSize: '13px', textAlign: 'left', color: '#1e293b' }}
-                                  onMouseDown={() => updRow('education', i, 'institution', s)}
+                                  onMouseDown={() => {
+                                    updRow('education', i, 'institution', s);
+                                    updRow('education', i, 'customInstitution', '');
+                                  }}
                                 >
                                   {s}
                                 </div>
                               ))}
+                              <div
+                                className="search-dropdown-item custom-add-item"
+                                style={{
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  borderBottom: '1px solid #f1f5f9',
+                                  fontSize: '13px',
+                                  textAlign: 'left',
+                                  color: '#002db3',
+                                  fontWeight: 'bold',
+                                  background: '#eff6ff'
+                                }}
+                                onMouseDown={() => {
+                                  updRow('education', i, 'institution', 'Other');
+                                  updRow('education', i, 'customInstitution', '');
+                                }}
+                              >
+                                Other (Outside Tamil Nadu / Not in List)
+                              </div>
                             </div>
                           );
                         })()}
+                        {r.institution === 'Other' && (
+                          <input
+                            className="input input-inline"
+                            style={{ marginTop: '8px' }}
+                            placeholder="Enter school/college name"
+                            value={r.customInstitution || ''}
+                            onChange={e => updRow('education', i, 'customInstitution', e.target.value)}
+                          />
+                        )}
                       </td>
                       <td data-label="Course / Degree">
                         <select
                           className="select select-inline"
-                          value={COURSE_DEGREES.includes(r.course) ? r.course : (r.course ? "Other" : "")}
+                          value={r.course}
                           onChange={e => {
                             const val = e.target.value;
-                            if (val === "Other") {
-                              updRow('education', i, 'course', "Other");
-                            } else {
-                              updRow('education', i, 'course', val);
+                            updRow('education', i, 'course', val);
+                            if (val !== "Other") {
+                              updRow('education', i, 'customCourse', '');
                             }
                           }}
                         >
                           <option value="">Select Course / Degree</option>
                           {COURSE_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                          <option value="Other">Other</option>
                         </select>
-                        {(r.course === "Other" || (!COURSE_DEGREES.includes(r.course) && r.course)) && (
+                        {r.course === "Other" && (
                           <input
                             className="input input-inline"
                             style={{ marginTop: '8px' }}
                             placeholder="Enter course/degree name"
-                            value={r.course === "Other" ? "" : r.course}
-                            onChange={e => updRow('education', i, 'course', e.target.value)}
+                            value={r.customCourse || ''}
+                            onChange={e => updRow('education', i, 'customCourse', e.target.value)}
                           />
                         )}
                       </td>
