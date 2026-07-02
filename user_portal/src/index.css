@@ -1509,6 +1509,7 @@ button { cursor: pointer; }
   height: 0;
   transform: translateY(-50%);
   -webkit-appearance: none;
+  appearance: none;
   background: none;
   pointer-events: none;
   z-index: 3;
@@ -1523,6 +1524,7 @@ button { cursor: pointer; }
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   -webkit-appearance: none;
+  appearance: none;
   pointer-events: auto;
   transition: transform 0.1s ease;
 }
