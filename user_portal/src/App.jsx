@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import LoginCard from './components/LoginCard';
 import ProfileWizard from './components/ProfileWizard';
 import DigitalResume from './components/DigitalResume';
@@ -9,7 +9,7 @@ import EmployerDashboard from './components/EmployerDashboard';
 const BACKEND = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
 
 /**
- * Decode a JWT payload to check expiration (client-side only, no signature check).
+ * DecodeaJWT payload to check expiration (client-side only, no signature check).
  */
 function isTokenExpired(token) {
   if (!token) return true;
