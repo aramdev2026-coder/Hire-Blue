@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PhoneCall } from 'lucide-react';
 
 export default function LoginCard({ backendUrl, onAuthSuccess }) {
   const [phone, setPhone] = useState('');
@@ -57,7 +58,10 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
           <div className="field">
             <label className="field-label">Mobile Number *</label>
             <div className="input-prefix-wrapper">
-              <span className="input-prefix">+91</span>
+              <span className="input-prefix" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PhoneCall size={16} style={{ opacity: 0.7 }} />
+                <span>+91</span>
+              </span>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -67,6 +71,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
                 onChange={(e) => { setError(''); setPhone(e.target.value.replace(/\D/g, '')); }}
                 autoFocus
                 className={`input input-with-prefix ${error ? 'input-error' : ''}`}
+                style={{ paddingLeft: '72px' }}
               />
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Edit, FileText, Download } from 'lucide-react';
 
 export default function DigitalResume({ verifiedPhone, profileData: p, onTriggerEdit }) {
   const safeArr = v => Array.isArray(v) ? v : [];
@@ -229,14 +230,17 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
       <div className="resume-footer">
         <p className="no-print">Your data is securely finalized. Administrators will review your preferences shortly.</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '1rem' }} className="no-print">
-          <button type="button" className="button button-primary resume-action" onClick={onTriggerEdit}>
-            Edit Profile
+          <button type="button" className="button button-primary resume-action" onClick={onTriggerEdit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <Edit size={16} />
+            <span>Edit Profile</span>
           </button>
-          <button type="button" className="button button-secondary resume-action" onClick={() => window.print()}>
-            Download PDF
+          <button type="button" className="button button-secondary resume-action" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <FileText size={16} />
+            <span>Download PDF</span>
           </button>
-          <button type="button" className="button button-ghost resume-action" onClick={downloadTextResume}>
-            Download TXT
+          <button type="button" className="button button-ghost resume-action" onClick={downloadTextResume} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <Download size={16} />
+            <span>Download TXT</span>
           </button>
         </div>
       </div>

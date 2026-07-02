@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { User, Briefcase, GraduationCap, Trash2, Plus } from 'lucide-react';
 
 const ALL_JOB_ROLES = [
   "Agricultural Laborer",
@@ -749,7 +750,12 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       <div className="wizard-header">
         <div>
           <div className="wizard-step-label">Step {step} of 3</div>
-          <div className="wizard-title">{STEP_NAMES[step - 1]}</div>
+          <div className="wizard-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {step === 1 && <User size={20} />}
+            {step === 2 && <Briefcase size={20} />}
+            {step === 3 && <GraduationCap size={20} />}
+            <span>{STEP_NAMES[step - 1]}</span>
+          </div>
         </div>
         <div className="step-indicator">
           {[1, 2, 3].map(s => (
@@ -1243,14 +1249,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                         )}
                       </td>
                       <td data-label=" " className="text-center">
-                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('education', i)}>Remove</button>
+                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('education', i)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}>
+                          <Trash2 size={14} />
+                          Remove
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" className="button button-ghost button-small" onClick={() => addRow('education')}>Add Row</button>
+            <button type="button" className="button button-ghost button-small" onClick={() => addRow('education')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
+              <Plus size={16} />
+              Add Row
+            </button>
 
             <div className="section-heading">Technical Qualifications</div>
             <div className="table-wrapper">
@@ -1266,14 +1278,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                       <td data-label="Institution"><input className="input input-inline" placeholder="Institute name" value={r.institution} onChange={e => updRow('technical', i, 'institution', e.target.value)} /></td>
                       <td data-label="Course / Certificate"><input className="input input-inline" placeholder="e.g. Tally ERP" value={r.course} onChange={e => updRow('technical', i, 'course', e.target.value)} /></td>
                       <td data-label=" " className="text-center">
-                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('technical', i)}>Remove</button>
+                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('technical', i)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}>
+                          <Trash2 size={14} />
+                          Remove
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" className="button button-ghost button-small" onClick={() => addRow('technical')}>Add Row</button>
+            <button type="button" className="button button-ghost button-small" onClick={() => addRow('technical')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
+              <Plus size={16} />
+              Add Row
+            </button>
 
             <div className="section-heading">Work Experience</div>
             <div className="table-wrapper">
@@ -1293,14 +1311,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                       <td data-label="From"><input className="input input-inline" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="YYYY" value={r.fromYear || ''} onChange={e => updRow('experience', i, 'fromYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
                       <td data-label="To"><input className="input input-inline" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="YYYY" value={r.toYear || ''} onChange={e => updRow('experience', i, 'toYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
                       <td data-label=" " className="text-center">
-                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('experience', i)}>Remove</button>
+                        <button type="button" className="button button-ghost button-small" onClick={() => delRow('experience', i)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}>
+                          <Trash2 size={14} />
+                          Remove
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" className="button button-ghost button-small" onClick={() => addRow('experience')}>Add Row</button>
+            <button type="button" className="button button-ghost button-small" onClick={() => addRow('experience')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px' }}>
+              <Plus size={16} />
+              Add Row
+            </button>
           </>)}
         </div>
 

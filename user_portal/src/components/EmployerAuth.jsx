@@ -46,7 +46,7 @@ export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
 
   return (
     <div className="auth-shell">
-      <div className="auth-card text-center">
+      <div className="auth-card auth-card--employer text-center">
         <img src="/favicon.png" alt="Aram FTC Logo" className="brand-logo" style={{ margin: '0 auto 16px', display: 'block' }} />
         <div className="auth-tab-switch">
           <button
