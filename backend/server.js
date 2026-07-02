@@ -20,6 +20,7 @@ import createEmployerRoutes from './routes/employerRoutes.js';
 
 const { PrismaClient } = pkg;
 const app = express();
+app.set('trust proxy', 1);
 const prisma = new PrismaClient();
 
 // ============================================================================
