@@ -47,7 +47,10 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
           Pending placement call
         </div>
         <h2 className="resume-hero-title">{p?.fullName || 'Your Profile'}</h2>
-        <p className="resume-hero-subtitle">+91 {verifiedPhone}</p>
+        <p className="resume-hero-subtitle">
+          +91 {verifiedPhone}
+          {p?.emailId && <span className="print-only-inline"> | {p.emailId}</span>}
+        </p>
       </div>
 
       <div className="resume-body">
@@ -78,33 +81,36 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
           {safeArr(p?.jobRoles).length > 0 && (
             <div className="mt-16">
               <p className="resume-detail-label">Job Roles</p>
-              <div className="badge-list">
+              <div className="badge-list no-print">
                 {p.jobRoles.map(r => (
                   <span key={r} className="badge badge--primary">{r}</span>
                 ))}
               </div>
+              <p className="print-only print-text-list">{p.jobRoles.join(', ')}</p>
             </div>
           )}
 
           {safeArr(p?.preferredDistricts).length > 0 && (
             <div className="mt-16">
               <p className="resume-detail-label">Preferred Districts</p>
-              <div className="badge-list">
+              <div className="badge-list no-print">
                 {p.preferredDistricts.map(d => (
                   <span key={d} className="badge badge--muted">{d}</span>
                 ))}
               </div>
+              <p className="print-only print-text-list">{p.preferredDistricts.join(', ')}</p>
             </div>
           )}
 
           {safeArr(p?.languagesKnown).length > 0 && (
             <div className="mt-16">
               <p className="resume-detail-label">Languages Known</p>
-              <div className="badge-list">
+              <div className="badge-list no-print">
                 {p.languagesKnown.map(l => (
                   <span key={l} className="badge badge--success">{l}</span>
                 ))}
               </div>
+              <p className="print-only print-text-list">{p.languagesKnown.join(', ')}</p>
             </div>
           )}
         </div>
@@ -112,7 +118,7 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
         {safeArr(p?.education).some(r => r.institution) && (
           <div className="resume-section">
             <div className="resume-section-title">Education</div>
-            <div className="table-wrapper">
+            <div className="table-wrapper no-print">
               <table className="responsive-table">
                 <thead>
                   <tr>
@@ -132,13 +138,21 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
                 </tbody>
               </table>
             </div>
+            <div className="print-only print-list">
+              {p.education.filter(r => r.institution).map((r, i) => (
+                <div key={i} className="print-list-item">
+                  <span className="print-item-left">{r.course}</span>
+                  <span className="print-item-right">{r.institution}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {safeArr(p?.technical).some(r => r.institution) && (
           <div className="resume-section">
             <div className="resume-section-title">Technical Qualifications</div>
-            <div className="table-wrapper">
+            <div className="table-wrapper no-print">
               <table className="responsive-table">
                 <thead>
                   <tr>
@@ -158,13 +172,21 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
                 </tbody>
               </table>
             </div>
+            <div className="print-only print-list">
+              {p.technical.filter(r => r.institution).map((r, i) => (
+                <div key={i} className="print-list-item">
+                  <span className="print-item-left">{r.course}</span>
+                  <span className="print-item-right">{r.institution}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {safeArr(p?.experience).some(r => r.institution) && (
           <div className="resume-section">
             <div className="resume-section-title">Work Experience</div>
-            <div className="table-wrapper">
+            <div className="table-wrapper no-print">
               <table className="responsive-table">
                 <thead>
                   <tr>
@@ -187,6 +209,18 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="print-only print-list">
+              {p.experience.filter(r => r.institution).map((r, i) => (
+                <div key={i} className="print-list-item">
+                  <span className="print-item-left">
+                    {r.role ? `${r.role}, ` : ''}{r.institution}
+                  </span>
+                  <span className="print-item-right">
+                    {r.fromYear} – {r.toYear}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -234,7 +234,13 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
               <Field label="Salary Expectation" required error={errors.expectedSalary}>
                 <select className={inputCls(errors.expectedSalary)} value={form.expectedSalary} onChange={(e) => upd('expectedSalary', e.target.value)}>
                   <option value="">Select range</option>
-                  {SALARY_RANGES.map((r) => <option key={r}>{r}</option>)}
+                  {(() => {
+                    const optionsList = [...SALARY_RANGES];
+                    if (form.expectedSalary && !optionsList.includes(form.expectedSalary)) {
+                      optionsList.push(form.expectedSalary);
+                    }
+                    return optionsList.map((r) => <option key={r} value={r}>{r}</option>);
+                  })()}
                 </select>
               </Field>
 

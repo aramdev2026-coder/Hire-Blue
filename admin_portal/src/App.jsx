@@ -94,9 +94,15 @@ export default function App() {
       const data = await apiFetch(path);
       let list = data.candidates || [];
       if (sortBy === 'salary') {
+        const parseSalaryValue = (val) => {
+          if (!val) return 0;
+          const numPart = val.split('-')[0] || '';
+          const digits = numPart.replace(/\D/g, '');
+          return parseInt(digits, 10) || 0;
+        };
         list = [...list].sort((a, b) => {
-          const aVal = parseInt(a.expectedSalary?.split('-')[0] || 0, 10);
-          const bVal = parseInt(b.expectedSalary?.split('-')[0] || 0, 10);
+          const aVal = parseSalaryValue(a.expectedSalary);
+          const bVal = parseSalaryValue(b.expectedSalary);
           return bVal - aVal;
         });
       }

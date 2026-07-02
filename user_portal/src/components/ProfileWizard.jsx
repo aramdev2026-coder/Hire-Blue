@@ -99,8 +99,37 @@ const HIGH_DEMAND_ROLES = [
   'Production Follow-up'
 ];
 
-const SALARY_RANGES = ['₹10,000 – ₹15,000', '₹15,000 – ₹20,000', '₹20,000 – ₹25,000',
-  '₹25,000 – ₹30,000', '₹30,000 – ₹35,000', '₹35,000 – ₹40,000'];
+const SALARY_STEPS = [
+  10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 40000, 45000, 50000,
+  60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 200000, 220000, 250000, 275000, 300000, 330000, 350000, 375000, 400000, 425000, 450000, 475000, 500000
+];
+
+const parseSalaryRange = (salaryStr) => {
+  const defaultMin = 15000;
+  const defaultMax = 25000;
+  if (!salaryStr) return { minVal: defaultMin, maxVal: defaultMax };
+
+  const numbers = salaryStr.match(/\d[\d,.]*/g);
+  if (!numbers || numbers.length === 0) return { minVal: defaultMin, maxVal: defaultMax };
+
+  const minParsed = parseInt(numbers[0].replace(/,/g, ''), 10) || defaultMin;
+  const maxParsed = numbers[1] ? (parseInt(numbers[1].replace(/,/g, ''), 10) || defaultMax) : minParsed;
+
+  return { minVal: minParsed, maxVal: maxParsed };
+};
+
+const findClosestIdx = (val) => {
+  let closestIdx = 0;
+  let minDiff = Math.abs(SALARY_STEPS[0] - val);
+  for (let i = 1; i < SALARY_STEPS.length; i++) {
+    const diff = Math.abs(SALARY_STEPS[i] - val);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIdx = i;
+    }
+  }
+  return closestIdx;
+};
 const LANGUAGES = ['Tamil', 'English', 'Hindi', 'Malayalam', 'Telugu', 'Kannada', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Odia', 'Assamese', 'Urdu', 'Sanskrit', 'Konkani', 'Kashmiri'];
 const TN_DISTRICTS = ['Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 'Dharmapuri',
   'Dindigul', 'Erode', 'Kallakurichi', 'Kancheepuram', 'Karur', 'Krishnagiri', 'Madurai',
@@ -108,6 +137,128 @@ const TN_DISTRICTS = ['Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cudd
   'Ramanathapuram', 'Ranipet', 'Salem', 'Sivaganga', 'Tenkasi', 'Thanjavur', 'Theni',
   'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 'Tirupathur', 'Tiruppur', 'Tiruvallur',
   'Tiruvannamalai', 'Tiruvarur', 'Vellore', 'Viluppuram', 'Virudhunagar'];
+const COURSE_DEGREES = [
+  "SSLC (10th)",
+  "HSC (12th)",
+  "ITI",
+  "Diploma",
+  "B.A.",
+  "B.Sc.",
+  "B.Com.",
+  "B.B.A.",
+  "B.C.A.",
+  "B.E. / B.Tech.",
+  "M.A.",
+  "M.Sc.",
+  "M.Com.",
+  "M.B.A.",
+  "M.C.A.",
+  "Other"
+];
+
+const TN_COLLEGES = [
+  "Anna University, Chennai",
+  "Madras University, Chennai",
+  "Bharathiar University, Coimbatore",
+  "Madurai Kamaraj University, Madurai",
+  "Bharathidasan University, Tiruchirappalli",
+  "Manonmaniam Sundaranar University, Tirunelveli",
+  "Alagappa University, Karaikudi",
+  "Annamalai University, Chidambaram",
+  "Periyar University, Salem",
+  "Thiruvalluvar University, Vellore",
+  "Tamil Nadu Agricultural University (TNAU), Coimbatore",
+  "Tamil Nadu Veterinary and Animal Sciences University (TANUVAS), Chennai",
+  "Tamil Nadu Dr. M.G.R. Medical University, Chennai",
+  "Tamil Nadu Dr. Ambedkar Law University, Chennai",
+  "Tamil Nadu Physical Education and Sports University, Chennai",
+  "Tamil University, Thanjavur",
+  "Gandhigram Rural Institute, Dindigul",
+  "Sathyabama Institute of Science and Technology, Chennai",
+  "SRM Institute of Science and Technology, Chennai",
+  "VIT University, Vellore",
+  "Amrita Vishwa Vidyapeetham, Coimbatore",
+  "SASTRA Deemed University, Thanjavur",
+  "Kalasalingam Academy of Research and Education, Srivilliputhur",
+  "Karunya Institute of Technology and Sciences, Coimbatore",
+  "B.S. Abdur Rahman Crescent Institute of Science and Technology, Chennai",
+  "Vinayaka Mission's Research Foundation, Salem",
+  "Avinashilingam Institute for Home Science and Higher Education for Women, Coimbatore",
+  "Loyola College, Chennai",
+  "Madras Christian College (MCC), Chennai",
+  "Presidency College, Chennai",
+  "St. Joseph's College, Tiruchirappalli",
+  "American College, Madurai",
+  "PSG College of Arts and Science, Coimbatore",
+  "Stella Maris College, Chennai",
+  "Women's Christian College (WCC), Chennai",
+  "Ethiraj College for Women, Chennai",
+  "Bishop Heber College, Tiruchirappalli",
+  "Jamal Mohamed College, Tiruchirappalli",
+  "National College, Tiruchirappalli",
+  "Government Arts College, Coimbatore",
+  "Government Arts College, Salem",
+  "Government Arts College, Kumbakonam",
+  "Government Arts College, Nandanam, Chennai",
+  "Queen Mary's College, Chennai",
+  "Sacred Heart College, Tirupattur",
+  "Sourashtra College, Madurai",
+  "Thiagarajar College, Madurai",
+  "Lady Doak College, Madurai",
+  "Madura College, Madurai",
+  "Sri Ramakrishna Mission Vidyalaya College of Arts and Science, Coimbatore",
+  "Kongu Arts and Science College, Erode",
+  "Vellalar College for Women, Erode",
+  "Bishop Appasamy College of Arts and Science, Coimbatore",
+  "Gobi Arts & Science College, Gobichettipalayam",
+  "Ayya Nadar Janaki Ammal College, Sivakasi",
+  "Standard Fireworks Rajaratnam College for Women, Sivakasi",
+  "Sarah Tucker College, Tirunelveli",
+  "St. Xavier's College, Palayamkottai",
+  "Sadakathullah Appa College, Tirunelveli",
+  "College of Engineering, Guindy (CEG), Chennai",
+  "Madras Institute of Technology (MIT), Chromepet, Chennai",
+  "Alagappa Chettiar Government College of Engineering and Technology, Karaikudi",
+  "Government College of Technology (GCT), Coimbatore",
+  "PSG College of Technology, Coimbatore",
+  "Thiagarajar College of Engineering (TCE), Madurai",
+  "Coimbatore Institute of Technology (CIT), Coimbatore",
+  "Government College of Engineering, Salem",
+  "Government College of Engineering, Tirunelveli",
+  "Government College of Engineering, Bargur",
+  "Government College of Engineering, Bodinayakkanur",
+  "Government College of Engineering, Srirangam",
+  "National Institute of Technology (NIT), Tiruchirappalli",
+  "Indian Institute of Technology (IIT), Madras",
+  "Kongu Engineering College, Erode",
+  "Bannari Amman Institute of Technology, Sathyamangalam",
+  "K.L.N. College of Engineering, Madurai",
+  "Mepco Schlenk Engineering College, Sivakasi",
+  "Sri Sivasubramaniya Nadar (SSN) College of Engineering, Chennai",
+  "St. Joseph's College of Engineering, Chennai",
+  "Rajalakshmi Engineering College, Chennai",
+  "Easwari Engineering College, Chennai",
+  "Sri Krishna College of Engineering and Technology, Coimbatore",
+  "Kumaraguru College of Technology, Coimbatore",
+  "Sona College of Technology, Salem",
+  "Francis Xavier Engineering College, Tirunelveli",
+  "National Engineering College, Kovilpatti",
+  "PSNA College of Engineering and Technology, Dindigul",
+  "Central Polytechnic College, Chennai",
+  "Government Polytechnic College, Coimbatore",
+  "Government Polytechnic College, Madurai",
+  "Government Polytechnic College, Tiruchirappalli",
+  "Government Polytechnic College, Tuticorin",
+  "Government Polytechnic College, Nagercoil",
+  "Government Polytechnic College, Krishnagiri",
+  "PSG Polytechnic College, Coimbatore",
+  "Murugappa Polytechnic College, Chennai",
+  "Government Industrial Training Institute (ITI), Guindy, Chennai",
+  "Government Industrial Training Institute (ITI), Coimbatore",
+  "Government Industrial Training Institute (ITI), Madurai",
+  "Government Industrial Training Institute (ITI), Trichy"
+];
+
 const STEP_NAMES = ['Personal Details', 'Job Preferences', 'Education & Experience'];
 
 function Lbl({ children, req }) {
@@ -185,7 +336,7 @@ function buildInit(init, phone) {
     permanentAddress: init?.permanentAddress || fallbackPermanentAddress,
     jobRoles: safeArr(init?.jobRoles),
     preferredDistricts: safeArr(init?.preferredDistricts),
-    expectedSalary: init?.expectedSalary || '',
+    expectedSalary: init?.expectedSalary || '₹15,000 - ₹25,000',
     languagesKnown: safeArr(init?.languagesKnown),
     education: safeArr(init?.education).length ? init.education : [{ institution: '', course: '' }],
     technical: safeArr(init?.technical).length ? init.technical : [{ institution: '', course: '' }],
@@ -265,6 +416,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const [errors, setErrors] = React.useState({});
   const [serverErr, setServerErr] = React.useState('');
   const [saving, setSaving] = React.useState(false);
+  const [activeColSuggestIdx, setActiveColSuggestIdx] = React.useState(null);
 
   React.useEffect(() => {
     localStorage.setItem(draftKey, JSON.stringify(form));
@@ -380,6 +532,18 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       }
       if (!form.sex) e.sex = 'Please select a gender';
       if (!form.maritalStatus) e.maritalStatus = 'Please select marital status';
+      if (!form.phoneNumber2) {
+        e.phoneNumber2 = 'Alternate mobile number is required';
+      } else if (!/^[6-9]\d{9}$/.test(form.phoneNumber2)) {
+        e.phoneNumber2 = 'Enter a valid 10-digit mobile number';
+      } else if (form.phoneNumber2 === form.phoneNumber1) {
+        e.phoneNumber2 = 'Alternate mobile number must be different from primary mobile';
+      }
+      if (!form.emailId) {
+        e.emailId = 'Email address is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailId)) {
+        e.emailId = 'Enter a valid email address';
+      }
       if (!form.presentStreet1.trim()) e.presentStreet1 = 'Street address is required';
       if (!form.presentCity) e.presentCity = 'City / Town is required';
       if (!sameAddr) {
@@ -593,16 +757,16 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                   <option value="">Select</option><option>Single</option><option>Married</option><option>Widowed</option><option>Divorced</option>
                 </select>
               </Field>
-              <Field label="Alternate Mobile">
-                <input className="input" type="tel" maxLength={10} placeholder="Optional"
+              <Field label="Alternate Mobile" req error={errors.phoneNumber2}>
+                <input className={`input${errors.phoneNumber2 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
                   value={form.phoneNumber2} onChange={e => upd('phoneNumber2', e.target.value.replace(/\D/g, ''))} />
               </Field>
               <Field label="Family Contact">
                 <input className="input" type="tel" maxLength={10} placeholder="Optional"
                   value={form.familyPhonePrimary} onChange={e => upd('familyPhonePrimary', e.target.value.replace(/\D/g, ''))} />
               </Field>
-              <Field label="Email Address">
-                <input className="input" type="email" placeholder="Optional"
+              <Field label="Email Address" req error={errors.emailId}>
+                <input className={`input${errors.emailId ? ' input-error' : ''}`} type="email" placeholder="e.g. name@domain.com"
                   value={form.emailId} onChange={e => upd('emailId', e.target.value)} />
               </Field>
               <Field label="Secondary Email">
@@ -850,11 +1014,66 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
 
             <div className="mt-12">
               <Field label="Monthly Salary Expectation" req error={errors.expectedSalary}>
-                <select className={`select${errors.expectedSalary ? ' select-error' : ''}`}
-                  value={form.expectedSalary} onChange={e => upd('expectedSalary', e.target.value)}>
-                  <option value="">Select a range</option>
-                  {SALARY_RANGES.map(r => <option key={r}>{r}</option>)}
-                </select>
+                {(() => {
+                  const { minVal, maxVal } = parseSalaryRange(form.expectedSalary);
+                  const minIdx = findClosestIdx(minVal);
+                  const maxIdx = findClosestIdx(maxVal);
+
+                  const handleMinSliderChange = (e) => {
+                    const newMinIdx = Math.min(parseInt(e.target.value, 10), maxIdx - 1);
+                    const formattedSalary = `₹${SALARY_STEPS[newMinIdx].toLocaleString('en-IN')} - ₹${SALARY_STEPS[maxIdx].toLocaleString('en-IN')}`;
+                    upd('expectedSalary', formattedSalary);
+                  };
+
+                  const handleMaxSliderChange = (e) => {
+                    const newMaxIdx = Math.max(parseInt(e.target.value, 10), minIdx + 1);
+                    const formattedSalary = `₹${SALARY_STEPS[minIdx].toLocaleString('en-IN')} - ₹${SALARY_STEPS[newMaxIdx].toLocaleString('en-IN')}`;
+                    upd('expectedSalary', formattedSalary);
+                  };
+
+                  const leftPercent = (minIdx / (SALARY_STEPS.length - 1)) * 100;
+                  const rightPercent = (maxIdx / (SALARY_STEPS.length - 1)) * 100;
+
+                  return (
+                    <div className="salary-slider-wrapper">
+                      <div className="salary-display">
+                        {form.expectedSalary || `₹${minVal.toLocaleString('en-IN')} - ₹${maxVal.toLocaleString('en-IN')}`}
+                      </div>
+
+                      <div className="range-slider-container">
+                        <div className="range-slider-track" />
+                        <div
+                          className="range-slider-highlight"
+                          style={{
+                            left: `${leftPercent}%`,
+                            width: `${rightPercent - leftPercent}%`
+                          }}
+                        />
+                        <input
+                          type="range"
+                          min={0}
+                          max={SALARY_STEPS.length - 1}
+                          value={minIdx}
+                          onChange={handleMinSliderChange}
+                          className="range-slider-input"
+                        />
+                        <input
+                          type="range"
+                          min={0}
+                          max={SALARY_STEPS.length - 1}
+                          value={maxIdx}
+                          onChange={handleMaxSliderChange}
+                          className="range-slider-input"
+                        />
+                      </div>
+
+                      <div className="salary-labels">
+                        <span>Min: ₹10,000</span>
+                        <span>Max: ₹5,00,000</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </Field>
             </div>
 
@@ -886,8 +1105,74 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 <tbody>
                   {form.education.map((r, i) => (
                     <tr key={i}>
-                      <td data-label="Institution"><input className="input input-inline" placeholder="School / College" value={r.institution} onChange={e => updRow('education', i, 'institution', e.target.value)} /></td>
-                      <td data-label="Course / Degree"><input className="input input-inline" placeholder="e.g. B.Sc Chemistry" value={r.course} onChange={e => updRow('education', i, 'course', e.target.value)} /></td>
+                      <td data-label="Institution" style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="input input-inline"
+                          placeholder="Search college or type your own"
+                          value={r.institution}
+                          onChange={e => updRow('education', i, 'institution', e.target.value)}
+                          onFocus={() => setActiveColSuggestIdx(i)}
+                          onBlur={() => setTimeout(() => setActiveColSuggestIdx(null), 250)}
+                          autoComplete="off"
+                        />
+                        {activeColSuggestIdx === i && r.institution.trim() && (() => {
+                          const query = r.institution.trim().toLowerCase();
+                          const suggestions = TN_COLLEGES.filter(c => c.toLowerCase().includes(query)).slice(0, 5);
+                          if (suggestions.length === 0) return null;
+                          return (
+                            <div className="search-dropdown-menu" style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              zIndex: 100,
+                              background: '#ffffff',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              maxHeight: '180px',
+                              overflowY: 'auto'
+                            }}>
+                              {suggestions.map(s => (
+                                <div
+                                  key={s}
+                                  style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', fontSize: '13px', textAlign: 'left', color: '#1e293b' }}
+                                  onMouseDown={() => updRow('education', i, 'institution', s)}
+                                >
+                                  {s}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td data-label="Course / Degree">
+                        <select
+                          className="select select-inline"
+                          value={COURSE_DEGREES.includes(r.course) ? r.course : (r.course ? "Other" : "")}
+                          onChange={e => {
+                            const val = e.target.value;
+                            if (val === "Other") {
+                              updRow('education', i, 'course', "Other");
+                            } else {
+                              updRow('education', i, 'course', val);
+                            }
+                          }}
+                        >
+                          <option value="">Select Course / Degree</option>
+                          {COURSE_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                        {(r.course === "Other" || (!COURSE_DEGREES.includes(r.course) && r.course)) && (
+                          <input
+                            className="input input-inline"
+                            style={{ marginTop: '8px' }}
+                            placeholder="Enter course/degree name"
+                            value={r.course === "Other" ? "" : r.course}
+                            onChange={e => updRow('education', i, 'course', e.target.value)}
+                          />
+                        )}
+                      </td>
                       <td data-label=" " className="text-center">
                         <button type="button" className="button button-ghost button-small" onClick={() => delRow('education', i)}>Remove</button>
                       </td>
@@ -936,8 +1221,8 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                     <tr key={i}>
                       <td data-label="Organisation"><input className="input input-inline" placeholder="Company" value={r.institution} onChange={e => updRow('experience', i, 'institution', e.target.value)} /></td>
                       <td data-label="Role"><input className="input input-inline" placeholder="Job Title" value={r.role || ''} onChange={e => updRow('experience', i, 'role', e.target.value)} /></td>
-                      <td data-label="From"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.fromYear || ''} onChange={e => updRow('experience', i, 'fromYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
-                      <td data-label="To"><input className="input input-inline" type="number" min="1900" max="2099" placeholder="YYYY" value={r.toYear || ''} onChange={e => updRow('experience', i, 'toYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
+                      <td data-label="From"><input className="input input-inline" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="YYYY" value={r.fromYear || ''} onChange={e => updRow('experience', i, 'fromYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
+                      <td data-label="To"><input className="input input-inline" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="YYYY" value={r.toYear || ''} onChange={e => updRow('experience', i, 'toYear', e.target.value.replace(/\D/g, '').slice(0, 4))} /></td>
                       <td data-label=" " className="text-center">
                         <button type="button" className="button button-ghost button-small" onClick={() => delRow('experience', i)}>Remove</button>
                       </td>
