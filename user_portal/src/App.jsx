@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Search, UserCheck, Home, Car, ShieldCheck, TrendingUp } from 'lucide-react';
 import LoginCard from './components/LoginCard';
 import ProfileWizard from './components/ProfileWizard';
 import DigitalResume from './components/DigitalResume';
@@ -124,14 +125,16 @@ export default function App() {
     }
   };
 
+  const isLandingPage = (portalMode === 'CANDIDATE' && candView === 'LOGIN' && !candToken) || (portalMode === 'EMPLOYER' && !empToken);
+
   return (
     <div className="app-shell">
-      <header className="header">
+      <header className={`header ${isLandingPage ? 'landing-container-header-override' : ''}`}>
         <div className="brand">
           <img src="/favicon.png" alt="Aram Logo" className="brand-logo" />
           <div className="brand-copy">
-            <span className="brand-title">Aram FTC</span>
-            <span className="brand-subtitle">Candidate & Employer Portal</span>
+            <span className="brand-title" style={{ fontSize: '1.25rem', color: '#1e3a8a', fontWeight: '800' }}>ARAM FINTECH CONCEPT</span>
+            <span className="brand-subtitle" style={{ fontSize: '0.85rem', color: '#ea580c', fontWeight: '700', letterSpacing: '0.05em' }}>JOB TO SECURE LIFE</span>
           </div>
         </div>
 
@@ -155,30 +158,97 @@ export default function App() {
       </header>
 
       <main className="shell-content">
-        {portalMode === 'CANDIDATE' && (
+        {isLandingPage ? (
+          <div className="landing-container">
+            <div className="landing-services-card">
+              <h3 className="services-section-title">Aram Ecosystem Services</h3>
+              <p className="services-section-subtitle">Secure your life with integrated job opportunities, insurance, financial planning, and loans.</p>
+              <div className="services-grid">
+                <div className="service-card border-left-blue">
+                  <div className="service-icon-wrapper bg-blue-soft text-blue">
+                    <Search size={20} className="service-icon" />
+                  </div>
+                  <div>
+                    <div className="service-name">Job Search</div>
+                    <div className="service-desc">Find matching job opportunities.</div>
+                  </div>
+                </div>
+                <div className="service-card border-left-emerald">
+                  <div className="service-icon-wrapper bg-emerald-soft text-emerald">
+                    <UserCheck size={20} className="service-icon" />
+                  </div>
+                  <div>
+                    <div className="service-name">Employee Selection</div>
+                    <div className="service-desc">Hire verified candidates efficiently.</div>
+                  </div>
+                </div>
+                <div className="service-card border-left-amber">
+                  <div className="service-icon-wrapper bg-amber-soft text-amber">
+                    <Home size={20} className="service-icon" />
+                  </div>
+                  <div>
+                    <div className="service-name">Home Loan</div>
+                    <div className="service-desc">Get competitive rates pre-approved.</div>
+                  </div>
+                </div>
+                <div className="service-card border-left-rose">
+                  <div className="service-icon-wrapper bg-rose-soft text-rose">
+                    <Car size={20} className="service-icon" />
+                  </div>
+                  <div>
+                    <div className="service-name">2/4 Wheeler Loan</div>
+                    <div className="service-desc">Flexible vehicle financing options.</div>
+                  </div>
+                </div>
+                <div className="service-card border-left-violet">
+                  <div className="service-icon-wrapper bg-violet-soft text-violet">
+                    <ShieldCheck size={20} className="service-icon" />
+                  </div>
+                  <div>
+                    <div className="service-name">Insurance</div>
+                    <div className="service-desc">Protect family, health, and assets.</div>
+                  </div>
+                </div>
+                <div className="service-card border-left-cyan">
+                  <div className="service-icon-wrapper bg-cyan-soft text-cyan">
+                    <TrendingUp size={20} className="service-icon" />
+                  </div>
+                  <div>
+                    <div className="service-name">Investments</div>
+                    <div className="service-desc">Grow your wealth with tailored strategies.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="landing-auth-section">
+              {portalMode === 'CANDIDATE' ? (
+                <LoginCard backendUrl={BACKEND} onAuthSuccess={handleCandAuth} />
+              ) : (
+                <EmployerAuth backendUrl={BACKEND} onAuthSuccess={handleEmpAuth} />
+              )}
+            </div>
+          </div>
+        ) : (
           <>
-            {candView === 'LOGIN' && <LoginCard backendUrl={BACKEND} onAuthSuccess={handleCandAuth} />}
-            {candView === 'WIZARD' && (
-              <ProfileWizard
-                backendUrl={BACKEND}
-                candidateId={candId}
-                verifiedPhone={phone}
-                initialData={profile}
-                onFinalizeSubmit={handleCandFinalized}
-                authToken={candToken}
-              />
+            {portalMode === 'CANDIDATE' && (
+              <>
+                {candView === 'WIZARD' && (
+                  <ProfileWizard
+                    backendUrl={BACKEND}
+                    candidateId={candId}
+                    verifiedPhone={phone}
+                    initialData={profile}
+                    onFinalizeSubmit={handleCandFinalized}
+                    authToken={candToken}
+                  />
+                )}
+                {candView === 'DASHBOARD' && (
+                  <DigitalResume verifiedPhone={phone} profileData={profile} onTriggerEdit={() => setCandView('WIZARD')} />
+                )}
+              </>
             )}
-            {candView === 'DASHBOARD' && (
-              <DigitalResume verifiedPhone={phone} profileData={profile} onTriggerEdit={() => setCandView('WIZARD')} />
-            )}
-          </>
-        )}
 
-        {portalMode === 'EMPLOYER' && (
-          <>
-            {!empToken ? (
-              <EmployerAuth backendUrl={BACKEND} onAuthSuccess={handleEmpAuth} />
-            ) : (
+            {portalMode === 'EMPLOYER' && empToken && (
               <EmployerDashboard backendUrl={BACKEND} employerId={empId} companyName={empName} authToken={empToken} />
             )}
           </>

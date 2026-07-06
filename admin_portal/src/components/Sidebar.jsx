@@ -19,7 +19,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
 
   const navigationItems = [
     ...(isAdmin ? [
-      { id: 'verification', label: 'Company Verification', icon: Building2 },
+      { id: 'verification', label: 'Company Management', icon: Building2 },
       { id: 'tracker', label: 'Requirements Tracker', icon: FileSpreadsheet },
       { id: 'match', label: 'Match Engine Pipeline', icon: Briefcase },
       { id: 'assignment', label: 'Candidate Assignment', icon: UserPlus },

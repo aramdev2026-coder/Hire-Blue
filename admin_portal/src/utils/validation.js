@@ -2,7 +2,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[6-9]\d{9}$/;
 
 export function isValidEmail(email) {
-  return EMAIL_RE.test(String(email || '').trim().toLowerCase());
+  const val = String(email || '').trim().toLowerCase();
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const domainTypos = [
+    'gamil.com', 'gamil.co', 'gmaill.com', 'gmaile.com', 'gmile.com', 'gmail.con', 'gmail.col',
+    'yaho.com', 'yhoo.com', 'yahoo.co', 'hotmal.com', 'hotmale.com', 'outlok.com', 'outloock.com',
+    'gamil.in', 'gamil.net', 'gamil.org', 'yaho.in', 'yahoo.con', 'hotmail.con'
+  ];
+  if (!emailRegex.test(val)) return false;
+  const [localPart, domainPart] = val.split('@');
+  if (localPart.length > 5 && !/[aeiouy]/.test(localPart)) return false;
+  if (/([a-zA-Z0-9])\1{4,}/.test(localPart)) return false;
+  if (domainTypos.includes(domainPart)) return false;
+  return true;
 }
 
 export function isValidPhone(phone, { required = false } = {}) {
@@ -47,8 +59,12 @@ export function validateCandidateForm(form) {
   if (!isValidPhone(form.phoneNumber1, { required: true })) {
     errors.phoneNumber1 = 'Enter a valid 10-digit mobile number';
   }
-  if (form.phoneNumber2 && !isValidPhone(form.phoneNumber2)) {
+  if (!form.phoneNumber2) {
+    errors.phoneNumber2 = 'Alternate mobile number is required';
+  } else if (!isValidPhone(form.phoneNumber2)) {
     errors.phoneNumber2 = 'Enter a valid 10-digit mobile number';
+  } else if (form.phoneNumber2 === form.phoneNumber1) {
+    errors.phoneNumber2 = 'Alternate mobile number must be different from primary mobile';
   }
   if (form.familyPhonePrimary && !isValidPhone(form.familyPhonePrimary)) {
     errors.familyPhonePrimary = 'Enter a valid 10-digit mobile number';
@@ -56,14 +72,33 @@ export function validateCandidateForm(form) {
   if (form.familyPhoneBackup && !isValidPhone(form.familyPhoneBackup)) {
     errors.familyPhoneBackup = 'Enter a valid 10-digit mobile number';
   }
-  if (form.emailId?.trim() && !isValidEmail(form.emailId)) {
+  if (!form.emailId?.trim()) {
+    errors.emailId = 'Email address is required';
+  } else if (!isValidEmail(form.emailId)) {
     errors.emailId = 'Enter a valid email address';
   }
   if (form.secondaryEmailId?.trim() && !isValidEmail(form.secondaryEmailId)) {
     errors.secondaryEmailId = 'Enter a valid email address';
   }
-  if (!form.dob) errors.dob = 'Date of birth is required';
-  else if (new Date(form.dob).getFullYear() < 1900) errors.dob = 'Year cannot be before 1900';
+  if (!form.dob) {
+    errors.dob = 'Date of birth is required';
+  } else {
+    const birthDate = new Date(form.dob);
+    const dobYear = birthDate.getFullYear();
+    if (dobYear < 1900) {
+      errors.dob = 'Year cannot be before 1900';
+    } else {
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        errors.dob = 'Candidate must be at least 18 years old';
+      }
+    }
+  }
   if (!form.sex) errors.sex = 'Please select gender';
   if (!form.maritalStatus) errors.maritalStatus = 'Please select marital status';
   if (!form.presentStreet1?.trim()) errors.presentStreet1 = 'Street address is required';

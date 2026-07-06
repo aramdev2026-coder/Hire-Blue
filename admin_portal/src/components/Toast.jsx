@@ -18,7 +18,7 @@ export default function Toast({ error, successMessage, setError, setSuccessMessa
   }, [successMessage, setSuccessMessage]);
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-50 flex flex-col gap-3 max-w-full sm:max-w-md pointer-events-none">
+    <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-3 max-w-full sm:max-w-md pointer-events-none">
       
       {error && (
         <div className="pointer-events-auto bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3.5 rounded-xl flex items-start justify-between gap-3 shadow-lg backdrop-blur-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">

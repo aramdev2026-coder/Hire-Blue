@@ -4,7 +4,7 @@ import rateLimit from 'express-rate-limit';
 import env from '../config/env.js';
 import AppError from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { verifyPassword } from '../utils/password.js';
+import { verifyPassword, hashPassword } from '../utils/password.js';
 import { serializeAdminUser } from '../utils/serializers.js';
 
 export default function createAuthRoutes(prisma) {
@@ -70,6 +70,46 @@ export default function createAuthRoutes(prisma) {
       res.json({ success: true, user: serializeAdminUser(admin) });
     } catch (err) {
       // Re-throw if it's already an AppError (from invalid session), otherwise wrap token errors
+      if (err.isOperational) throw err;
+      throw new AppError('Invalid or expired token', 401);
+    }
+  }));
+
+  router.post('/change-password', asyncHandler(async (req, res) => {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      throw new AppError('Both old and new passwords are required', 400);
+    }
+
+    try {
+      const payload = jwt.verify(header.slice(7), env.JWT_SECRET);
+      const admin = await prisma.admin.findUnique({ where: { id: payload.id } });
+      if (!admin || !admin.isActive) {
+        throw new AppError('Invalid session', 401);
+      }
+
+      const valid = await verifyPassword(oldPassword, admin.password);
+      if (!valid) {
+        throw new AppError('Incorrect current password', 400);
+      }
+
+      if (newPassword.length < 6) {
+        throw new AppError('New password must be at least 6 characters', 400);
+      }
+
+      const hashed = await hashPassword(newPassword);
+      await prisma.admin.update({
+        where: { id: admin.id },
+        data: { password: hashed },
+      });
+
+      res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
       if (err.isOperational) throw err;
       throw new AppError('Invalid or expired token', 401);
     }

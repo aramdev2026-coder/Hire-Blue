@@ -29,7 +29,7 @@ export default function App() {
   const [successMessage, setSuccessMessage] = useState('');
 
   const [employers, setEmployers] = useState([]);
-  const [employers_filter, setEmployersFilter] = useState('PENDING_VERIFICATION');
+  const [employers_filter, setEmployersFilter] = useState('ACTIVE');
   const [candidates, setCandidates] = useState([]);
   const [candidates_filter, setCandidatesFilter] = useState('PENDING_ADMIN_CALL');
   const [sortBy, setSortBy] = useState('name');
@@ -84,7 +84,7 @@ export default function App() {
     setError('');
     try {
       const query = new URLSearchParams();
-      if (candidates_filter) query.append('status', candidates_filter);
+      if (candidates_filter && !isSubAdmin) query.append('status', candidates_filter);
       if (searchQuery) query.append('search', searchQuery);
 
       const path = isSubAdmin
@@ -309,8 +309,15 @@ export default function App() {
   };
 
   const handleAddCandidate = async (data) => {
-    await apiFetch('/api/sub-admin/candidates', { method: 'POST', body: JSON.stringify(data) });
-    setSuccessMessage('Candidate added');
+    try {
+      setError('');
+      await apiFetch('/api/sub-admin/candidates', { method: 'POST', body: JSON.stringify(data) });
+      setSuccessMessage('Candidate added');
+      fetchCandidates();
+    } catch (err) {
+      setError(err.message || 'Failed to add candidate');
+      throw err;
+    }
   };
 
   const handleAddNote = async (candidateId, note, callbackScheduledFor) => {

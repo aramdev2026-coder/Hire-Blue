@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+/* Range Slider Styles */
+.range-slider-input::-webkit-slider-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #059669;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  transition: transform 0.1s ease;
+}
+
+.range-slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.range-slider-input::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #059669;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.1s ease;
+}
+
+.range-slider-input::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}

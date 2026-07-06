@@ -6,6 +6,38 @@ import {
 } from '../constants';
 import { validateCandidateForm, buildCandidatePayload } from '../utils/validation';
 
+const SALARY_STEPS = [
+  10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 40000, 45000, 50000,
+  60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 200000, 220000, 250000, 275000, 300000, 330000, 350000, 375000, 400000, 425000, 450000, 475000, 500000
+];
+
+const parseSalaryRange = (salaryStr) => {
+  const defaultMin = 15000;
+  const defaultMax = 25000;
+  if (!salaryStr) return { minVal: defaultMin, maxVal: defaultMax };
+
+  const numbers = salaryStr.match(/\d[\d,.]*/g);
+  if (!numbers || numbers.length === 0) return { minVal: defaultMin, maxVal: defaultMax };
+
+  const minParsed = parseInt(numbers[0].replace(/,/g, ''), 10) || defaultMin;
+  const maxParsed = numbers[1] ? (parseInt(numbers[1].replace(/,/g, ''), 10) || defaultMax) : minParsed;
+
+  return { minVal: minParsed, maxVal: maxParsed };
+};
+
+const findClosestIdx = (val) => {
+  let closestIdx = 0;
+  let minDiff = Math.abs(SALARY_STEPS[0] - val);
+  for (let i = 1; i < SALARY_STEPS.length; i++) {
+    const diff = Math.abs(SALARY_STEPS[i] - val);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIdx = i;
+    }
+  }
+  return closestIdx;
+};
+
 const STEP_NAMES = ['Personal Details', 'Job Preferences', 'Education & Experience'];
 
 function Field({ label, required, error, children, className = '' }) {
@@ -91,7 +123,23 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
     const all = validateCandidateForm(form);
     setErrors(all);
     if (Object.keys(all).length) return;
-    await onSubmit(buildCandidatePayload(form));
+    try {
+      await onSubmit(buildCandidatePayload(form));
+    } catch (err) {
+      const errMsg = err.message || '';
+      const newErrors = {};
+      if (errMsg.toLowerCase().includes('phone number') || errMsg.toLowerCase().includes('phone')) {
+        newErrors.phoneNumber1 = 'A candidate with this phone number already exists';
+        setStep(1);
+      } else if (errMsg.toLowerCase().includes('email')) {
+        newErrors.emailId = 'A candidate with this email address already exists';
+        setStep(1);
+      } else {
+        newErrors.form = errMsg;
+      }
+      setErrors(newErrors);
+      throw err;
+    }
   };
 
   const inputCls = (err) => `w-full mt-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${err ? 'border-rose-300' : 'border-slate-200'}`;
@@ -108,6 +156,11 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
         </div>
 
         <div className="overflow-y-auto p-4 space-y-4 flex-1">
+          {errors.form && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg p-3">
+              ❌ {errors.form}
+            </div>
+          )}
           {step === 1 && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -232,16 +285,67 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
               </Field>
 
               <Field label="Salary Expectation" required error={errors.expectedSalary}>
-                <select className={inputCls(errors.expectedSalary)} value={form.expectedSalary} onChange={(e) => upd('expectedSalary', e.target.value)}>
-                  <option value="">Select range</option>
-                  {(() => {
-                    const optionsList = [...SALARY_RANGES];
-                    if (form.expectedSalary && !optionsList.includes(form.expectedSalary)) {
-                      optionsList.push(form.expectedSalary);
-                    }
-                    return optionsList.map((r) => <option key={r} value={r}>{r}</option>);
-                  })()}
-                </select>
+                {(() => {
+                  const { minVal, maxVal } = parseSalaryRange(form.expectedSalary || '₹15,000 - ₹25,000');
+                  const minIdx = findClosestIdx(minVal);
+                  const maxIdx = findClosestIdx(maxVal);
+
+                  const handleMinSliderChange = (e) => {
+                    const newMinIdx = Math.min(parseInt(e.target.value, 10), maxIdx - 1);
+                    const formattedSalary = `₹${SALARY_STEPS[newMinIdx].toLocaleString('en-IN')} - ₹${SALARY_STEPS[maxIdx].toLocaleString('en-IN')}`;
+                    upd('expectedSalary', formattedSalary);
+                  };
+
+                  const handleMaxSliderChange = (e) => {
+                    const newMaxIdx = Math.max(parseInt(e.target.value, 10), minIdx + 1);
+                    const formattedSalary = `₹${SALARY_STEPS[minIdx].toLocaleString('en-IN')} - ₹${SALARY_STEPS[newMaxIdx].toLocaleString('en-IN')}`;
+                    upd('expectedSalary', formattedSalary);
+                  };
+
+                  const leftPercent = (minIdx / (SALARY_STEPS.length - 1)) * 100;
+                  const rightPercent = (maxIdx / (SALARY_STEPS.length - 1)) * 100;
+
+                  return (
+                    <div className="salary-slider-wrapper py-2">
+                      <div className="salary-display text-sm font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5 inline-block mb-3">
+                        {form.expectedSalary || `₹${minVal.toLocaleString('en-IN')} - ₹${maxVal.toLocaleString('en-IN')}`}
+                      </div>
+
+                      <div className="range-slider-container relative w-full h-6 mt-2">
+                        <div className="range-slider-track absolute top-1/2 left-0 right-0 h-1.5 bg-slate-200 -translate-y-1/2 rounded-full" />
+                        <div
+                          className="range-slider-highlight absolute top-1/2 h-1.5 bg-emerald-600 -translate-y-1/2 rounded-full"
+                          style={{
+                            left: `${leftPercent}%`,
+                            width: `${rightPercent - leftPercent}%`
+                          }}
+                        />
+                        <input
+                          type="range"
+                          min={0}
+                          max={SALARY_STEPS.length - 1}
+                          value={minIdx}
+                          onChange={handleMinSliderChange}
+                          className="range-slider-input absolute top-1/2 left-0 w-full h-0 -translate-y-1/2 appearance-none bg-transparent pointer-events-none z-10"
+                          style={{ outline: 'none' }}
+                        />
+                        <input
+                          type="range"
+                          min={0}
+                          max={SALARY_STEPS.length - 1}
+                          value={maxIdx}
+                          onChange={handleMaxSliderChange}
+                          className="range-slider-input absolute top-1/2 left-0 w-full h-0 -translate-y-1/2 appearance-none bg-transparent pointer-events-none z-10"
+                          style={{ outline: 'none' }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+                        <span>₹10,000</span>
+                        <span>₹5,00,000+</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </Field>
 
               <Field label="Languages Known" required error={errors.languagesKnown}>

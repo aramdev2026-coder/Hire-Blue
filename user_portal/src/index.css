@@ -2101,3 +2101,244 @@ button {
   background: linear-gradient(135deg, #0f766e 0%, #115e59 100%) !important;
   box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35) !important;
 }
+
+/* ============================================================
+   Redesigned Services Footer UI
+   ============================================================ */
+.landing-services-footer {
+  margin-top: 48px;
+  width: 100%;
+}
+
+.services-divider-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent);
+  margin-bottom: 32px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 8px;
+}
+
+.service-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.service-icon-wrapper {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.service-card:hover .service-icon-wrapper {
+  background: var(--primary);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.service-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+  font-family: "Outfit", var(--font);
+}
+
+.service-desc {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   Side-by-Side Landing Page Layout (No Scrollbar)
+   ============================================================ */
+.landing-container {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 32px;
+  align-items: center;
+  min-height: calc(100vh - 160px);
+  padding: 10px 0;
+}
+
+.landing-services-card {
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.65) 0%, rgba(255, 247, 237, 0.65) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.services-section-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin-bottom: 6px;
+  font-family: "Outfit", var(--font);
+  letter-spacing: -0.02em;
+}
+
+.services-section-subtitle {
+  font-size: 0.88rem;
+  color: var(--muted-strong);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.landing-container .services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.landing-container .service-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.02);
+  transition: all 0.25s ease;
+  height: 100%;
+  cursor: default; /* Not clickable, informative */
+}
+
+.landing-container .service-card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: rgba(226, 232, 240, 1);
+}
+
+.landing-container .service-icon-wrapper {
+  margin-bottom: 0;
+  padding: 10px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+}
+
+.landing-container .service-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.landing-container .service-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Accent Borders covering all four sides & Color Gradients */
+.border-left-blue { 
+  border: 3.5px solid #2563eb !important; 
+  background: linear-gradient(to right, rgba(37, 99, 235, 0.04) 0%, #ffffff 40%, #ffffff 100%) !important;
+}
+.border-left-emerald { 
+  border: 3.5px solid #059669 !important; 
+  background: linear-gradient(to right, rgba(5, 150, 105, 0.04) 0%, #ffffff 40%, #ffffff 100%) !important;
+}
+.border-left-amber { 
+  border: 3.5px solid #d97706 !important; 
+  background: linear-gradient(to right, rgba(217, 119, 6, 0.04) 0%, #ffffff 40%, #ffffff 100%) !important;
+}
+.border-left-rose { 
+  border: 3.5px solid #e11d48 !important; 
+  background: linear-gradient(to right, rgba(225, 29, 72, 0.04) 0%, #ffffff 40%, #ffffff 100%) !important;
+}
+.border-left-violet { 
+  border: 3.5px solid #7c3aed !important; 
+  background: linear-gradient(to right, rgba(124, 58, 237, 0.04) 0%, #ffffff 40%, #ffffff 100%) !important;
+}
+.border-left-cyan { 
+  border: 3.5px solid #0891b2 !important; 
+  background: linear-gradient(to right, rgba(8, 145, 178, 0.04) 0%, #ffffff 40%, #ffffff 100%) !important;
+}
+
+/* Hover effects for individual service cards - intensifies background accent color */
+.border-left-blue:hover { background: linear-gradient(to right, rgba(37, 99, 235, 0.08) 0%, #ffffff 70%) !important; }
+.border-left-emerald:hover { background: linear-gradient(to right, rgba(5, 150, 105, 0.08) 0%, #ffffff 70%) !important; }
+.border-left-amber:hover { background: linear-gradient(to right, rgba(217, 119, 6, 0.08) 0%, #ffffff 70%) !important; }
+.border-left-rose:hover { background: linear-gradient(to right, rgba(225, 29, 72, 0.08) 0%, #ffffff 70%) !important; }
+.border-left-violet:hover { background: linear-gradient(to right, rgba(124, 58, 237, 0.08) 0%, #ffffff 70%) !important; }
+.border-left-cyan:hover { background: linear-gradient(to right, rgba(8, 145, 178, 0.08) 0%, #ffffff 70%) !important; }
+
+/* Custom Soft Colors for Icon Backgrounds */
+.bg-blue-soft { background-color: rgba(37, 99, 235, 0.08) !important; }
+.text-blue { color: #2563eb !important; }
+
+.bg-emerald-soft { background-color: rgba(5, 150, 105, 0.08) !important; }
+.text-emerald { color: #059669 !important; }
+
+.bg-amber-soft { background-color: rgba(217, 119, 6, 0.08) !important; }
+.text-amber { color: #d97706 !important; }
+
+.bg-rose-soft { background-color: rgba(225, 29, 72, 0.08) !important; }
+.text-rose { color: #e11d48 !important; }
+
+.bg-violet-soft { background-color: rgba(124, 58, 237, 0.08) !important; }
+.text-violet { color: #7c3aed !important; }
+
+.bg-cyan-soft { background-color: rgba(8, 145, 178, 0.08) !important; }
+.text-cyan { color: #0891b2 !important; }
+
+/* Custom styling for Auth Card on the Landing Page */
+.landing-auth-section .auth-card {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(239, 246, 255, 0.45) 100%) !important;
+  box-shadow: var(--shadow-lg), 0 30px 60px rgba(15, 23, 42, 0.05) !important;
+  border: 3.5px solid var(--primary) !important;
+}
+
+.landing-auth-section .auth-card.auth-card--employer {
+  border: 3.5px solid #0d9488 !important;
+}
+
+/* Custom styling for Header on the Landing Page */
+.landing-container-header-override {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(239, 246, 255, 0.9)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+}
+
+@media (max-width: 968px) {
+  .landing-container {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    min-height: auto;
+    padding-bottom: 40px;
+  }
+}
+
+@media (max-width: 580px) {
+  .landing-container .services-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

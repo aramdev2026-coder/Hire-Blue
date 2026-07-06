@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
-import { PhoneCall } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 export default function LoginCard({ backendUrl, onAuthSuccess }) {
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!/^\d{10}$/.test(phone)) {
-      setError('Enter a valid 10-digit mobile number.');
+
+    const emailTrimmed = email.trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const domainTypos = [
+      'gamil.com', 'gamil.co', 'gmaill.com', 'gmaile.com', 'gmile.com', 'gmail.con', 'gmail.col',
+      'yaho.com', 'yhoo.com', 'yahoo.co', 'hotmal.com', 'hotmale.com', 'outlok.com', 'outloock.com',
+      'gamil.in', 'gamil.net', 'gamil.org', 'yaho.in', 'yahoo.con', 'hotmail.con'
+    ];
+    const [localPart, domainPart] = emailTrimmed.split('@');
+
+    if (
+      !emailRegex.test(emailTrimmed) ||
+      (localPart.length > 5 && !/[aeiouy]/.test(localPart)) ||
+      /([a-zA-Z0-9])\1{4,}/.test(localPart) ||
+      domainTypos.includes(domainPart)
+    ) {
+      setError('Please enter a valid, legitimate email address (e.g. name@gmail.com).');
       return;
     }
     setLoading(true);
@@ -19,7 +34,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
       const res = await fetch(`${backendUrl}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: phone, otpCode: '123456', otpSessionId: 'SANDBOX_SESSION_ACTIVE' }),
+        body: JSON.stringify({ email: emailTrimmed, otpCode: '123456', otpSessionId: 'SANDBOX_SESSION_ACTIVE' }),
       });
       const data = await res.json();
       if (!data.success) { setError(data.error || 'Login failed. Try again.'); return; }
@@ -37,7 +52,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
       } catch { }
 
       const status = profile?.status ?? data.profileStatus;
-      onAuthSuccess(data.token, data.candidateId, phone, status, profile);
+      onAuthSuccess(data.token, data.candidateId, emailTrimmed, status, profile);
     } catch {
       setError('Cannot reach server. Make sure it is running.');
     } finally {
@@ -50,28 +65,25 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
       <div className="auth-card text-center">
         <img src="/favicon.png" alt="Aram FTC Logo" className="brand-logo" style={{ margin: '0 auto 16px', display: 'block' }} />
         <h1 className="auth-title">Candidate Portal</h1>
-        <p className="auth-copy">Enter your mobile number to open or continue your profile.</p>
+        <p className="auth-copy">Enter your email address to open or continue your profile.</p>
 
         {error && <div className="alert-box error">{error}</div>}
 
         <form onSubmit={submit} className="form-stack">
           <div className="field">
-            <label className="field-label">Mobile Number *</label>
+            <label className="field-label">Email Address *</label>
             <div className="input-prefix-wrapper">
               <span className="input-prefix" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <PhoneCall size={16} style={{ opacity: 0.7 }} />
-                <span>+91</span>
+                <Mail size={16} style={{ opacity: 0.7 }} />
               </span>
               <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                placeholder="9876543210"
-                value={phone}
-                onChange={(e) => { setError(''); setPhone(e.target.value.replace(/\D/g, '')); }}
+                type="email"
+                placeholder="name@domain.com"
+                value={email}
+                onChange={(e) => { setError(''); setEmail(e.target.value); }}
                 autoFocus
                 className={`input input-with-prefix ${error ? 'input-error' : ''}`}
-                style={{ paddingLeft: '72px' }}
+                style={{ paddingLeft: '44px' }}
               />
             </div>
           </div>
@@ -82,7 +94,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
         </form>
 
         <div className="notice-box">
-          <strong>Sandbox mode:</strong> OTP is skipped. Any 10-digit valid phonenumber works.
+          <strong>Sandbox mode:</strong> OTP is skipped. Any valid email address works. Code is 123456.
         </div>
       </div>
     </div>

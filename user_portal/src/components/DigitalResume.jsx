@@ -7,8 +7,8 @@ export default function DigitalResume({ verifiedPhone, profileData: p, onTrigger
   const downloadTextResume = () => {
     const text = `
 DIGITAL RESUME - ${p?.fullName || 'Candidate'}
-Mobile: +91 ${verifiedPhone}
-Email: ${p?.emailId || '—'}
+Mobile: ${p?.phoneNumber1 ? '+91 ' + p.phoneNumber1 : '—'}
+Email: ${verifiedPhone || p?.emailId || '—'}
 Date of Birth: ${p?.dob ? new Date(p.dob).toLocaleDateString('en-IN') : '—'}
 Gender: ${p?.sex || '—'}
 Marital Status: ${p?.maritalStatus || '—'}
@@ -49,8 +49,8 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
         </div>
         <h2 className="resume-hero-title">{p?.fullName || 'Your Profile'}</h2>
         <p className="resume-hero-subtitle">
-          +91 {verifiedPhone}
-          {p?.emailId && <span className="print-only-inline"> | {p.emailId}</span>}
+          {p?.phoneNumber1 ? `+91 ${p.phoneNumber1}` : 'No mobile number'}
+          {(verifiedPhone || p?.emailId) && <span className="print-only-inline"> | {verifiedPhone || p.emailId}</span>}
         </p>
       </div>
 

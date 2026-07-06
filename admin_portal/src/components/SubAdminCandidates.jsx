@@ -71,6 +71,8 @@ export default function SubAdminCandidates({
       await onAddCandidate(payload);
       setShowAddModal(false);
       onRefresh();
+    } catch (err) {
+      console.warn('Failed to create candidate:', err);
     } finally {
       setSubmitting(false);
     }

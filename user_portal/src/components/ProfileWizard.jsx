@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Briefcase, GraduationCap, Trash2, Plus } from 'lucide-react';
+import LegalModal from './LegalModal';
 
 const ALL_JOB_ROLES = [
   "Agricultural Laborer",
@@ -331,11 +332,11 @@ function buildInit(init, phone) {
     dob: init?.dob ? new Date(init.dob).toISOString().split('T')[0] : '',
     sex: init?.sex || '',
     maritalStatus: init?.maritalStatus || '',
-    phoneNumber1: phone || '',
+    phoneNumber1: (init?.phoneNumber1 && !init.phoneNumber1.startsWith('EMAIL_AUTO_')) ? init.phoneNumber1 : '',
     phoneNumber2: init?.phoneNumber2 || '',
     familyPhonePrimary: init?.familyPhonePrimary || '',
     familyPhoneBackup: init?.familyPhoneBackup || '',
-    emailId: init?.emailId || '',
+    emailId: init?.emailId || phone || '',
     secondaryEmailId: init?.secondaryEmailId || '',
     presentStreet1: present.street1,
     presentStreet2: present.street2,
@@ -384,7 +385,10 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           .forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
         p.education = p.education.map(normalizeEducationItem);
         p.experience = p.experience.map(normalizeExperienceItem);
-        p.phoneNumber1 = verifiedPhone || p.phoneNumber1;
+        p.emailId = verifiedPhone || p.emailId;
+        if (p.phoneNumber1 && p.phoneNumber1.startsWith('EMAIL_AUTO_')) {
+          p.phoneNumber1 = '';
+        }
         if (p.presentStreet1 === undefined) {
           const parts = (p.presentAddress || '').split(', ');
           p.presentStreet1 = parts[0] || '';
@@ -430,6 +434,10 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const [errors, setErrors] = React.useState({});
   const [serverErr, setServerErr] = React.useState('');
   const [saving, setSaving] = React.useState(false);
+  const [acceptedTerms, setAcceptedTerms] = React.useState(() => {
+    return !!(initialData?.fullName || initialData?.phoneNumber1);
+  });
+  const [showLegal, setShowLegal] = React.useState(false);
   const [activeColSuggestIdx, setActiveColSuggestIdx] = React.useState(null);
 
   React.useEffect(() => {
@@ -549,6 +557,11 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       }
       if (!form.sex) e.sex = 'Please select a gender';
       if (!form.maritalStatus) e.maritalStatus = 'Please select marital status';
+      if (!form.phoneNumber1) {
+        e.phoneNumber1 = 'Primary mobile number is required';
+      } else if (!/^[6-9]\d{9}$/.test(form.phoneNumber1)) {
+        e.phoneNumber1 = 'Enter a valid 10-digit mobile number';
+      }
       if (!form.phoneNumber2) {
         e.phoneNumber2 = 'Alternate mobile number is required';
       } else if (!/^[6-9]\d{9}$/.test(form.phoneNumber2)) {
@@ -556,16 +569,46 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       } else if (form.phoneNumber2 === form.phoneNumber1) {
         e.phoneNumber2 = 'Alternate mobile number must be different from primary mobile';
       }
-      if (!form.emailId) {
+      const emailTrimmed = String(form.emailId || '').trim().toLowerCase();
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      const domainTypos = [
+        'gamil.com', 'gamil.co', 'gmaill.com', 'gmaile.com', 'gmile.com', 'gmail.con', 'gmail.col',
+        'yaho.com', 'yhoo.com', 'yahoo.co', 'hotmal.com', 'hotmale.com', 'outlok.com', 'outloock.com',
+        'gamil.in', 'gamil.net', 'gamil.org', 'yaho.in', 'yahoo.con', 'hotmail.con'
+      ];
+      const [localPart, domainPart] = emailTrimmed.split('@');
+
+      if (!emailTrimmed) {
         e.emailId = 'Email address is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailId)) {
-        e.emailId = 'Enter a valid email address';
+      } else if (
+        !emailRegex.test(emailTrimmed) ||
+        (localPart.length > 5 && !/[aeiouy]/.test(localPart)) ||
+        /([a-zA-Z0-9])\1{4,}/.test(localPart) ||
+        domainTypos.includes(domainPart)
+      ) {
+        e.emailId = 'Please enter a valid, legitimate email address';
+      }
+
+      if (form.secondaryEmailId) {
+        const secEmail = String(form.secondaryEmailId).trim().toLowerCase();
+        const [secLocal, secDomain] = secEmail.split('@');
+        if (
+          !emailRegex.test(secEmail) ||
+          (secLocal.length > 5 && !/[aeiouy]/.test(secLocal)) ||
+          /([a-zA-Z0-9])\1{4,}/.test(secLocal) ||
+          domainTypos.includes(secDomain)
+        ) {
+          e.secondaryEmailId = 'Please enter a valid, legitimate email address';
+        }
       }
       if (!form.presentStreet1.trim()) e.presentStreet1 = 'Street address is required';
       if (!form.presentCity) e.presentCity = 'City / Town is required';
       if (!sameAddr) {
         if (!form.permanentStreet1.trim()) e.permanentStreet1 = 'Street address is required';
         if (!form.permanentCity) e.permanentCity = 'City / Town is required';
+      }
+      if (!acceptedTerms) {
+        e.acceptedTerms = 'You must accept the terms and privacy policy to proceed';
       }
     }
     if (step === 2) {
@@ -774,8 +817,8 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 <input className={`input${errors.fullName ? ' input-error' : ''}`} type="text" placeholder="e.g. Arun Kumar"
                   value={form.fullName} onChange={e => upd('fullName', e.target.value)} autoFocus />
               </Field>
-              <Field label="Verified Mobile">
-                <input className="input input-readonly" readOnly disabled value={`+91 ${form.phoneNumber1}`} />
+              <Field label="Verified Email">
+                <input className="input input-readonly" readOnly disabled value={form.emailId} />
               </Field>
               <Field label="Date of Birth" req error={errors.dob}>
                 <input className={`input${errors.dob ? ' input-error' : ''}`} type="date"
@@ -801,9 +844,9 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 <input className="input" type="tel" maxLength={10} placeholder="Optional"
                   value={form.familyPhonePrimary} onChange={e => upd('familyPhonePrimary', e.target.value.replace(/\D/g, ''))} />
               </Field>
-              <Field label="Email Address" req error={errors.emailId}>
-                <input className={`input${errors.emailId ? ' input-error' : ''}`} type="email" placeholder="e.g. name@domain.com"
-                  value={form.emailId} onChange={e => upd('emailId', e.target.value)} />
+              <Field label="Primary Mobile" req error={errors.phoneNumber1}>
+                <input className={`input${errors.phoneNumber1 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
+                  value={form.phoneNumber1} onChange={e => upd('phoneNumber1', e.target.value.replace(/\D/g, ''))} />
               </Field>
               <Field label="Secondary Email">
                 <input className="input" type="email" placeholder="Optional"
@@ -867,6 +910,23 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 </Field>
               </div>
             </>)}
+            <label className="checkbox-label" style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', textAlign: 'left' }}>
+              <input 
+                type="checkbox" 
+                checked={acceptedTerms} 
+                onChange={(e) => setAcceptedTerms(e.target.checked)} 
+                className="checkbox-input" 
+                style={{ width: '16px', height: '16px', cursor: 'pointer', margin: '4px 0 0 0', flexShrink: 0 }}
+              />
+              <span className="checkbox-copy" style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.4' }}>
+                I accept the <button type="button" onClick={() => setShowLegal(true)} className="btn-inline" style={{ display: 'inline', border: 'none', background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}>Terms and Conditions</button> and <button type="button" onClick={() => setShowLegal(true)} className="btn-inline" style={{ display: 'inline', border: 'none', background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}>Privacy Policy</button>.
+              </span>
+            </label>
+            {errors.acceptedTerms && (
+              <div className="error-copy" style={{ color: 'var(--danger)', fontSize: '0.78rem', marginTop: '4px', textAlign: 'left' }}>
+                {errors.acceptedTerms}
+              </div>
+            )}
           </>)}
 
           {step === 2 && (<>
@@ -1338,6 +1398,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           </button>
         </div>
       </form>
+      <LegalModal isOpen={showLegal} onClose={() => setShowLegal(false)} />
     </div>
   );
 }

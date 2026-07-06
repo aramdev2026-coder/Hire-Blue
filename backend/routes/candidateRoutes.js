@@ -30,68 +30,46 @@ export default function createCandidateRoutes(prisma) {
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // STEP 1 - TRANSMIT MOBILE OTP
+  // STEP 1 - TRANSMIT EMAIL OTP
   // ─────────────────────────────────────────────────────────────────
   router.post('/send-otp', otpLimiter, asyncHandler(async (req, res) => {
-    const { phoneNumber } = req.body;
-    if (!phoneNumber) throw new AppError('Mobile number is required', 400);
+    const { email } = req.body;
+    if (!email) throw new AppError('Email address is required', 400);
 
-    const digits = String(phoneNumber).replace(/\D/g, '');
-    if (!/^[6-9]\d{9}$/.test(digits)) {
-      throw new AppError('Invalid phone number format', 400);
+    const emailLower = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      throw new AppError('Invalid email format', 400);
     }
 
-    const hasApiKey = env.TWO_FACTOR_API_KEY && env.TWO_FACTOR_API_KEY !== 'YOUR_2FACTOR_API_KEY_HERE';
-
-    if (!hasApiKey) {
-      // Fallback to sandbox if API key is not configured
-      return res.json({ success: true, otpSessionId: 'SANDBOX_SESSION_ACTIVE', sandbox: true });
-    }
-
-    try {
-      const response = await axios.get(
-        `https://2factor.in/API/V1/${env.TWO_FACTOR_API_KEY}/SMS/${digits}/AUTOGEN3/BLU_COLLAR_AUTH`
-      );
-      res.json({ success: true, otpSessionId: response.data.Details });
-    } catch (error) {
-      if (env.NODE_ENV !== 'production') {
-        res.json({ success: true, otpSessionId: 'SANDBOX_SESSION_ACTIVE', sandbox: true });
-      } else {
-        throw new AppError('SMS service temporarily unavailable. Please try again.', 503);
-      }
-    }
+    // Email OTP sandbox fallback
+    return res.json({ success: true, otpSessionId: 'SANDBOX_SESSION_ACTIVE', sandbox: true });
   }));
 
   // ─────────────────────────────────────────────────────────────────
   // STEP 2 - VALIDATE OTP & ASSIGN SESSION TOKEN
   // ─────────────────────────────────────────────────────────────────
   router.post('/verify-otp', authLimiter, asyncHandler(async (req, res) => {
-    const { phoneNumber, otpCode, otpSessionId } = req.body;
-    if (!phoneNumber || !otpCode) throw new AppError('Phone and OTP required', 400);
+    const { email, otpCode, otpSessionId } = req.body;
+    if (!email || !otpCode) throw new AppError('Email and OTP required', 400);
 
-    const digits = String(phoneNumber).replace(/\D/g, '');
-    if (!/^[6-9]\d{9}$/.test(digits)) throw new AppError('Invalid phone number format', 400);
+    const emailLower = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) throw new AppError('Invalid email format', 400);
     if (!/^\d{4,6}$/.test(String(otpCode))) throw new AppError('Invalid OTP format', 400);
 
-    const hasApiKey = env.TWO_FACTOR_API_KEY && env.TWO_FACTOR_API_KEY !== 'YOUR_2FACTOR_API_KEY_HERE';
-
-    try {
-      if (otpSessionId !== 'SANDBOX_SESSION_ACTIVE' && hasApiKey) {
-        await axios.get(`https://2factor.in/API/V1/${env.TWO_FACTOR_API_KEY}/SMS/VERIFY/${otpSessionId}/${otpCode}`);
-      } else {
-        if (otpCode !== '123456') {
-          throw new AppError('Incorrect OTP. Sandbox code is 123456.', 400);
-        }
-      }
-    } catch (err) {
-      throw new AppError('OTP is incorrect or expired', 400);
+    if (otpCode !== '123456') {
+      throw new AppError('Incorrect OTP. Sandbox code is 123456.', 400);
     }
 
-    let candidate = await prisma.candidate.findUnique({ where: { phoneNumber1: digits } });
+    let candidate = await prisma.candidate.findFirst({ where: { emailId: emailLower } });
     if (!candidate) {
       try {
         candidate = await prisma.candidate.create({
-          data: { phoneNumber1: digits, status: 'PENDING_WIZARD', source: 'USER_PORTAL' }
+          data: { 
+            emailId: emailLower, 
+            phoneNumber1: 'EMAIL_AUTO_' + Math.random().toString(36).substring(2, 15),
+            status: 'PENDING_WIZARD', 
+            source: 'USER_PORTAL' 
+          }
         });
       } catch (createErr) {
         if (createErr?.code === 'P2002') {
@@ -102,7 +80,7 @@ export default function createCandidateRoutes(prisma) {
     }
 
     const token = jwt.sign(
-      { id: candidate.id, role: 'CANDIDATE', phone: candidate.phoneNumber1 },
+      { id: candidate.id, role: 'CANDIDATE', phone: candidate.phoneNumber1, email: candidate.emailId },
       env.JWT_SECRET,
       { expiresIn: '7d' }
     );

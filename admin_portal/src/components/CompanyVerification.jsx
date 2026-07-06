@@ -4,17 +4,11 @@ import { Loader } from 'lucide-react';
 export default function CompanyVerification({ employers, filter, setFilter, loading, onUpdateStatus }) {
   return (
     <div className="space-y-4 max-w-4xl w-full px-2 sm:px-0">
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-        💡 <strong>Awaiting Action:</strong> These employers have signed up and cannot view candidate arrays until approved.
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-800">
+        💡 <strong>Company Management:</strong> Toggle company accounts between active and blocked. Blocked companies cannot log in or view candidates.
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button 
-          onClick={() => setFilter('PENDING_VERIFICATION')}
-          className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'PENDING_VERIFICATION' ? 'bg-amber-600 text-white border-amber-700' : 'bg-white border-slate-200 text-slate-600'}`}
-        >
-          Pending
-        </button>
         <button 
           onClick={() => setFilter('ACTIVE')}
           className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'ACTIVE' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}
@@ -22,10 +16,10 @@ export default function CompanyVerification({ employers, filter, setFilter, load
           Active
         </button>
         <button 
-          onClick={() => setFilter('REJECTED')}
-          className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'REJECTED' ? 'bg-rose-600 text-white border-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
+          onClick={() => setFilter('SUSPENDED')}
+          className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'SUSPENDED' ? 'bg-rose-600 text-white border-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
         >
-          Rejected
+          Blocked
         </button>
       </div>
 
@@ -35,7 +29,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
         </div>
       ) : employers.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">
-          No employers found
+          No companies found
         </div>
       ) : (
         <>
@@ -48,11 +42,10 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                     <p className="text-xs text-slate-500 font-mono mt-0.5">ID: #{employer.id.slice(0, 8)}</p>
                   </div>
                   <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
-                    employer.status === 'PENDING_VERIFICATION' ? 'bg-amber-100 text-amber-800' :
                     employer.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' :
                     'bg-rose-100 text-rose-800'
                   }`}>
-                    {employer.status}
+                    {employer.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED'}
                   </span>
                 </div>
                 
@@ -61,22 +54,23 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                   <p><strong>Phone:</strong> {employer.phoneNumber}</p>
                 </div>
 
-                {filter === 'PENDING_VERIFICATION' && (
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  {employer.status === 'ACTIVE' ? (
                     <button 
-                      onClick={() => onUpdateStatus(employer.id, 'REJECTED')}
-                      className="flex-1 max-w-[100px] text-center bg-rose-50 hover:bg-rose-100 text-rose-600 py-1.5 rounded-md text-xs font-medium border border-rose-200 transition-colors cursor-pointer"
+                      onClick={() => onUpdateStatus(employer.id, 'SUSPENDED')}
+                      className="flex-1 text-center bg-rose-50 hover:bg-rose-100 text-rose-600 py-1.5 rounded-md text-xs font-medium border border-rose-200 transition-colors cursor-pointer"
                     >
-                      Reject
+                      Block Company
                     </button>
+                  ) : (
                     <button 
                       onClick={() => onUpdateStatus(employer.id, 'ACTIVE')}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer text-center"
                     >
-                      Approve Entity
+                      Activate Company
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -88,7 +82,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                   <th className="p-4">Company Name</th>
                   <th className="p-4">Contact Information</th>
                   <th className="p-4">Status</th>
-                  {filter === 'PENDING_VERIFICATION' && <th className="p-4 text-right">Actions</th>}
+                  <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -98,29 +92,29 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                     <td className="p-4 text-slate-600">{employer.email} | {employer.phoneNumber}</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                        employer.status === 'PENDING_VERIFICATION' ? 'bg-amber-100 text-amber-800' :
                         employer.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' :
                         'bg-rose-100 text-rose-800'
                       }`}>
-                        {employer.status}
+                        {employer.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED'}
                       </span>
                     </td>
-                    {filter === 'PENDING_VERIFICATION' && (
-                      <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                    <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                      {employer.status === 'ACTIVE' ? (
                         <button 
-                          onClick={() => onUpdateStatus(employer.id, 'REJECTED')}
+                          onClick={() => onUpdateStatus(employer.id, 'SUSPENDED')}
                           className="bg-rose-50 hover:bg-rose-100 text-rose-600 p-1.5 rounded-md text-xs font-medium border border-rose-200 transition-colors cursor-pointer"
                         >
-                          Reject
+                          Block Company
                         </button>
+                      ) : (
                         <button 
                           onClick={() => onUpdateStatus(employer.id, 'ACTIVE')}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
                         >
-                          Approve Entity
+                          Activate Company
                         </button>
-                      </td>
-                    )}
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

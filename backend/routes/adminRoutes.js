@@ -155,8 +155,11 @@ export default function createAdminRoutes(prisma) {
 
   router.post('/candidates', async (req, res) => {
     const {
-      fullName, phoneNumber1, phoneNumber2, presentDistrict, jobRoles,
-      expectedSalary, preferredDistricts, languagesKnown,
+      fullName, phoneNumber1, phoneNumber2, dob, sex, maritalStatus,
+      familyPhonePrimary, familyPhoneBackup, emailId, secondaryEmailId,
+      presentAddress, presentDistrict, presentState, permanentAddress,
+      permanentDistrict, permanentState, jobRoles, preferredDistricts,
+      expectedSalary, languagesKnown, education, technical, experience
     } = req.body;
 
     if (!fullName || !phoneNumber1) {
@@ -175,7 +178,19 @@ export default function createAdminRoutes(prisma) {
           fullName: sanitizeString(fullName, 100),
           phoneNumber1,
           phoneNumber2: phoneNumber2 || null,
+          dob: dob ? new Date(dob) : null,
+          sex: sex ? sanitizeString(sex, 20) : null,
+          maritalStatus: maritalStatus ? sanitizeString(maritalStatus, 20) : null,
+          familyPhonePrimary: familyPhonePrimary || null,
+          familyPhoneBackup: familyPhoneBackup || null,
+          emailId: emailId || null,
+          secondaryEmailId: secondaryEmailId || null,
+          presentAddress: presentAddress ? sanitizeString(presentAddress, 500) : null,
           presentDistrict: presentDistrict ? sanitizeString(presentDistrict, 50) : null,
+          presentState: presentState ? sanitizeString(presentState, 50) : 'Tamil Nadu',
+          permanentAddress: permanentAddress ? sanitizeString(permanentAddress, 500) : null,
+          permanentDistrict: permanentDistrict ? sanitizeString(permanentDistrict, 50) : null,
+          permanentState: permanentState ? sanitizeString(permanentState, 50) : 'Tamil Nadu',
           jobRoles: Array.isArray(jobRoles) ? jobRoles : [],
           preferredDistricts: Array.isArray(preferredDistricts) ? preferredDistricts : [],
           expectedSalary: expectedSalary ? sanitizeString(expectedSalary, 50) : null,
@@ -183,6 +198,32 @@ export default function createAdminRoutes(prisma) {
           status: 'NEW',
           source,
           createdById: req.admin.id,
+          education: {
+            create: Array.isArray(education)
+              ? education.filter(item => item?.institution?.trim()).map(item => ({
+                  institution: sanitizeString(item.institution, 200) || '',
+                  course: sanitizeString(item.course, 200) || '',
+                }))
+              : []
+          },
+          technical: {
+            create: Array.isArray(technical)
+              ? technical.filter(item => item?.institution?.trim()).map(item => ({
+                  institution: sanitizeString(item.institution, 200) || '',
+                  course: sanitizeString(item.course, 200) || '',
+                }))
+              : []
+          },
+          experience: {
+            create: Array.isArray(experience)
+              ? experience.filter(item => item?.institution?.trim()).map(item => ({
+                  institution: sanitizeString(item.institution, 200) || '',
+                  role: sanitizeString(item.role, 200) || '',
+                  fromYear: sanitizeString(item.fromYear, 10) || '',
+                  toYear: sanitizeString(item.toYear, 10) || '',
+                }))
+              : []
+          }
         },
       });
 

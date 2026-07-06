@@ -46,11 +46,11 @@ export default function createEmployerRoutes(prisma) {
         email: normalizedEmail,
         phoneNumber: normalizedPhone,
         password: hashedPassword,
-        status: 'PENDING_VERIFICATION',
+        status: 'ACTIVE',
       }
     });
 
-    res.status(201).json({ success: true, message: 'Account created. Pending Admin Verification.' });
+    res.status(201).json({ success: true, message: 'Account created successfully. You can log in now.' });
   }));
 
   // ─────────────────────────────────────────────────────────────────
@@ -72,14 +72,8 @@ export default function createEmployerRoutes(prisma) {
     const passwordValid = await verifyPassword(password, employer.password);
     if (!passwordValid) throw new AppError('Invalid credentials.', 401);
 
-    if (employer.status === 'PENDING_VERIFICATION') {
-      throw new AppError('Your account is pending verification by our HR team.', 403);
-    }
-    if (employer.status === 'REJECTED') {
-      throw new AppError('Your account has been rejected.', 403);
-    }
     if (employer.status === 'SUSPENDED') {
-      throw new AppError('Your account has been suspended.', 403);
+      throw new AppError('Your account has been blocked.', 403);
     }
 
     const token = jwt.sign({ id: employer.id, role: 'EMPLOYER' }, env.JWT_SECRET, { expiresIn: '7d' });
