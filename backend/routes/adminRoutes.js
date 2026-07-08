@@ -3,13 +3,14 @@ import { authenticateAdmin, requireRole } from '../middleware/auth.js';
 import {
   enrichCandidateWithSourceLabel,
 } from '../utils/serializers.js';
-import { sanitizeString } from '../utils/validation.js';
+import { sanitizeString, validateCandidateInput, normalizePhone } from '../utils/validation.js';
 import {
   updateCandidateStatus,
   assignCandidates,
   buildCandidateFilters,
   findDuplicatePhones,
 } from '../services/candidateService.js';
+import { createFullCandidate } from '../services/createCandidate.js';
 
 export default function createAdminRoutes(prisma) {
   const router = express.Router();
@@ -154,89 +155,49 @@ export default function createAdminRoutes(prisma) {
   });
 
   router.post('/candidates', async (req, res) => {
-    const {
-      fullName, phoneNumber1, phoneNumber2, dob, sex, maritalStatus,
-      familyPhonePrimary, familyPhoneBackup, emailId, secondaryEmailId,
-      presentAddress, presentDistrict, presentState, permanentAddress,
-      permanentDistrict, permanentState, jobRoles, preferredDistricts,
-      expectedSalary, languagesKnown, education, technical, experience
-    } = req.body;
+    const body = {
+      ...req.body,
+      phoneNumber1: normalizePhone(req.body.phoneNumber1),
+      phoneNumber2: req.body.phoneNumber2 ? normalizePhone(req.body.phoneNumber2) : null,
+      familyPhonePrimary: req.body.familyPhonePrimary ? normalizePhone(req.body.familyPhonePrimary) : null,
+      familyPhoneBackup: req.body.familyPhoneBackup ? normalizePhone(req.body.familyPhoneBackup) : null,
+    };
 
-    if (!fullName || !phoneNumber1) {
+    const validationErrors = validateCandidateInput(body);
+    if (validationErrors.length) {
+      return res.status(400).json({ error: validationErrors[0], errors: validationErrors });
+    }
+
+    if (!body.fullName || !body.phoneNumber1) {
       return res.status(400).json({ error: 'fullName and phoneNumber1 are required' });
     }
 
     try {
-      const existing = await prisma.candidate.findUnique({ where: { phoneNumber1 } });
+      const existing = await prisma.candidate.findUnique({ where: { phoneNumber1: body.phoneNumber1 } });
       if (existing) {
         return res.status(409).json({ error: 'A candidate with this phone number already exists' });
       }
 
+      // Sanitize string inputs
+      body.fullName = sanitizeString(body.fullName, 100);
+      body.presentAddress = body.presentAddress ? sanitizeString(body.presentAddress, 500) : null;
+      body.permanentAddress = body.permanentAddress ? sanitizeString(body.permanentAddress, 500) : null;
+
       const source = req.admin.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN';
-      const candidate = await prisma.candidate.create({
-        data: {
-          fullName: sanitizeString(fullName, 100),
-          phoneNumber1,
-          phoneNumber2: phoneNumber2 || null,
-          dob: dob ? new Date(dob) : null,
-          sex: sex ? sanitizeString(sex, 20) : null,
-          maritalStatus: maritalStatus ? sanitizeString(maritalStatus, 20) : null,
-          familyPhonePrimary: familyPhonePrimary || null,
-          familyPhoneBackup: familyPhoneBackup || null,
-          emailId: emailId || null,
-          secondaryEmailId: secondaryEmailId || null,
-          presentAddress: presentAddress ? sanitizeString(presentAddress, 500) : null,
-          presentDistrict: presentDistrict ? sanitizeString(presentDistrict, 50) : null,
-          presentState: presentState ? sanitizeString(presentState, 50) : 'Tamil Nadu',
-          permanentAddress: permanentAddress ? sanitizeString(permanentAddress, 500) : null,
-          permanentDistrict: permanentDistrict ? sanitizeString(permanentDistrict, 50) : null,
-          permanentState: permanentState ? sanitizeString(permanentState, 50) : 'Tamil Nadu',
-          jobRoles: Array.isArray(jobRoles) ? jobRoles : [],
-          preferredDistricts: Array.isArray(preferredDistricts) ? preferredDistricts : [],
-          expectedSalary: expectedSalary ? sanitizeString(expectedSalary, 50) : null,
-          languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : [],
-          status: 'NEW',
+      const candidate = await createFullCandidate(
+        prisma,
+        {
+          ...body,
           source,
           createdById: req.admin.id,
-          education: {
-            create: Array.isArray(education)
-              ? education.filter(item => item?.institution?.trim()).map(item => ({
-                  institution: sanitizeString(item.institution, 200) || '',
-                  course: sanitizeString(item.course, 200) || '',
-                }))
-              : []
-          },
-          technical: {
-            create: Array.isArray(technical)
-              ? technical.filter(item => item?.institution?.trim()).map(item => ({
-                  institution: sanitizeString(item.institution, 200) || '',
-                  course: sanitizeString(item.course, 200) || '',
-                }))
-              : []
-          },
-          experience: {
-            create: Array.isArray(experience)
-              ? experience.filter(item => item?.institution?.trim()).map(item => ({
-                  institution: sanitizeString(item.institution, 200) || '',
-                  role: sanitizeString(item.role, 200) || '',
-                  fromYear: sanitizeString(item.fromYear, 10) || '',
-                  toYear: sanitizeString(item.toYear, 10) || '',
-                }))
-              : []
-          }
+          assignedToId: body.assignedToId || null,
+          status: 'NEW',
         },
-      });
+        { changedById: req.admin.id },
+      );
 
-      await prisma.statusHistory.create({
-        data: {
-          candidateId: candidate.id,
-          fromStatus: null,
-          toStatus: 'NEW',
-          changedById: req.admin.id,
-        },
-      });
-
-      res.status(201).json({ success: true, candidate });
+      const adminMap = await getAdminMap();
+      res.status(201).json({ success: true, candidate: enrichCandidateWithSourceLabel(candidate, adminMap) });
     } catch (err) {
       console.error('Admin create candidate:', err.message);
       res.status(500).json({ error: 'Failed to create candidate' });

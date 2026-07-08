@@ -2329,7 +2329,8 @@ button {
 
 @media (max-width: 968px) {
   .landing-container {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse;
     gap: 32px;
     min-height: auto;
     padding-bottom: 40px;

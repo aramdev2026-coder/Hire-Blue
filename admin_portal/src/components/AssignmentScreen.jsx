@@ -10,6 +10,7 @@ export default function AssignmentScreen({
   const [districtFilter, setDistrictFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [assignmentFilter, setAssignmentFilter] = useState('ALL');
   const [selected, setSelected] = useState(new Set());
   const [subAdminId, setSubAdminId] = useState('');
   const [roundRobin, setRoundRobin] = useState(false);
@@ -31,9 +32,11 @@ export default function AssignmentScreen({
       if (districtFilter && c.presentDistrict !== districtFilter) return false;
       if (roleFilter && !c.jobRoles?.includes(roleFilter)) return false;
       if (sourceFilter && c.source !== sourceFilter) return false;
+      if (assignmentFilter === 'ASSIGNED' && !c.assignedToId && !c.assignedTo) return false;
+      if (assignmentFilter === 'UNASSIGNED' && (c.assignedToId || c.assignedTo)) return false;
       return true;
     });
-  }, [candidates, search, statusFilter, districtFilter, roleFilter, sourceFilter]);
+  }, [candidates, search, statusFilter, districtFilter, roleFilter, sourceFilter, assignmentFilter]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -70,11 +73,16 @@ export default function AssignmentScreen({
           <h3 className="font-bold text-slate-900">Candidate Assignment</h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <div className="relative lg:col-span-2">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg" />
           </div>
+          <select value={assignmentFilter} onChange={(e) => setAssignmentFilter(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-2 bg-slate-50 text-slate-700 font-medium cursor-pointer">
+            <option value="ALL">All Candidates</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="UNASSIGNED">Unassigned</option>
+          </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-2">
             <option value="">All Statuses</option>
             {ALL_CANDIDATE_STATUSES.map((s) => <option key={s} value={s}>{formatStatus(s)}</option>)}

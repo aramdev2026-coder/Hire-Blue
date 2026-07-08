@@ -108,7 +108,7 @@ export default function createCandidateRoutes(prisma) {
     // Too many attempts
     if (record.attempts >= 5) {
       await cleanupOldOTPs(prisma, emailLower);
-      throw new AppError('Too many failed attempts. Please request a new OTP.', 400);
+      throw new AppError('Too many failed attempts. Please press Resend OTP to request a new code.', 400);
     }
 
     // Expired
@@ -123,7 +123,7 @@ export default function createCandidateRoutes(prisma) {
         where: { id: record.id },
         data: { attempts: record.attempts + 1 }
       });
-      const remaining = 5 - (record.attempts + 1);
+      const remaining = 6 - (record.attempts + 1);
       throw new AppError(`Invalid OTP. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`, 400);
     }
 

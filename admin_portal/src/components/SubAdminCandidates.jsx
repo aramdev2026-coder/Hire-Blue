@@ -160,6 +160,7 @@ export default function SubAdminCandidates({
                     <p><strong>Mobile:</strong> {candidate.phoneNumber1}</p>
                     <p><strong>District:</strong> {candidate.presentDistrict || 'N/A'}</p>
                     <p><strong>Roles:</strong> {candidate.jobRoles?.join(', ') || 'N/A'}</p>
+                    <p><strong>Registered:</strong> {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

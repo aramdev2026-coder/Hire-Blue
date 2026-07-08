@@ -340,6 +340,9 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
             <p className="auth-copy" style={{ marginBottom: '16px' }}>
               We've sent a 6-digit OTP code to <br />
               <strong style={{ color: 'var(--text)', wordBreak: 'break-all' }}>{email}</strong>
+              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--muted)', marginTop: '8px' }}>
+                If you do not receive the email shortly, please <strong style={{ color: 'var(--primary)', fontWeight: '700' }}>refresh your inbox</strong> or <strong style={{ color: '#ea580c', fontWeight: '700' }}>check your spam folder</strong>.
+              </span>
             </p>
 
             {error && <div className="alert-box error">{error}</div>}
@@ -348,7 +351,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
             <form onSubmit={handleVerifyOTP} className="form-stack">
               <div className="field text-center">
                 <label className="field-label" style={{ textAlign: 'left', display: 'block' }}>Enter One-Time Password *</label>
-                
+
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', margin: '20px 0' }}>
                   {otpVals.map((val, idx) => (
                     <input
@@ -408,7 +411,10 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
               </button>
             </form>
 
-            <div style={{ marginTop: '20px', fontSize: '0.9rem', color: 'var(--muted)' }}>
+            <div style={{ marginTop: '24px', fontSize: '0.88rem', color: 'var(--muted)' }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                Please check your email thoroughly before requesting a resend for confirmation.
+              </p>
               Didn't receive the email?{' '}
               {resendCountdown > 0 ? (
                 <span>Resend in {resendCountdown}s</span>
