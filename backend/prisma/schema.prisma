@@ -83,7 +83,7 @@ model Candidate {
   maritalStatus      String?
   familyPhonePrimary String?
   familyPhoneBackup  String?
-  emailId            String?
+  emailId            String?         @unique
   secondaryEmailId   String?
   presentAddress     String?
   presentDistrict    String?
@@ -237,3 +237,15 @@ model JobRequirement {
 
   shortlistedCandidates Candidate[]
 }
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+

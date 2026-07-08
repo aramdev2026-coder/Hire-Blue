@@ -64,11 +64,11 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    
+
     return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
@@ -119,6 +119,26 @@ app.use('/api/employer', createEmployerRoutes(prisma));
 // ❌ GLOBAL ERROR HANDLER
 // ============================================================================
 app.use(errorHandler);
+
+// ============================================================================
+// 🧹 BACKGROUND CRON JOBS
+// ============================================================================
+
+// Clean up expired OTPs every hour
+setInterval(async () => {
+  try {
+    const deleted = await prisma.otpToken.deleteMany({
+      where: {
+        expiresAt: { lt: new Date() }  // expired before now
+      }
+    });
+    if (deleted.count > 0) {
+      logger.info(`🧹 Cleaned up ${deleted.count} expired OTP token(s)`);
+    }
+  } catch (err) {
+    logger.error('❌ OTP cleanup error:', err);
+  }
+}, 60 * 60 * 1000); // every 60 minutes
 
 // ============================================================================
 // 🚀 SERVER START

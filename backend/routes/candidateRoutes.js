@@ -7,9 +7,21 @@ import AppError from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sanitizeString } from '../utils/validation.js';
 import { authenticateCandidate, enforceCandidateOwnership } from '../middleware/security.js';
+import { sendOTPEmail } from '../services/emailService.js';
+import logger from '../utils/logger.js';
 
 export default function createCandidateRoutes(prisma) {
   const router = express.Router();
+
+  // Helper — generate 6 digit OTP
+  const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Helper — delete expired OTPs for an email (cleanup)
+  const cleanupOldOTPs = async (prismaInstance, email) => {
+    await prismaInstance.otpToken.deleteMany({
+      where: { email }
+    });
+  };
 
   // OTP rate limiter — 5 OTP requests per 10 min per IP
   const otpLimiter = rateLimit({
@@ -41,26 +53,87 @@ export default function createCandidateRoutes(prisma) {
       throw new AppError('Invalid email format', 400);
     }
 
-    // Email OTP sandbox fallback
-    return res.json({ success: true, otpSessionId: 'SANDBOX_SESSION_ACTIVE', sandbox: true });
+    // Clean up old OTPs
+    await cleanupOldOTPs(prisma, emailLower);
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // Save to database
+    await prisma.otpToken.create({
+      data: {
+        email: emailLower,
+        otp,
+        expiresAt,
+        attempts: 0,
+      }
+    });
+
+    // Log the OTP code immediately in dev environment for quick access
+    if (env.NODE_ENV !== 'production') {
+      console.log('\n=========================================');
+      console.log(`🔑 DEV OTP CODE FOR ${emailLower}: ${otp}`);
+      console.log('=========================================\n');
+    }
+
+    // Fire email sending in the background (does not block client response)
+    sendOTPEmail(emailLower, otp).catch((err) => {
+      logger.error(`❌ Failed to send OTP email in background: ${err.message || err}`);
+    });
+
+    res.json({ success: true, message: 'OTP sent to your email.' });
   }));
 
   // ─────────────────────────────────────────────────────────────────
   // STEP 2 - VALIDATE OTP & ASSIGN SESSION TOKEN
   // ─────────────────────────────────────────────────────────────────
   router.post('/verify-otp', authLimiter, asyncHandler(async (req, res) => {
-    const { email, otpCode, otpSessionId } = req.body;
+    const { email, otpCode } = req.body;
     if (!email || !otpCode) throw new AppError('Email and OTP required', 400);
 
     const emailLower = String(email).trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) throw new AppError('Invalid email format', 400);
-    if (!/^\d{4,6}$/.test(String(otpCode))) throw new AppError('Invalid OTP format', 400);
 
-    if (otpCode !== '123456') {
-      throw new AppError('Incorrect OTP. Sandbox code is 123456.', 400);
+    // Find the latest OTP token record
+    const record = await prisma.otpToken.findFirst({
+      where: { email: emailLower },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!record) {
+      throw new AppError('OTP not found. Please request a new one.', 400);
     }
 
-    let candidate = await prisma.candidate.findFirst({ where: { emailId: emailLower } });
+    // Too many attempts
+    if (record.attempts >= 5) {
+      await cleanupOldOTPs(prisma, emailLower);
+      throw new AppError('Too many failed attempts. Please request a new OTP.', 400);
+    }
+
+    // Expired
+    if (new Date() > record.expiresAt) {
+      await cleanupOldOTPs(prisma, emailLower);
+      throw new AppError('OTP expired. Please request a new one.', 400);
+    }
+
+    // Incorrect code
+    if (record.otp !== String(otpCode)) {
+      await prisma.otpToken.update({
+        where: { id: record.id },
+        data: { attempts: record.attempts + 1 }
+      });
+      const remaining = 5 - (record.attempts + 1);
+      throw new AppError(`Invalid OTP. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`, 400);
+    }
+
+    // OTP is valid - clean it up
+    await cleanupOldOTPs(prisma, emailLower);
+
+    let candidate = await prisma.candidate.findUnique({
+      where: { emailId: emailLower }
+    });
+
     if (!candidate) {
       try {
         candidate = await prisma.candidate.create({
@@ -88,6 +161,58 @@ export default function createCandidateRoutes(prisma) {
   }));
 
   // ─────────────────────────────────────────────────────────────────
+  // STEP 3 - RESEND OTP
+  // ─────────────────────────────────────────────────────────────────
+  router.post('/resend-otp', otpLimiter, asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email) throw new AppError('Email address is required', 400);
+
+    const emailLower = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      throw new AppError('Invalid email format', 400);
+    }
+
+    // Rate limit — don't allow resend more than once per 60 seconds
+    const recentOtp = await prisma.otpToken.findFirst({
+      where: { email: emailLower },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (recentOtp) {
+      const secondsSinceCreated = (Date.now() - new Date(recentOtp.createdAt).getTime()) / 1000;
+      if (secondsSinceCreated < 60) {
+        const waitSeconds = Math.ceil(60 - secondsSinceCreated);
+        throw new AppError(`Please wait ${waitSeconds} seconds before requesting a new OTP.`, 429);
+      }
+    }
+
+    // Clean up old OTPs
+    await cleanupOldOTPs(prisma, emailLower);
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.otpToken.create({
+      data: { email: emailLower, otp, expiresAt, attempts: 0 }
+    });
+
+    // Log the OTP code immediately in dev environment for quick access
+    if (env.NODE_ENV !== 'production') {
+      console.log('\n=========================================');
+      console.log(`🔑 DEV RESEND OTP CODE FOR ${emailLower}: ${otp}`);
+      console.log('=========================================\n');
+    }
+
+    // Fire email sending in the background (does not block client response)
+    sendOTPEmail(emailLower, otp).catch((err) => {
+      logger.error(`❌ Failed to resend OTP email in background: ${err.message || err}`);
+    });
+
+    res.json({ success: true, message: 'New OTP sent to your email.' });
+  }));
+
+  // ─────────────────────────────────────────────────────────────────
   // INTERMEDIATE PROFILE SAVE ENGINE
   // ─────────────────────────────────────────────────────────────────
   router.post('/save-wizard-step', authenticateCandidate, enforceCandidateOwnership, asyncHandler(async (req, res) => {
@@ -99,6 +224,19 @@ export default function createCandidateRoutes(prisma) {
     }
 
     if (Number(sectionIndex) === 1) {
+      // 🛡️ Check if another candidate has the same phoneNumber1 to prevent database conflict
+      if (p.phoneNumber1) {
+        const existing = await prisma.candidate.findFirst({
+          where: {
+            phoneNumber1: p.phoneNumber1,
+            NOT: { id: req.candidate.id }
+          }
+        });
+        if (existing) {
+          throw new AppError('This primary mobile number is already registered to another account', 409);
+        }
+      }
+
       await prisma.candidate.update({
         where: { id: req.candidate.id },
         data: {
@@ -106,6 +244,7 @@ export default function createCandidateRoutes(prisma) {
           dob: p.dob ? new Date(p.dob) : null,
           sex: sanitizeString(p.sex, 20),
           maritalStatus: sanitizeString(p.maritalStatus, 20),
+          phoneNumber1: p.phoneNumber1 || undefined, // Save the updated primary phone number
           phoneNumber2: p.phoneNumber2 || null,
           familyPhonePrimary: p.familyPhonePrimary || null,
           familyPhoneBackup: p.familyPhoneBackup || null,

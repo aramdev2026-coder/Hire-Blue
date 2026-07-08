@@ -434,9 +434,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const [errors, setErrors] = React.useState({});
   const [serverErr, setServerErr] = React.useState('');
   const [saving, setSaving] = React.useState(false);
-  const [acceptedTerms, setAcceptedTerms] = React.useState(() => {
-    return !!(initialData?.fullName || initialData?.phoneNumber1);
-  });
+  const [acceptedTerms, setAcceptedTerms] = React.useState(true);
   const [showLegal, setShowLegal] = React.useState(false);
   const [activeColSuggestIdx, setActiveColSuggestIdx] = React.useState(null);
 
@@ -500,8 +498,8 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   });
   const addRow = (tbl) => setForm(p => ({
     ...p, [tbl]: [...p[tbl],
-    tbl === 'experience' 
-      ? { institution: '', role: '', fromYear: '', toYear: '' } 
+    tbl === 'experience'
+      ? { institution: '', role: '', fromYear: '', toYear: '' }
       : { institution: '', customInstitution: '', course: '', customCourse: '' }
     ]
   }));
@@ -836,17 +834,17 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                   <option value="">Select</option><option>Single</option><option>Married</option><option>Widowed</option><option>Divorced</option>
                 </select>
               </Field>
-              <Field label="Alternate Mobile" req error={errors.phoneNumber2}>
-                <input className={`input${errors.phoneNumber2 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
-                  value={form.phoneNumber2} onChange={e => upd('phoneNumber2', e.target.value.replace(/\D/g, ''))} />
+              <Field label="Primary Mobile" req error={errors.phoneNumber1}>
+                <input className={`input${errors.phoneNumber1 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
+                  value={form.phoneNumber1} onChange={e => upd('phoneNumber1', e.target.value.replace(/\D/g, ''))} />
               </Field>
               <Field label="Family Contact">
                 <input className="input" type="tel" maxLength={10} placeholder="Optional"
                   value={form.familyPhonePrimary} onChange={e => upd('familyPhonePrimary', e.target.value.replace(/\D/g, ''))} />
               </Field>
-              <Field label="Primary Mobile" req error={errors.phoneNumber1}>
-                <input className={`input${errors.phoneNumber1 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
-                  value={form.phoneNumber1} onChange={e => upd('phoneNumber1', e.target.value.replace(/\D/g, ''))} />
+              <Field label="Alternate Mobile" req error={errors.phoneNumber2}>
+                <input className={`input${errors.phoneNumber2 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
+                  value={form.phoneNumber2} onChange={e => upd('phoneNumber2', e.target.value.replace(/\D/g, ''))} />
               </Field>
               <Field label="Secondary Email">
                 <input className="input" type="email" placeholder="Optional"
@@ -911,11 +909,11 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               </div>
             </>)}
             <label className="checkbox-label" style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', textAlign: 'left' }}>
-              <input 
-                type="checkbox" 
-                checked={acceptedTerms} 
-                onChange={(e) => setAcceptedTerms(e.target.checked)} 
-                className="checkbox-input" 
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="checkbox-input"
                 style={{ width: '16px', height: '16px', cursor: 'pointer', margin: '4px 0 0 0', flexShrink: 0 }}
               />
               <span className="checkbox-copy" style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.4' }}>
