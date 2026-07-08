@@ -82,6 +82,9 @@ app.use(express.json({ limit: '1mb' }));
 // Input sanitization
 app.use(sanitizeBody);
 
+// Health check endpoint (bypasses rate limiters for uptime monitors)
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 // Global rate limiter
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -103,8 +106,6 @@ const authLimiter = rateLimit({
 // ============================================================================
 // 🛣️ ROUTES
 // ============================================================================
-
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/admin/auth', authLimiter, createAuthRoutes(prisma));
 app.use('/api/sub-admin', createSubAdminRoutes(prisma));
