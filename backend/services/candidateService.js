@@ -90,7 +90,11 @@ export async function assignCandidates(prisma, { candidateIds, subAdminId, subAd
 
 export function buildCandidateFilters(query) {
   const filters = {};
-  if (query.status) filters.status = query.status;
+  if (query.status) {
+    filters.status = query.status;
+  } else {
+    filters.status = { not: 'PENDING_WIZARD' };
+  }
   if (query.source) filters.source = query.source;
   if (query.district) filters.presentDistrict = query.district;
   if (query.role) filters.jobRoles = { has: query.role };

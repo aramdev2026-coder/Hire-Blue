@@ -21,7 +21,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
     ...(isAdmin ? [
       { id: 'verification', label: 'Employer Management', icon: Building2 },
       { id: 'tracker', label: 'Requirements Tracker', icon: FileSpreadsheet },
-      { id: 'match', label: 'Match Engine Pipeline', icon: Briefcase },
+      ...(isSuperAdmin ? [{ id: 'match', label: 'Match Engine Pipeline', icon: Briefcase }] : []),
       { id: 'candidates', label: 'Candidates Directory', icon: Users },
       { id: 'assignment', label: 'Candidate Assignment', icon: UserPlus },
     ] : []),

@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { TN_DISTRICTS } from '../constants';
+import { STATES_AND_DISTRICTS } from '../utils/locationData';
 
 export default function AdminAccountForm({
   form, setForm, errors, editing = false, showDistrict = false, onSubmit, onCancel, submitting, submitLabel,
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const initialRegionState = Object.keys(STATES_AND_DISTRICTS).find(st => 
+    (STATES_AND_DISTRICTS[st] || []).includes(form.region)
+  ) || 'Tamil Nadu';
+  const [subAdminState, setSubAdminState] = useState(initialRegionState);
   const inputCls = (field) =>
     `w-full mt-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
       errors[field] ? 'border-rose-300' : 'border-slate-200'
@@ -25,7 +29,7 @@ export default function AdminAccountForm({
 
       <div>
         <label className="text-xs font-semibold text-slate-600 uppercase">Email <span className="text-rose-500">*</span></label>
-        <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls('email')} />
+        <input type="email" required autoComplete="new-email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls('email')} />
         {errors.email && <p className="text-xs text-rose-600 mt-0.5">{errors.email}</p>}
       </div>
 
@@ -41,7 +45,7 @@ export default function AdminAccountForm({
           Password {!editing && <span className="text-rose-500">*</span>}
         </label>
         <div className="relative mt-1">
-          <input type={showPassword ? "text" : "password"} required={!editing} value={form.password}
+          <input type={showPassword ? "text" : "password"} required={!editing} autoComplete="new-password" value={form.password}
             placeholder={editing ? 'Leave blank to keep current' : ''}
             onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${inputCls('password').replace('mt-1', '')} pr-10`} />
           <button
@@ -56,14 +60,25 @@ export default function AdminAccountForm({
       </div>
 
       {showDistrict && (
-        <div className="sm:col-span-2">
-          <label className="text-xs font-semibold text-slate-600 uppercase">District / Region <span className="text-rose-500">*</span></label>
-          <select required value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className={inputCls('region')}>
-            <option value="">Select district</option>
-            {TN_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-          {errors.region && <p className="text-xs text-rose-600 mt-0.5">{errors.region}</p>}
-        </div>
+        <>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 uppercase">State <span className="text-rose-500">*</span></label>
+            <select required value={subAdminState} onChange={(e) => {
+              setSubAdminState(e.target.value);
+              setForm({ ...form, region: '' });
+            }} className={inputCls('region')}>
+              {Object.keys(STATES_AND_DISTRICTS).map((st) => <option key={st} value={st}>{st}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 uppercase">District / Region <span className="text-rose-500">*</span></label>
+            <select required value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className={inputCls('region')}>
+              <option value="">Select district</option>
+              {(STATES_AND_DISTRICTS[subAdminState] || []).map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            {errors.region && <p className="text-xs text-rose-600 mt-0.5">{errors.region}</p>}
+          </div>
+        </>
       )}
 
       <div className="sm:col-span-2 flex gap-2">

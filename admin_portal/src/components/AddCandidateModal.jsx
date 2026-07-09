@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
-  TN_DISTRICTS, JOB_ROLES, SALARY_RANGES, LANGUAGES,
+  JOB_ROLES, SALARY_RANGES, LANGUAGES,
   GENDER_OPTIONS, MARITAL_OPTIONS, emptyCandidateForm,
 } from '../constants';
 import { validateCandidateForm, buildCandidatePayload } from '../utils/validation';
+import { STATES_AND_DISTRICTS } from '../utils/locationData';
+const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
 
 const SALARY_STEPS = [
   10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 40000, 45000, 50000,
@@ -77,11 +79,77 @@ function TagPicker({ options, selected, onToggle, error }) {
   );
 }
 
-export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
+function mapCandidateToForm(c) {
+  const splitAddr = (full) => {
+    const raw = full || '';
+    if (raw.includes(', ')) {
+      const parts = raw.split(', ');
+      return { street1: parts[0] || '', street2: parts.slice(1).join(', ') };
+    }
+    return { street1: raw, street2: '' };
+  };
+  const present = splitAddr(c.presentAddress);
+  const permanent = splitAddr(c.permanentAddress);
+
+  const parsedExp = (c.experience || []).map((exp) => {
+    const match = (exp.institution || '').match(/^(.*?)\s*\((.*?)\)$/);
+    return {
+      institution: match ? match[1] : exp.institution || '',
+      role: match ? match[2] : '',
+      fromYear: exp.fromYear || '',
+      toYear: exp.toYear || '',
+    };
+  });
+
+  const parseDob = (dobVal) => {
+    if (!dobVal) return '';
+    const d = new Date(dobVal);
+    return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+  };
+
+  return {
+    fullName: c.fullName || '',
+    phoneNumber1: c.phoneNumber1 || '',
+    phoneNumber2: c.phoneNumber2 || '',
+    dob: parseDob(c.dob),
+    sex: c.sex || '',
+    maritalStatus: c.maritalStatus || '',
+    familyPhonePrimary: c.familyPhonePrimary || '',
+    familyPhoneBackup: c.familyPhoneBackup || '',
+    emailId: c.emailId || '',
+    secondaryEmailId: c.secondaryEmailId || '',
+    presentStreet1: present.street1,
+    presentStreet2: present.street2,
+    presentCity: c.presentDistrict || '',
+    presentState: c.presentState || 'Tamil Nadu',
+    sameAddress: c.presentAddress === c.permanentAddress && c.presentDistrict === c.permanentDistrict && c.presentState === c.permanentState,
+    permanentStreet1: permanent.street1,
+    permanentStreet2: permanent.street2,
+    permanentCity: c.permanentDistrict || '',
+    permanentState: c.permanentState || 'Tamil Nadu',
+    jobRoles: Array.isArray(c.jobRoles) ? c.jobRoles : [],
+    preferredDistricts: Array.isArray(c.preferredDistricts) ? c.preferredDistricts : [],
+    expectedSalary: c.expectedSalary || '',
+    languagesKnown: Array.isArray(c.languagesKnown) ? c.languagesKnown : [],
+    education: c.education && c.education.length > 0
+      ? c.education.map((e) => ({ institution: e.institution, course: e.course }))
+      : [{ institution: '', course: '' }],
+    technical: c.technical && c.technical.length > 0
+      ? c.technical.map((t) => ({ institution: t.institution, course: t.course }))
+      : [{ institution: '', course: '' }],
+    experience: parsedExp.length > 0 ? parsedExp : [{ institution: '', role: '', fromYear: '', toYear: '' }],
+  };
+}
+
+export default function AddCandidateModal({ onClose, onSubmit, submitting, candidate }) {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(emptyCandidateForm);
+  const [form, setForm] = useState(() => {
+    if (candidate) return mapCandidateToForm(candidate);
+    return emptyCandidateForm();
+  });
   const [errors, setErrors] = useState({});
   const [customRole, setCustomRole] = useState('');
+  const [preferredState, setPreferredState] = useState('Tamil Nadu');
 
   const upd = (key, val) => setForm((f) => ({ ...f, [key]: val }));
   const toggle = (key, val) => setForm((f) => ({
@@ -215,14 +283,19 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
                 <input className={inputCls()} value={form.presentStreet2} onChange={(e) => upd('presentStreet2', e.target.value)} />
               </Field>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="State" required>
+                  <select className={inputCls()} value={form.presentState || 'Tamil Nadu'} onChange={(e) => {
+                    upd('presentState', e.target.value);
+                    upd('presentCity', '');
+                  }}>
+                    {Object.keys(STATES_AND_DISTRICTS).map((st) => <option key={st} value={st}>{st}</option>)}
+                  </select>
+                </Field>
                 <Field label="District" required error={errors.presentCity}>
                   <select className={inputCls(errors.presentCity)} value={form.presentCity} onChange={(e) => upd('presentCity', e.target.value)}>
                     <option value="">Select district</option>
-                    {TN_DISTRICTS.map((d) => <option key={d}>{d}</option>)}
+                    {(STATES_AND_DISTRICTS[form.presentState || 'Tamil Nadu'] || []).map((d) => <option key={d}>{d}</option>)}
                   </select>
-                </Field>
-                <Field label="State">
-                  <input className={`${inputCls()} bg-slate-50`} readOnly value="Tamil Nadu" />
                 </Field>
               </div>
 
@@ -240,12 +313,22 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
                   <Field label="Street Address 2">
                     <input className={inputCls()} value={form.permanentStreet2} onChange={(e) => upd('permanentStreet2', e.target.value)} />
                   </Field>
-                  <Field label="District" required error={errors.permanentCity}>
-                    <select className={inputCls(errors.permanentCity)} value={form.permanentCity} onChange={(e) => upd('permanentCity', e.target.value)}>
-                      <option value="">Select district</option>
-                      {TN_DISTRICTS.map((d) => <option key={d}>{d}</option>)}
-                    </select>
-                  </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="State" required>
+                      <select className={inputCls()} value={form.permanentState || 'Tamil Nadu'} onChange={(e) => {
+                        upd('permanentState', e.target.value);
+                        upd('permanentCity', '');
+                      }}>
+                        {Object.keys(STATES_AND_DISTRICTS).map((st) => <option key={st} value={st}>{st}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="District" required error={errors.permanentCity}>
+                      <select className={inputCls(errors.permanentCity)} value={form.permanentCity} onChange={(e) => upd('permanentCity', e.target.value)}>
+                        <option value="">Select district</option>
+                        {(STATES_AND_DISTRICTS[form.permanentState || 'Tamil Nadu'] || []).map((d) => <option key={d}>{d}</option>)}
+                      </select>
+                    </Field>
+                  </div>
                 </>
               )}
             </>
@@ -267,13 +350,18 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting }) {
 
               <Field label="Preferred Districts" required error={errors.preferredDistricts}>
                 <div className="flex gap-2 mb-1">
-                  <button type="button" className="text-xs text-emerald-600 cursor-pointer" onClick={() => upd('preferredDistricts', [...TN_DISTRICTS])}>Select all</button>
-                  <button type="button" className="text-xs text-slate-500 cursor-pointer" onClick={() => upd('preferredDistricts', [])}>Clear</button>
+                  <button type="button" className="text-xs text-emerald-600 cursor-pointer" onClick={() => upd('preferredDistricts', [...new Set([...form.preferredDistricts, ...(STATES_AND_DISTRICTS[preferredState] || [])])])}>Select all for {preferredState}</button>
+                  <button type="button" className="text-xs text-slate-500 cursor-pointer" onClick={() => upd('preferredDistricts', [])}>Clear All</button>
                 </div>
-                <select className={inputCls()} value="" onChange={(e) => e.target.value && toggle('preferredDistricts', e.target.value)}>
-                  <option value="">Add district...</option>
-                  {TN_DISTRICTS.filter((d) => !form.preferredDistricts.includes(d)).map((d) => <option key={d}>{d}</option>)}
-                </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                  <select className={inputCls()} value={preferredState} onChange={(e) => setPreferredState(e.target.value)}>
+                    {Object.keys(STATES_AND_DISTRICTS).map((st) => <option key={st} value={st}>{st}</option>)}
+                  </select>
+                  <select className={inputCls()} value="" onChange={(e) => e.target.value && toggle('preferredDistricts', e.target.value)}>
+                    <option value="">Add district from {preferredState}...</option>
+                    {(STATES_AND_DISTRICTS[preferredState] || []).filter((d) => !form.preferredDistricts.includes(d)).map((d) => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {form.preferredDistricts.map((d) => (
                     <button key={d} type="button" onClick={() => toggle('preferredDistricts', d)}

@@ -5,7 +5,7 @@ import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass } from '../const
 import { useConfirm } from '../context/ConfirmContext';
 
 export default function AssignmentScreen({
-  candidates, subAdmins, loading, onAssign, duplicates = [],
+  candidates, subAdmins, loading, onAssign, duplicates = [], statusCounts = {},
 }) {
   const { showAlert } = useConfirm();
   const [search, setSearch] = useState('');
@@ -88,7 +88,14 @@ export default function AssignmentScreen({
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-2">
             <option value="">All Statuses</option>
-            {ALL_CANDIDATE_STATUSES.map((s) => <option key={s} value={s}>{formatStatus(s)}</option>)}
+            {ALL_CANDIDATE_STATUSES.map((s) => {
+              const count = statusCounts[s] ?? 0;
+              return (
+                <option key={s} value={s}>
+                  {formatStatus(s)} ({count})
+                </option>
+              );
+            })}
           </select>
           <select value={districtFilter} onChange={(e) => setDistrictFilter(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-2 py-2">
             <option value="">All Districts</option>

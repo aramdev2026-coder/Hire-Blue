@@ -10,7 +10,7 @@ const SUB_ADMIN_STATUSES = ALL_CANDIDATE_STATUSES.filter(
 );
 
 export default function SubAdminCandidates({
-  candidates, loading, stats, onRefresh, onAddCandidate, onUpdateStatus, onAddNote, onFetchNotes,
+  candidates, loading, stats, onRefresh, onAddCandidate, onUpdateStatus, onAddNote, onFetchNotes, statusCounts = {}, onEditCandidate,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('ALL');
@@ -20,6 +20,8 @@ export default function SubAdminCandidates({
   const [callbackDate, setCallbackDate] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const displayedCandidates = candidates.filter((c) => {
     const matchesSearch = c.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,6 +80,20 @@ export default function SubAdminCandidates({
     }
   };
 
+  const handleEdit = async (candidateId, payload) => {
+    setSubmitting(true);
+    try {
+      await onEditCandidate(candidateId, payload);
+      setShowEditModal(false);
+      setEditingCandidate(null);
+      onRefresh();
+    } catch (err) {
+      console.warn('Failed to edit candidate:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const isCallbackDue = (candidate) => {
     const logs = notes[candidate.id] || [];
     const due = logs.find((l) => l.callbackAt && new Date(l.callbackAt) <= new Date());
@@ -129,9 +145,14 @@ export default function SubAdminCandidates({
           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
         >
           <option value="ALL">All Statuses</option>
-          {ALL_CANDIDATE_STATUSES.map((s) => (
-            <option key={s} value={s}>{formatStatus(s)}</option>
-          ))}
+          {ALL_CANDIDATE_STATUSES.map((s) => {
+            const count = statusCounts[s] ?? 0;
+            return (
+              <option key={s} value={s}>
+                {formatStatus(s)} ({count})
+              </option>
+            );
+          })}
         </select>
       </div>
 
@@ -173,6 +194,15 @@ export default function SubAdminCandidates({
                       <option key={s} value={s}>{formatStatus(s)}</option>
                     ))}
                   </select>
+                  <button
+                    onClick={() => {
+                      setEditingCandidate(candidate);
+                      setShowEditModal(true);
+                    }}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleExpand(candidate.id)}
                     className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg cursor-pointer"
@@ -236,6 +266,18 @@ export default function SubAdminCandidates({
           onClose={() => setShowAddModal(false)}
           onSubmit={handleCreate}
           submitting={submitting}
+        />
+      )}
+
+      {showEditModal && editingCandidate && (
+        <AddCandidateModal
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingCandidate(null);
+          }}
+          onSubmit={(payload) => handleEdit(editingCandidate.id, payload)}
+          submitting={submitting}
+          candidate={editingCandidate}
         />
       )}
     </div>

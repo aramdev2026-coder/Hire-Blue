@@ -84,10 +84,22 @@ export default function createAdminRoutes(prisma) {
         );
       }
 
+      // Calculate status counts on matching district/role/search (ignoring status filter)
+      const countFilters = buildCandidateFilters({ ...req.query, status: undefined });
+      const countsRaw = await prisma.candidate.groupBy({
+        by: ['status'],
+        _count: { id: true },
+        where: countFilters,
+      });
+      const statusCounts = Object.fromEntries(
+        countsRaw.map(item => [item.status, item._count.id])
+      );
+
       const adminMap = await getAdminMap();
       res.json({
         success: true,
         candidates: candidates.map((c) => enrichCandidateWithSourceLabel(c, adminMap)),
+        statusCounts,
       });
     } catch (err) {
       console.error('Fetch candidates:', err.message);
@@ -246,8 +258,8 @@ export default function createAdminRoutes(prisma) {
       const enriched = await Promise.all(
         subAdmins.map(async (sa) => {
           const [assignedCount, addedCount, placedCount] = await Promise.all([
-            prisma.candidate.count({ where: { assignedToId: sa.id, status: { notIn: ['PLACED', 'INACTIVE', 'BLACKLISTED'] } } }),
-            prisma.candidate.count({ where: { createdById: sa.id } }),
+            prisma.candidate.count({ where: { assignedToId: sa.id, status: { notIn: ['PLACED', 'INACTIVE', 'BLACKLISTED', 'PENDING_WIZARD'] } } }),
+            prisma.candidate.count({ where: { createdById: sa.id, status: { not: 'PENDING_WIZARD' } } }),
             prisma.candidate.count({ where: { createdById: sa.id, status: 'PLACED' } }),
           ]);
           return { ...sa, assignedCount, addedCount, placedCount };
@@ -303,6 +315,33 @@ export default function createAdminRoutes(prisma) {
 
   router.get('/jobs/:id/matches', async (req, res) => {
     try {
+      if (req.params.id === 'all') {
+        const jobs = await prisma.jobRequirement.findMany({
+          include: { employer: { select: { companyName: true } } },
+        });
+        const roles = [...new Set(jobs.map(j => j.roleTitle).filter(Boolean))];
+        const locations = [...new Set(jobs.flatMap(j => j.location || []).filter(Boolean))];
+
+        const candidates = await prisma.candidate.findMany({
+          where: {
+            status: { in: ['PENDING_ADMIN_CALL', 'VERIFIED', 'NEW'] },
+            jobRoles: { hasSome: roles },
+            OR: [
+              { preferredDistricts: { hasSome: locations } },
+              { preferredDistricts: { has: 'All Locations' } },
+              { preferredDistricts: { isEmpty: true } },
+            ],
+          },
+          include: { experience: true },
+        });
+
+        return res.json({
+          success: true,
+          job: { id: 'all', roleTitle: 'All Roles', employer: { companyName: 'All Companies' } },
+          matches: candidates
+        });
+      }
+
       const job = await prisma.jobRequirement.findUnique({
         where: { id: req.params.id },
         include: { employer: { select: { companyName: true } } },
@@ -311,7 +350,7 @@ export default function createAdminRoutes(prisma) {
 
       const candidates = await prisma.candidate.findMany({
         where: {
-          status: { in: ['PENDING_ADMIN_CALL', 'PENDING_WIZARD', 'VERIFIED', 'NEW'] },
+          status: { in: ['PENDING_ADMIN_CALL', 'VERIFIED', 'NEW'] },
           jobRoles: { hasSome: [job.roleTitle] },
           OR: [
             { preferredDistricts: { hasSome: job.location?.length ? job.location : [] } },
@@ -367,6 +406,139 @@ export default function createAdminRoutes(prisma) {
     } catch (err) {
       console.error('Notifications:', err.message);
       res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+  });
+
+  router.put('/candidates/:id', async (req, res) => {
+    const candidateId = parseInt(req.params.id, 10);
+    if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
+    const body = {
+      ...req.body,
+      phoneNumber1: normalizePhone(req.body.phoneNumber1),
+      phoneNumber2: req.body.phoneNumber2 ? normalizePhone(req.body.phoneNumber2) : null,
+      familyPhonePrimary: req.body.familyPhonePrimary ? normalizePhone(req.body.familyPhonePrimary) : null,
+      familyPhoneBackup: req.body.familyPhoneBackup ? normalizePhone(req.body.familyPhoneBackup) : null,
+    };
+
+    const validationErrors = validateCandidateInput(body);
+    if (validationErrors.length) {
+      return res.status(400).json({ error: validationErrors[0], errors: validationErrors });
+    }
+
+    try {
+      const candidate = await prisma.candidate.findUnique({
+        where: { id: candidateId },
+      });
+      if (!candidate) {
+        return res.status(404).json({ error: 'Candidate not found' });
+      }
+
+      // Check duplicates for phoneNumber1
+      if (body.phoneNumber1 !== candidate.phoneNumber1) {
+        const existing = await prisma.candidate.findUnique({ where: { phoneNumber1: body.phoneNumber1 } });
+        if (existing) {
+          return res.status(409).json({ error: 'A candidate with this phone number already exists' });
+        }
+      }
+
+      // Track changes for Audit Log
+      const diffs = [];
+      const trackFields = [
+        { key: 'fullName', label: 'Full Name' },
+        { key: 'phoneNumber1', label: 'Phone' },
+        { key: 'presentDistrict', label: 'Present District' },
+        { key: 'permanentDistrict', label: 'Permanent District' },
+        { key: 'expectedSalary', label: 'Expected Salary' },
+      ];
+
+      trackFields.forEach(({ key, label }) => {
+        if (body[key] !== undefined && body[key] !== candidate[key]) {
+          diffs.push(`${label} updated from "${candidate[key] || ''}" to "${body[key] || ''}"`);
+        }
+      });
+
+      // Update candidate fields and associations
+      const updated = await prisma.$transaction(async (tx) => {
+        // Delete existing associated rows
+        await tx.candidateEducation.deleteMany({ where: { candidateId } });
+        await tx.candidateTechnical.deleteMany({ where: { candidateId } });
+        await tx.candidateExperience.deleteMany({ where: { candidateId } });
+
+        // Re-create new associated rows
+        if (body.education?.length) {
+          await tx.candidateEducation.createMany({
+            data: body.education.map((item) => ({
+              candidateId,
+              institution: item.institution || '',
+              course: item.course || '',
+            })),
+          });
+        }
+        if (body.technical?.length) {
+          await tx.candidateTechnical.createMany({
+            data: body.technical.map((item) => ({
+              candidateId,
+              institution: item.institution || '',
+              course: item.course || '',
+            })),
+          });
+        }
+        if (body.experience?.length) {
+          await tx.candidateExperience.createMany({
+            data: body.experience.map((item) => ({
+              candidateId,
+              institution: item.institution || '',
+              fromYear: String(item.fromYear || ''),
+              toYear: String(item.toYear || ''),
+            })),
+          });
+        }
+
+        return tx.candidate.update({
+          where: { id: candidateId },
+          data: {
+            fullName: sanitizeString(body.fullName, 100),
+            phoneNumber1: body.phoneNumber1,
+            phoneNumber2: body.phoneNumber2,
+            dob: body.dob ? new Date(body.dob) : null,
+            sex: body.sex,
+            maritalStatus: body.maritalStatus,
+            familyPhonePrimary: body.familyPhonePrimary,
+            familyPhoneBackup: body.familyPhoneBackup,
+            emailId: body.emailId,
+            secondaryEmailId: body.secondaryEmailId,
+            presentAddress: body.presentAddress ? sanitizeString(body.presentAddress, 500) : null,
+            presentDistrict: body.presentDistrict,
+            presentState: body.presentState,
+            permanentAddress: body.permanentAddress ? sanitizeString(body.permanentAddress, 500) : null,
+            permanentDistrict: body.permanentDistrict,
+            permanentState: body.permanentState,
+            preferredDistricts: body.preferredDistricts || [],
+            expectedSalary: body.expectedSalary,
+            jobRoles: body.jobRoles || [],
+            languagesKnown: body.languagesKnown || [],
+          },
+        });
+      });
+
+      // Insert audit note in CommunicationLog if anything changed
+      if (diffs.length > 0) {
+        const auditLogMsg = `[Profile Edit] ${diffs.join(', ')} by admin`;
+        await prisma.communicationLog.create({
+          data: {
+            candidateId,
+            authorId: req.admin.id,
+            note: auditLogMsg,
+          },
+        });
+      }
+
+      const adminMap = await getAdminMap();
+      res.json({ success: true, candidate: enrichCandidateWithSourceLabel(updated, adminMap) });
+    } catch (err) {
+      console.error('Admin edit candidate:', err.message);
+      res.status(500).json({ error: 'Failed to update candidate' });
     }
   });
 

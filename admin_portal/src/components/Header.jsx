@@ -137,7 +137,7 @@ export default function Header({ activeTab, user }) {
                     className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="Enter current password"
                     required
                   />
                   <button
@@ -158,7 +158,7 @@ export default function Header({ activeTab, user }) {
                     className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="Enter new password"
                     required
                   />
                   <button
@@ -179,7 +179,7 @@ export default function Header({ activeTab, user }) {
                     className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="Confirm new password"
                     required
                   />
                   <button

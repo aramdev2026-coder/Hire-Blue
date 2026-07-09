@@ -31,6 +31,7 @@ export default function App() {
   const [employers, setEmployers] = useState([]);
   const [employers_filter, setEmployersFilter] = useState('ACTIVE');
   const [candidates, setCandidates] = useState([]);
+  const [statusCounts, setStatusCounts] = useState({});
   const [candidates_filter, setCandidatesFilter] = useState('PENDING_ADMIN_CALL');
   const [candidates_district, setCandidatesDistrict] = useState('');
   const [candidates_role, setCandidatesRole] = useState('');
@@ -131,6 +132,7 @@ export default function App() {
         });
       }
       setCandidates(list);
+      setStatusCounts(data.statusCounts || {});
     } catch (err) {
       setError(err.message);
     } finally {
@@ -215,23 +217,31 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    if (['tracker', 'match', 'assignment', 'candidates'].includes(activeTab) && isAdmin) {
+    const hasAccess = ['tracker', 'assignment', 'candidates'].includes(activeTab) && isAdmin;
+    const hasMatchAccess = activeTab === 'match' && isSuperAdmin;
+    if (hasAccess || hasMatchAccess) {
       fetchJobs();
       fetchDuplicates();
     }
-  }, [activeTab, user, isAdmin, fetchJobs, fetchDuplicates]);
+  }, [activeTab, user, isAdmin, isSuperAdmin, fetchJobs, fetchDuplicates]);
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'match' && isAdmin) {
+    if (activeTab === 'match' && isSuperAdmin) {
       fetchJobs().then((jobsList) => {
         if (jobsList?.length > 0) {
-          fetchJobMatches(jobsList[0].id);
-          setSelectedJob(jobsList[0]);
+          if (jobsList.length > 1) {
+            const allRolesJob = { id: 'all', roleTitle: 'All Roles', employer: { companyName: 'All Companies' } };
+            setSelectedJob(allRolesJob);
+            fetchJobMatches('all');
+          } else {
+            setSelectedJob(jobsList[0]);
+            fetchJobMatches(jobsList[0].id);
+          }
         }
       });
     }
-  }, [activeTab, user, isAdmin]);
+  }, [activeTab, user, isSuperAdmin]);
 
   useEffect(() => {
     if (!user) return;
@@ -432,6 +442,21 @@ export default function App() {
     }
   };
 
+  const handleEditCandidate = async (candidateId, data) => {
+    try {
+      setError('');
+      const path = isSubAdmin
+        ? `/api/sub-admin/candidates/${candidateId}`
+        : `/api/admin/candidates/${candidateId}`;
+      await apiFetch(path, { method: 'PUT', body: JSON.stringify(data) });
+      setSuccessMessage('Candidate details updated successfully.');
+      fetchCandidates();
+    } catch (err) {
+      setError(err.message || 'Failed to update candidate');
+      throw err;
+    }
+  };
+
   const handleAddNote = async (candidateId, note, callbackScheduledFor) => {
     await apiFetch(`/api/sub-admin/candidates/${candidateId}/notes`, {
       method: 'POST',
@@ -519,6 +544,7 @@ export default function App() {
               subAdmins={subAdmins}
               jobs={jobs}
               duplicates={duplicates}
+              statusCounts={statusCounts}
             />
           )}
 
@@ -529,6 +555,7 @@ export default function App() {
               loading={loading}
               onAssign={handleAssign}
               duplicates={duplicates}
+              statusCounts={statusCounts}
             />
           )}
 
@@ -536,7 +563,7 @@ export default function App() {
             <RequirementsTracker jobs={jobs} loading={loading} />
           )}
 
-          {isAdmin && activeTab === 'match' && (
+          {isSuperAdmin && activeTab === 'match' && (
             <MatchEngine
               jobs={jobs}
               selectedJob={selectedJob}
@@ -586,6 +613,8 @@ export default function App() {
               onUpdateStatus={updateCandidateStatus}
               onAddNote={handleAddNote}
               onFetchNotes={handleFetchNotes}
+              statusCounts={statusCounts}
+              onEditCandidate={handleEditCandidate}
             />
           )}
         </div>

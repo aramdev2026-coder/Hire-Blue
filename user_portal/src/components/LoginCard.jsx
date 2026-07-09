@@ -295,7 +295,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
         )}
 
         <img
-          src="/favicon.png"
+          src="/candidate-logo.png"
           alt="Aram FTC Logo"
           className="brand-logo"
           style={{ margin: '0 auto 16px', display: 'block' }}

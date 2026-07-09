@@ -14,7 +14,11 @@ export default function createSubAdminRoutes(prisma) {
       const { status, search } = req.query;
       const filters = { assignedToId: req.admin.id };
 
-      if (status) filters.status = status;
+      if (status) {
+        filters.status = status;
+      } else {
+        filters.status = { not: 'PENDING_WIZARD' };
+      }
 
       let candidates = await prisma.candidate.findMany({
         where: filters,
@@ -31,9 +35,21 @@ export default function createSubAdminRoutes(prisma) {
         );
       }
 
+      // Calculate status counts on sub-admin queue (excluding status filter)
+      const countFilters = { assignedToId: req.admin.id };
+      const countsRaw = await prisma.candidate.groupBy({
+        by: ['status'],
+        _count: { id: true },
+        where: countFilters,
+      });
+      const statusCounts = Object.fromEntries(
+        countsRaw.map(item => [item.status, item._count.id])
+      );
+
       res.json({
         success: true,
         candidates: candidates.map(serializeCandidateForSubAdmin),
+        statusCounts,
       });
     } catch (err) {
       console.error('Sub-admin fetch candidates:', err.message);
@@ -206,6 +222,138 @@ export default function createSubAdminRoutes(prisma) {
     } catch (err) {
       console.error('Sub-admin stats:', err.message);
       res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
+
+  router.put('/candidates/:id', async (req, res) => {
+    const candidateId = parseInt(req.params.id, 10);
+    if (isNaN(candidateId)) return res.status(400).json({ error: 'Invalid candidate ID' });
+
+    const body = {
+      ...req.body,
+      phoneNumber1: normalizePhone(req.body.phoneNumber1),
+      phoneNumber2: req.body.phoneNumber2 ? normalizePhone(req.body.phoneNumber2) : null,
+      familyPhonePrimary: req.body.familyPhonePrimary ? normalizePhone(req.body.familyPhonePrimary) : null,
+      familyPhoneBackup: req.body.familyPhoneBackup ? normalizePhone(req.body.familyPhoneBackup) : null,
+    };
+
+    const validationErrors = validateCandidateInput(body);
+    if (validationErrors.length) {
+      return res.status(400).json({ error: validationErrors[0], errors: validationErrors });
+    }
+
+    try {
+      const candidate = await prisma.candidate.findFirst({
+        where: { id: candidateId, assignedToId: req.admin.id },
+      });
+      if (!candidate) {
+        return res.status(404).json({ error: 'Candidate not found or not assigned to you' });
+      }
+
+      // Check duplicates for phoneNumber1
+      if (body.phoneNumber1 !== candidate.phoneNumber1) {
+        const existing = await prisma.candidate.findUnique({ where: { phoneNumber1: body.phoneNumber1 } });
+        if (existing) {
+          return res.status(409).json({ error: 'A candidate with this phone number already exists' });
+        }
+      }
+
+      // Track changes for Audit Log
+      const diffs = [];
+      const trackFields = [
+        { key: 'fullName', label: 'Full Name' },
+        { key: 'phoneNumber1', label: 'Phone' },
+        { key: 'presentDistrict', label: 'Present District' },
+        { key: 'permanentDistrict', label: 'Permanent District' },
+        { key: 'expectedSalary', label: 'Expected Salary' },
+      ];
+
+      trackFields.forEach(({ key, label }) => {
+        if (body[key] !== undefined && body[key] !== candidate[key]) {
+          diffs.push(`${label} updated from "${candidate[key] || ''}" to "${body[key] || ''}"`);
+        }
+      });
+
+      // Update candidate fields and associations
+      const updated = await prisma.$transaction(async (tx) => {
+        // Delete existing associated rows
+        await tx.candidateEducation.deleteMany({ where: { candidateId } });
+        await tx.candidateTechnical.deleteMany({ where: { candidateId } });
+        await tx.candidateExperience.deleteMany({ where: { candidateId } });
+
+        // Re-create new associated rows
+        if (body.education?.length) {
+          await tx.candidateEducation.createMany({
+            data: body.education.map((item) => ({
+              candidateId,
+              institution: item.institution || '',
+              course: item.course || '',
+            })),
+          });
+        }
+        if (body.technical?.length) {
+          await tx.candidateTechnical.createMany({
+            data: body.technical.map((item) => ({
+              candidateId,
+              institution: item.institution || '',
+              course: item.course || '',
+            })),
+          });
+        }
+        if (body.experience?.length) {
+          await tx.candidateExperience.createMany({
+            data: body.experience.map((item) => ({
+              candidateId,
+              institution: item.institution || '',
+              fromYear: String(item.fromYear || ''),
+              toYear: String(item.toYear || ''),
+            })),
+          });
+        }
+
+        return tx.candidate.update({
+          where: { id: candidateId },
+          data: {
+            fullName: sanitizeString(body.fullName, 100),
+            phoneNumber1: body.phoneNumber1,
+            phoneNumber2: body.phoneNumber2,
+            dob: body.dob ? new Date(body.dob) : null,
+            sex: body.sex,
+            maritalStatus: body.maritalStatus,
+            familyPhonePrimary: body.familyPhonePrimary,
+            familyPhoneBackup: body.familyPhoneBackup,
+            emailId: body.emailId,
+            secondaryEmailId: body.secondaryEmailId,
+            presentAddress: body.presentAddress ? sanitizeString(body.presentAddress, 500) : null,
+            presentDistrict: body.presentDistrict,
+            presentState: body.presentState,
+            permanentAddress: body.permanentAddress ? sanitizeString(body.permanentAddress, 500) : null,
+            permanentDistrict: body.permanentDistrict,
+            permanentState: body.permanentState,
+            preferredDistricts: body.preferredDistricts || [],
+            expectedSalary: body.expectedSalary,
+            jobRoles: body.jobRoles || [],
+            languagesKnown: body.languagesKnown || [],
+          },
+        });
+      });
+
+      // Insert audit note in CommunicationLog if anything changed
+      if (diffs.length > 0) {
+        const auditLogMsg = `[Profile Edit] ${diffs.join(', ')} by sub-admin`;
+        await prisma.communicationLog.create({
+          data: {
+            candidateId,
+            authorId: req.admin.id,
+            note: auditLogMsg,
+          },
+        });
+      }
+
+      res.json({ success: true, candidate: serializeCandidateForSubAdmin(updated) });
+    } catch (err) {
+      console.error('Sub-admin edit candidate:', err.message);
+      res.status(500).json({ error: 'Failed to update candidate' });
     }
   });
 

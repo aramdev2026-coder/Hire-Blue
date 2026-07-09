@@ -1,11 +1,4 @@
-export const TN_DISTRICTS = [
-  'Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 'Dharmapuri',
-  'Dindigul', 'Erode', 'Kallakurichi', 'Kancheepuram', 'Karur', 'Krishnagiri', 'Madurai',
-  'Mayiladuthurai', 'Nagapattinam', 'Namakkal', 'Nilgiris', 'Perambalur', 'Pudukkottai',
-  'Ramanathapuram', 'Ranipet', 'Salem', 'Sivaganga', 'Tenkasi', 'Thanjavur', 'Theni',
-  'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 'Tirupathur', 'Tiruppur', 'Tiruvallur',
-  'Tiruvannamalai', 'Tiruvarur', 'Vellore', 'Viluppuram', 'Virudhunagar',
-];
+import { STATES_AND_DISTRICTS, ALL_DISTRICTS, TN_DISTRICTS } from './locationData.js';
 
 // ─── Field Length Limits ─────────────────────────────────────────────
 const MAX_LENGTHS = {
@@ -62,7 +55,7 @@ export function normalizePhone(phone) {
 
 export function isValidDistrict(district) {
   if (!district) return true;
-  return TN_DISTRICTS.includes(district);
+  return ALL_DISTRICTS.includes(district);
 }
 
 // ─── String sanitizer — strips HTML to prevent stored XSS ───────────
@@ -135,7 +128,7 @@ export function validateCandidateInput(body) {
     errors.push('Invalid permanent district');
   }
   if (Array.isArray(body.preferredDistricts)) {
-    const invalid = body.preferredDistricts.filter((d) => d !== 'All Locations' && !TN_DISTRICTS.includes(d));
+    const invalid = body.preferredDistricts.filter((d) => d !== 'All Locations' && !ALL_DISTRICTS.includes(d));
     if (invalid.length) errors.push('Invalid preferred district(s)');
   }
 

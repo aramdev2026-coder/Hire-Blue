@@ -133,12 +133,8 @@ const findClosestIdx = (val) => {
   return closestIdx;
 };
 const LANGUAGES = ['Tamil', 'English', 'Hindi', 'Malayalam', 'Telugu', 'Kannada', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Odia', 'Assamese', 'Urdu', 'Sanskrit', 'Konkani', 'Kashmiri'];
-const TN_DISTRICTS = ['Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 'Dharmapuri',
-  'Dindigul', 'Erode', 'Kallakurichi', 'Kancheepuram', 'Karur', 'Krishnagiri', 'Madurai',
-  'Mayiladuthurai', 'Nagapattinam', 'Namakkal', 'Nilgiris', 'Perambalur', 'Pudukkottai',
-  'Ramanathapuram', 'Ranipet', 'Salem', 'Sivaganga', 'Tenkasi', 'Thanjavur', 'Theni',
-  'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 'Tirupathur', 'Tiruppur', 'Tiruvallur',
-  'Tiruvannamalai', 'Tiruvarur', 'Vellore', 'Viluppuram', 'Virudhunagar'];
+import { STATES_AND_DISTRICTS, TN_COLLEGES } from '../utils/locationData';
+const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
 const COURSE_DEGREES = [
   "SSLC (10th)",
   "HSC (12th)",
@@ -156,109 +152,6 @@ const COURSE_DEGREES = [
   "M.B.A.",
   "M.C.A.",
   "Other"
-];
-
-const TN_COLLEGES = [
-  "Anna University, Chennai",
-  "Madras University, Chennai",
-  "Bharathiar University, Coimbatore",
-  "Madurai Kamaraj University, Madurai",
-  "Bharathidasan University, Tiruchirappalli",
-  "Manonmaniam Sundaranar University, Tirunelveli",
-  "Alagappa University, Karaikudi",
-  "Annamalai University, Chidambaram",
-  "Periyar University, Salem",
-  "Thiruvalluvar University, Vellore",
-  "Tamil Nadu Agricultural University (TNAU), Coimbatore",
-  "Tamil Nadu Veterinary and Animal Sciences University (TANUVAS), Chennai",
-  "Tamil Nadu Dr. M.G.R. Medical University, Chennai",
-  "Tamil Nadu Dr. Ambedkar Law University, Chennai",
-  "Tamil Nadu Physical Education and Sports University, Chennai",
-  "Tamil University, Thanjavur",
-  "Gandhigram Rural Institute, Dindigul",
-  "Sathyabama Institute of Science and Technology, Chennai",
-  "SRM Institute of Science and Technology, Chennai",
-  "VIT University, Vellore",
-  "Amrita Vishwa Vidyapeetham, Coimbatore",
-  "SASTRA Deemed University, Thanjavur",
-  "Kalasalingam Academy of Research and Education, Srivilliputhur",
-  "Karunya Institute of Technology and Sciences, Coimbatore",
-  "B.S. Abdur Rahman Crescent Institute of Science and Technology, Chennai",
-  "Vinayaka Mission's Research Foundation, Salem",
-  "Avinashilingam Institute for Home Science and Higher Education for Women, Coimbatore",
-  "Loyola College, Chennai",
-  "Madras Christian College (MCC), Chennai",
-  "Presidency College, Chennai",
-  "St. Joseph's College, Tiruchirappalli",
-  "American College, Madurai",
-  "PSG College of Arts and Science, Coimbatore",
-  "Stella Maris College, Chennai",
-  "Women's Christian College (WCC), Chennai",
-  "Ethiraj College for Women, Chennai",
-  "Bishop Heber College, Tiruchirappalli",
-  "Jamal Mohamed College, Tiruchirappalli",
-  "National College, Tiruchirappalli",
-  "Government Arts College, Coimbatore",
-  "Government Arts College, Salem",
-  "Government Arts College, Kumbakonam",
-  "Government Arts College, Nandanam, Chennai",
-  "Queen Mary's College, Chennai",
-  "Sacred Heart College, Tirupattur",
-  "Sourashtra College, Madurai",
-  "Thiagarajar College, Madurai",
-  "Lady Doak College, Madurai",
-  "Madura College, Madurai",
-  "Sri Ramakrishna Mission Vidyalaya College of Arts and Science, Coimbatore",
-  "Kongu Arts and Science College, Erode",
-  "Vellalar College for Women, Erode",
-  "Bishop Appasamy College of Arts and Science, Coimbatore",
-  "Gobi Arts & Science College, Gobichettipalayam",
-  "Ayya Nadar Janaki Ammal College, Sivakasi",
-  "Standard Fireworks Rajaratnam College for Women, Sivakasi",
-  "Sarah Tucker College, Tirunelveli",
-  "St. Xavier's College, Palayamkottai",
-  "Sadakathullah Appa College, Tirunelveli",
-  "College of Engineering, Guindy (CEG), Chennai",
-  "Madras Institute of Technology (MIT), Chromepet, Chennai",
-  "Alagappa Chettiar Government College of Engineering and Technology, Karaikudi",
-  "Government College of Technology (GCT), Coimbatore",
-  "PSG College of Technology, Coimbatore",
-  "Thiagarajar College of Engineering (TCE), Madurai",
-  "Coimbatore Institute of Technology (CIT), Coimbatore",
-  "Government College of Engineering, Salem",
-  "Government College of Engineering, Tirunelveli",
-  "Government College of Engineering, Bargur",
-  "Government College of Engineering, Bodinayakkanur",
-  "Government College of Engineering, Srirangam",
-  "National Institute of Technology (NIT), Tiruchirappalli",
-  "Indian Institute of Technology (IIT), Madras",
-  "Kongu Engineering College, Erode",
-  "Bannari Amman Institute of Technology, Sathyamangalam",
-  "K.L.N. College of Engineering, Madurai",
-  "Mepco Schlenk Engineering College, Sivakasi",
-  "Sri Sivasubramaniya Nadar (SSN) College of Engineering, Chennai",
-  "St. Joseph's College of Engineering, Chennai",
-  "Rajalakshmi Engineering College, Chennai",
-  "Easwari Engineering College, Chennai",
-  "Sri Krishna College of Engineering and Technology, Coimbatore",
-  "Kumaraguru College of Technology, Coimbatore",
-  "Sona College of Technology, Salem",
-  "Francis Xavier Engineering College, Tirunelveli",
-  "National Engineering College, Kovilpatti",
-  "PSNA College of Engineering and Technology, Dindigul",
-  "Central Polytechnic College, Chennai",
-  "Government Polytechnic College, Coimbatore",
-  "Government Polytechnic College, Madurai",
-  "Government Polytechnic College, Tiruchirappalli",
-  "Government Polytechnic College, Tuticorin",
-  "Government Polytechnic College, Nagercoil",
-  "Government Polytechnic College, Krishnagiri",
-  "PSG Polytechnic College, Coimbatore",
-  "Murugappa Polytechnic College, Chennai",
-  "Government Industrial Training Institute (ITI), Guindy, Chennai",
-  "Government Industrial Training Institute (ITI), Coimbatore",
-  "Government Industrial Training Institute (ITI), Madurai",
-  "Government Industrial Training Institute (ITI), Trichy"
 ];
 
 const normalizeEducationItem = (item) => {
@@ -435,6 +328,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
   const [serverErr, setServerErr] = React.useState('');
   const [saving, setSaving] = React.useState(false);
   const [acceptedTerms, setAcceptedTerms] = React.useState(true);
+  const [preferredState, setPreferredState] = React.useState('Tamil Nadu');
   const [showLegal, setShowLegal] = React.useState(false);
   const [activeColSuggestIdx, setActiveColSuggestIdx] = React.useState(null);
 
@@ -864,15 +758,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 value={form.presentStreet2} onChange={e => upd('presentStreet2', e.target.value)} />
             </Field>
             <div className="responsive-grid">
-              <Field label="City / Town" req error={errors.presentCity}>
-                <select className={`select${errors.presentCity ? ' select-error' : ''}`}
-                  value={form.presentCity} onChange={e => upd('presentCity', e.target.value)}>
-                  <option value="">Select city / town</option>
-                  {TN_DISTRICTS.map(d => <option key={d}>{d}</option>)}
+              <Field label="State" req>
+                <select className="select" value={form.presentState || 'Tamil Nadu'} onChange={e => {
+                  upd('presentState', e.target.value);
+                  upd('presentCity', '');
+                }}>
+                  {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
                 </select>
               </Field>
-              <Field label="State / Province / Region">
-                <input className="input input-readonly" readOnly value="Tamil Nadu" disabled />
+              <Field label="District / City" req error={errors.presentCity}>
+                <select className={`select${errors.presentCity ? ' select-error' : ''}`}
+                  value={form.presentCity} onChange={e => upd('presentCity', e.target.value)}>
+                  <option value="">Select district</option>
+                  {(STATES_AND_DISTRICTS[form.presentState || 'Tamil Nadu'] || []).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
               </Field>
             </div>
 
@@ -896,15 +795,20 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                   value={form.permanentStreet2} onChange={e => upd('permanentStreet2', e.target.value)} />
               </Field>
               <div className="responsive-grid">
-                <Field label="City / Town" req error={errors.permanentCity}>
-                  <select className={`select${errors.permanentCity ? ' select-error' : ''}`}
-                    value={form.permanentCity} onChange={e => upd('permanentCity', e.target.value)}>
-                    <option value="">Select city / town</option>
-                    {TN_DISTRICTS.map(d => <option key={d}>{d}</option>)}
+                <Field label="State" req>
+                  <select className="select" value={form.permanentState || 'Tamil Nadu'} onChange={e => {
+                    upd('permanentState', e.target.value);
+                    upd('permanentCity', '');
+                  }}>
+                    {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
                   </select>
                 </Field>
-                <Field label="State / Province / Region">
-                  <input className="input input-readonly" readOnly value="Tamil Nadu" disabled />
+                <Field label="District / City" req error={errors.permanentCity}>
+                  <select className={`select${errors.permanentCity ? ' select-error' : ''}`}
+                    value={form.permanentCity} onChange={e => upd('permanentCity', e.target.value)}>
+                    <option value="">Select district</option>
+                    {(STATES_AND_DISTRICTS[form.permanentState || 'Tamil Nadu'] || []).map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
                 </Field>
               </div>
             </>)}
@@ -1083,18 +987,27 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <Err msg={errors.jobRoles} />
             </div>
 
-            <div className="field-label-row mt-16">
-              <Lbl req>Preferred Districts</Lbl>
-              <div className="field-inline-actions">
-                <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [...TN_DISTRICTS])}>All</button>
-                <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [])}>Clear</button>
-              </div>
-            </div>
-            <select className={`select${errors.preferredDistricts ? ' select-error' : ''}`} value=""
-              onChange={e => e.target.value && toggle('preferredDistricts', e.target.value)}>
-              <option value="">Add a district…</option>
-              {TN_DISTRICTS.filter(d => !form.preferredDistricts.includes(d)).map(d => <option key={d}>{d}</option>)}
-            </select>
+             <div className="field-label-row mt-16">
+               <Lbl req>Preferred Districts</Lbl>
+               <div className="field-inline-actions">
+                 <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [...new Set([...form.preferredDistricts, ...(STATES_AND_DISTRICTS[preferredState] || [])])])}>Add All for {preferredState}</button>
+                 <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [])}>Clear All</button>
+               </div>
+             </div>
+             <div className="responsive-grid" style={{ marginBottom: '10px' }}>
+               <Field label="Filter by State">
+                 <select className="select" value={preferredState} onChange={e => setPreferredState(e.target.value)}>
+                   {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
+                 </select>
+               </Field>
+               <Field label="Choose District" error={errors.preferredDistricts}>
+                 <select className="select" value=""
+                   onChange={e => e.target.value && toggle('preferredDistricts', e.target.value)}>
+                   <option value="">Select District…</option>
+                   {(STATES_AND_DISTRICTS[preferredState] || []).filter(d => !form.preferredDistricts.includes(d)).map(d => <option key={d} value={d}>{d}</option>)}
+                 </select>
+               </Field>
+             </div>
             <div className={`tag-panel${errors.preferredDistricts ? ' has-error' : ''}`}>
               {form.preferredDistricts.length === 0
                 ? <span className="field-note">No districts added yet</span>

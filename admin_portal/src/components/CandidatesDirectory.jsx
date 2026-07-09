@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, ArrowUpDown, Loader, Users, Send, AlertTriangle, Download } from 'lucide-react';
-import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass, TN_DISTRICTS, JOB_ROLES } from '../constants';
+import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass, JOB_ROLES } from '../constants';
+import { STATES_AND_DISTRICTS } from '../utils/locationData';
+const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
 import { useConfirm } from '../context/ConfirmContext';
 import ShortlistJobModal from './ShortlistJobModal';
 
 export default function CandidatesDirectory({ 
-  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [],
+  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [], statusCounts = {},
 }) {
   const { showConfirm, showAlert } = useConfirm();
+  const [selectedStateFilter, setSelectedStateFilter] = useState('Tamil Nadu');
   const [delegationMode, setDelegationMode] = useState(false);
   const [shortlistTarget, setShortlistTarget] = useState(null);
   const [delDistrict, setDelDistrict] = useState('');
@@ -15,50 +18,7 @@ export default function CandidatesDirectory({
   const [delCount, setDelCount] = useState('');
   const [delSubAdmin, setDelSubAdmin] = useState('');
 
-  const handleExportCSV = () => {
-    if (!candidates.length) return showAlert('Export Alert', 'No candidate data to export.', 'warning');
-    
-    const headers = [
-      'Candidate ID',
-      'Name',
-      'Phone',
-      'Alternate Phone',
-      'District',
-      'Roles',
-      'Status',
-      'Source',
-      'Assigned To',
-      'Registered Date'
-    ];
-    
-    const rows = candidates.map(c => [
-      c.id,
-      c.fullName || '',
-      c.phoneNumber1 || '',
-      c.phoneNumber2 || '',
-      c.presentDistrict || '',
-      (c.jobRoles || []).join('; '),
-      c.status || '',
-      c.source || '',
-      c.assignedTo?.name || 'Unassigned',
-      c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Candidates_Directory_${filter || 'ALL'}_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+
 
   const duplicatePhones = useMemo(() => {
     const set = new Set();
@@ -212,8 +172,27 @@ export default function CandidatesDirectory({
             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
           >
             <option value="">All Statuses</option>
-            {ALL_CANDIDATE_STATUSES.map((s) => (
-              <option key={s} value={s}>{formatStatus(s)}</option>
+            {ALL_CANDIDATE_STATUSES.map((s) => {
+              const count = statusCounts[s] ?? 0;
+              return (
+                <option key={s} value={s}>
+                  {formatStatus(s)} ({count})
+                </option>
+              );
+            })}
+          </select>
+
+          <select
+            value={selectedStateFilter}
+            onChange={(e) => {
+              setSelectedStateFilter(e.target.value);
+              setDistrictFilter('');
+            }}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
+          >
+            <option value="">All States</option>
+            {Object.keys(STATES_AND_DISTRICTS).map((st) => (
+              <option key={st} value={st}>{st}</option>
             ))}
           </select>
 
@@ -223,7 +202,10 @@ export default function CandidatesDirectory({
             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
           >
             <option value="">All Districts</option>
-            {TN_DISTRICTS.map((d) => (
+            {(selectedStateFilter
+              ? (STATES_AND_DISTRICTS[selectedStateFilter] || [])
+              : Object.values(STATES_AND_DISTRICTS).flat()
+            ).map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
@@ -239,13 +221,6 @@ export default function CandidatesDirectory({
             ))}
           </select>
         </div>
-
-        <button
-          onClick={handleExportCSV}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-        >
-          <Download className="w-3.5 h-3.5" /> Export CSV
-        </button>
       </div>
 
       {loading ? (
