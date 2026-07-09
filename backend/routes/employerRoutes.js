@@ -141,6 +141,7 @@ export default function createEmployerRoutes(prisma) {
         return {
           id: c.id,
           candidateIdNumber: `HB-${String(c.id).padStart(4, '0')}`,
+          fullName: c.fullName || 'N/A',
           experienceYears: totalExp > 0 ? `${totalExp} Years` : 'Fresher',
           topEducation: topEdu,
           location: c.presentDistrict || 'Unknown',

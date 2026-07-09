@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Plus, List } from 'lucide-react';
 
 const PRESET_ROLES = ['Delivery Staff','Driver','Supervisor','Sales Rep','Accountant','Store In-Charge','Data Entry','M/c Operator','Packing / Checking','Production Follow-up'];
 
@@ -163,14 +164,16 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
             onClick={() => setActiveMenu('POST_JOBS')} 
             className={`sidebar-item ${activeMenu === 'POST_JOBS' ? 'active' : ''}`}
           >
-            + Post New Roles
+            <Plus size={16} />
+            <span>Post New Roles</span>
           </button>
           <button 
             type="button" 
             onClick={() => setActiveMenu('ORDERS')} 
             className={`sidebar-item ${activeMenu === 'ORDERS' ? 'active' : ''}`}
           >
-            View Orders
+            <List size={16} />
+            <span>View Orders</span>
           </button>
         </div>
       </div>
@@ -393,14 +396,17 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                     </div>
 
                     <div className="order-card__body">
-                      <h4 className="section-subtitle">Matched Anonymized Candidates ({order.matchedCandidates?.length || 0})</h4>
+                      <h4 className="section-subtitle">Matched Candidates ({order.matchedCandidates?.length || 0})</h4>
                       {order.matchedCandidates?.length === 0 ? (
-                        <p className="notice-block">Our system is currently sweeping the network. Matches will appear here.</p>
+                        <p className="notice-block">No matching candidates found yet. Our sourcing team is actively screening new talent for this requisition.</p>
                       ) : (
                         <div className="candidate-grid">
                           {order.matchedCandidates.map(c => (
                             <div key={c.id} className="candidate-card">
-                              <div className="candidate-card__header">{c.candidateIdNumber}</div>
+                              <div className="candidate-card__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span className="font-semibold text-slate-900">{c.fullName || 'N/A'}</span>
+                                <span className="font-mono text-xs text-slate-400 font-bold">{c.candidateIdNumber}</span>
+                              </div>
                               <div className="candidate-card__meta">
                                 <span><strong>Exp:</strong> {c.experienceYears} Years</span>
                                 <span><strong>Edu:</strong> {c.topEducation}</span>

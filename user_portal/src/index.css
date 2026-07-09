@@ -1118,10 +1118,14 @@ button {
 }
 
 .sidebar-panel {
-  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+  padding: 24px 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   position: sticky;
   top: 108px;
 }
@@ -1130,6 +1134,9 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .sidebar-label {
@@ -1143,6 +1150,7 @@ button {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
+  word-break: break-all;
 }
 
 .sidebar-button,
@@ -1157,21 +1165,26 @@ button {
   font-size: 0.92rem;
   color: var(--muted-strong);
   background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease;
 }
 
 .sidebar-button:hover,
 .sidebar-item:hover,
 .menu-item:hover {
-  background: var(--surface-sunken);
+  background: var(--surface-soft);
   color: var(--text);
 }
 
 .sidebar-button.active,
 .sidebar-item.active,
 .menu-item.active {
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
 }
 
 /* ============================================================
