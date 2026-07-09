@@ -290,8 +290,13 @@ export default function CandidatesDirectory({
 
                 <div className="text-xs space-y-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1.5 text-slate-600">
                   <div><strong>Mobile:</strong> <span className="font-mono">{candidate.phoneNumber1}</span></div>
-                  <div><strong>District:</strong> {candidate.presentDistrict || 'N/A'}</div>
+                  <div><strong>Present District:</strong> {candidate.presentDistrict || 'N/A'}</div>
+                  <div><strong>Expected Salary:</strong> <span className="font-semibold text-slate-900">{candidate.expectedSalary || 'N/A'}</span></div>
                   <div><strong>Registered:</strong> {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</div>
+                  
+                  <div className="sm:col-span-2">
+                    <strong>Preferred Districts:</strong> {candidate.preferredDistricts && candidate.preferredDistricts.length > 0 ? candidate.preferredDistricts.join(', ') : 'N/A'}
+                  </div>
                   
                   <div className="sm:col-span-2">
                     <strong>Targeted Roles:</strong>
@@ -358,7 +363,9 @@ export default function CandidatesDirectory({
                   <th className="p-4">Primary Mobile</th>
                   <th className="p-4">Targeted Roles</th>
                   <th className="p-4">Languages</th>
-                  <th className="p-4">District Preference</th>
+                  <th className="p-4">Present District</th>
+                  <th className="p-4">Preferred Districts</th>
+                  <th className="p-4">Expected Salary</th>
                   <th className="p-4">Registered Date</th>
                   {(filter === 'SHORTLISTED' || filter === 'PLACED') ? (
                     <th className="p-4 text-amber-700 bg-amber-50/50">Assigned Company</th>
@@ -391,6 +398,10 @@ export default function CandidatesDirectory({
                       ) : <span className="text-slate-400">-</span>}
                     </td>
                     <td className="p-4">{candidate.presentDistrict || 'N/A'}</td>
+                    <td className="p-4 max-w-[150px] truncate" title={candidate.preferredDistricts?.join(', ')}>
+                      {candidate.preferredDistricts && candidate.preferredDistricts.length > 0 ? candidate.preferredDistricts.join(', ') : 'N/A'}
+                    </td>
+                    <td className="p-4 font-semibold text-indigo-600">{candidate.expectedSalary || 'N/A'}</td>
                     <td className="p-4 whitespace-nowrap">
                       {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                     </td>
