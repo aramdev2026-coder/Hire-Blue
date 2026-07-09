@@ -1,37 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, List, Trash2, MapPin, Award, CheckCircle2, User, Clock, AlertCircle, Briefcase, IndianRupee } from 'lucide-react';
 
 const PRESET_ROLES = ['Delivery Staff','Driver','Supervisor','Sales Rep','Accountant','Store In-Charge','Data Entry','M/c Operator','Packing / Checking','Production Follow-up'];
-
-const TN_DISTRICTS = ['Ariyalur','Chengalpattu','Chennai','Coimbatore','Cuddalore','Dharmapuri',
-  'Dindigul','Erode','Kallakurichi','Kancheepuram','Karur','Krishnagiri','Madurai',
-  'Mayiladuthurai','Nagapattinam','Namakkal','Nilgiris','Perambalur','Pudukkottai',
-  'Ramanathapuram','Ranipet','Salem','Sivaganga','Tenkasi','Thanjavur','Theni',
-  'Thoothukudi','Tiruchirappalli','Tirunelveli','Tirupathur','Tiruppur','Tiruvallur',
-  'Tiruvannamalai','Tiruvarur','Vellore','Viluppuram','Virudhunagar'];
-
-const EXP_OPTIONS = [
-  { value: 0, label: 'Any Experience' },
-  { value: 1, label: '1 Year' },
-  { value: 2, label: '2 Years' },
-  { value: 3, label: '3 Years' },
-  { value: 4, label: '4 Years' },
-  { value: 5, label: '5 Years' },
-  { value: 6, label: '6 Years' },
-  { value: 7, label: '7 Years' },
-  { value: 8, label: '8 Years' },
-  { value: 9, label: '9 Years' },
-  { value: 10, label: '10 Years' },
-  { value: 11, label: '10+ Years' },
-];
-
-const MARKET_TRENDS_AUTOFILL = {
-  salaryRange: '₹15,000 - ₹20,000',
-  location: ['Coimbatore'],
-  maritalStatus: 'No Preference',
-  educationLevel: '12th Pass / ITI',
-  expRequired: 2
-};
 
 const EMPTY_DETAILS = { salaryRange:'', location:[], maritalStatus:'', educationLevel:'', expRequired:0 };
 
@@ -87,10 +56,9 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
       delete copy[role];
       return copy;
     });
-    // Keep the active tab pointing at a valid role
+    // Keep active tab valid
     if (activeTab > idx) setActiveTab(activeTab - 1);
     else if (activeTab === idx) setActiveTab(Math.max(0, idx - 1));
-    // Removing the last role while on the detail screen drops back to role selection
     if (isFillingDetails && next.length === 0) setIsFillingDetails(false);
   };
 
@@ -111,13 +79,18 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
   const autoFillTrends = (role) => {
     setJobDetails(prev => ({
       ...prev,
-      [role]: { ...MARKET_TRENDS_AUTOFILL }
+      [role]: {
+        salaryRange: '₹15,000 - ₹20,000',
+        location: ['Coimbatore'],
+        maritalStatus: 'No Preference',
+        educationLevel: '12th Pass / ITI',
+        expRequired: 2
+      }
     }));
   };
 
   const submitJobs = async () => {
     setIsSubmitting(true);
-    // Submit each role as a separate requisition record in parallel
     try {
       const promises = addedRoles.map(async (role) => {
         const details = jobDetails[role];
@@ -174,161 +147,101 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
     }
   };
 
-  // Compute metrics summaries for the analytics row
-  const activeRequisitionsCount = orders.length;
-  const totalMatchesCount = orders.reduce((acc, curr) => acc + (curr.matchedCandidates?.length || 0), 0);
-  const totalCompletedPlacements = orders.reduce((acc, curr) => acc + (curr.status === 'COMPLETED' ? 1 : 0), 0);
-
   return (
     <div className="dashboard-layout">
       
-      {/* LEFT SIDEBAR */}
-      <div className="sidebar-panel">
-        <div className="sidebar-heading border-b border-slate-100 pb-4 mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm uppercase shrink-0 border border-indigo-100">
-              {companyName?.slice(0, 2) || 'EN'}
-            </div>
-            <div className="truncate">
-              <div className="sidebar-label">Enterprise User</div>
-              <div className="sidebar-title truncate">{companyName || 'new_comp'}</div>
-            </div>
+      {/* LEFT SIDEBAR WRAPPED IN NATIVE FIXED-WIDTH CONTAINER */}
+      <div className="dashboard-sidebar">
+        <div className="sidebar-panel">
+          <div className="sidebar-heading">
+            <div className="sidebar-label">Enterprise User</div>
+            <div className="sidebar-title">{companyName || 'new_comp'}</div>
           </div>
-        </div>
 
-        <div className="space-y-1 w-full">
           <button 
             type="button" 
             onClick={() => setActiveMenu('POST_JOBS')} 
-            className={`sidebar-item flex items-center gap-3 w-full ${activeMenu === 'POST_JOBS' ? 'active' : ''}`}
+            className={`sidebar-item ${activeMenu === 'POST_JOBS' ? 'active' : ''}`}
           >
-            <PlusCircle className="w-4 h-4 shrink-0" />
-            <span className="font-semibold">Post New Roles</span>
+            + Post New Roles
           </button>
           <button 
             type="button" 
             onClick={() => setActiveMenu('ORDERS')} 
-            className={`sidebar-item flex items-center gap-3 w-full ${activeMenu === 'ORDERS' ? 'active' : ''}`}
+            className={`sidebar-item ${activeMenu === 'ORDERS' ? 'active' : ''}`}
           >
-            <List className="w-4 h-4 shrink-0" />
-            <span className="font-semibold">View Orders</span>
+            View Orders
           </button>
         </div>
       </div>
 
       {/* RIGHT CONTENT AREA */}
-      <div className="dashboard-main space-y-6">
+      <div className="dashboard-main">
         
-        {/* TOP METRICS GRID BANNER */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Briefcase className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Requisitions</p>
-              <h3 className="text-xl font-bold text-slate-800 mt-0.5">{activeRequisitionsCount}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Matches Found</p>
-              <h3 className="text-xl font-bold text-slate-800 mt-0.5">{totalMatchesCount}</h3>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sourcing Status</p>
-              <h3 className="text-sm font-bold text-slate-600 mt-1">Active Pipeline</h3>
-            </div>
-          </div>
-        </div>
-
         {/* ==== VIEW: POST JOBS ==== */}
         {activeMenu === 'POST_JOBS' && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-            <div className="border-b border-slate-100 pb-4">
-              <h2 className="text-lg font-bold text-slate-900">Requisition Generator</h2>
-              <p className="text-xs text-slate-500 mt-1">Select job roles and configure experience/salary preferences to find blue-collar matches.</p>
-            </div>
+          <>
+            <h2 className="section-title">Requisition Generator</h2>
 
             {!isFillingDetails ? (
-              <div className="space-y-6">
-                {/* Shaded preset chips card container */}
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Preset Job Roles Suggestions</span>
-                  <div className="role-list">
-                    {PRESET_ROLES.map(r => (
-                      <button
-                        key={r}
-                        type="button"
-                        className={`role-chip ${addedRoles.includes(r) ? 'role-chip--selected' : ''}`}
-                        onClick={() => {
-                          if (!addedRoles.includes(r)) {
-                            setAddedRoles(prev => [...prev, r]);
-                            setJobDetails(prev => ({ ...prev, [r]: prev[r] || { ...EMPTY_DETAILS } }));
-                          }
-                        }}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
+              <div className="form-card--narrow">
+                <div className="role-list">
+                  {PRESET_ROLES.map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`role-chip ${addedRoles.includes(r) ? 'role-chip--selected' : ''}`}
+                      onClick={() => {
+                        if (!addedRoles.includes(r)) {
+                          setAddedRoles(prev => [...prev, r]);
+                          setJobDetails(prev => ({ ...prev, [r]: prev[r] || { ...EMPTY_DETAILS } }));
+                        }
+                      }}
+                    >
+                      {r}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Form Row Input Group */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-700">Target Job Roles</label>
-                  <form onSubmit={handleAddRole} className="flex gap-2">
+                <div className="field">
+                  <label className="field-label">Target Job Roles</label>
+                  <form onSubmit={handleAddRole} className="form-row">
                     <input
                       type="text"
-                      className="input flex-1"
+                      className="input"
                       placeholder="e.g. Delivery Driver, Welder, Floor Supervisor..."
                       value={roleInput}
                       onChange={e => setRoleInput(e.target.value)}
                     />
-                    <button type="submit" className="button button-primary shrink-0 px-6">Add</button>
+                    <button type="submit" className="button button-primary">Add</button>
                   </form>
                 </div>
 
-                {/* Tag Panel selected preview */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-700">Selected Roles Queue</label>
-                  <div className="tag-panel">
-                    {addedRoles.length === 0 ? <span className="field-note">No roles added yet.</span> : null}
-                    {addedRoles.map(role => (
-                      <button
-                        key={role}
-                        type="button"
-                        className="tag-chip tag-chip--selected"
-                        onClick={() => handleRemoveRole(role)}
-                      >
-                        {role} ×
-                      </button>
-                    ))}
-                  </div>
+                <div className="tag-panel">
+                  {addedRoles.length === 0 ? <span className="field-note">No roles added yet.</span> : null}
+                  {addedRoles.map(role => (
+                    <button
+                      key={role}
+                      type="button"
+                      className="tag-chip tag-chip--selected"
+                      onClick={() => handleRemoveRole(role)}
+                    >
+                      {role} ×
+                    </button>
+                  ))}
                 </div>
 
                 <button
                   type="button"
-                  className="button button-primary button-full py-3 text-sm font-semibold flex justify-center items-center gap-2"
+                  className="button button-primary button-full"
                   onClick={startDetailFill}
                   disabled={addedRoles.length === 0}
                 >
-                  <span>Proceed to Role Details</span>
-                  <span>→</span>
+                  Proceed to Role Details →
                 </button>
               </div>
             ) : (
-              // PHASE 2: TABS CONFIGURATION FORM
+              // PHASE 2: CONFIGURE FORM TABS
               <div>
                 <div className="tab-track">
                   {addedRoles.map((role, idx) => (
@@ -354,12 +267,12 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                 </div>
 
                 {addedRoles.length > 0 && (
-                  <div className="form-card--wide border border-slate-100 rounded-xl p-5 bg-slate-50/20">
-                    <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                      <h3 className="font-bold text-slate-800 text-sm">Configure Parameters: <span className="text-indigo-600">{addedRoles[activeTab]}</span></h3>
+                  <div className="form-card--wide">
+                    <div className="card-header">
+                      <h3>Details for: {addedRoles[activeTab]}</h3>
                       <button
                         type="button"
-                        className="button button-secondary button-small flex items-center gap-1.5"
+                        className="button button-secondary button-small"
                         onClick={() => autoFillTrends(addedRoles[activeTab])}
                       >
                         Auto-Fill Market Trends
@@ -382,7 +295,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                           </div>
                           
                           <div className="field">
-                            <label className="field-label">Target Locations</label>
+                            <label className="field-label">Location</label>
                             <input
                               className="input"
                               value={Array.isArray(details.location) ? details.location.join(', ') : (details.location || '')}
@@ -398,7 +311,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                               value={details.maritalStatus || ''}
                               onChange={e => handleDetailChange(activeRole, 'maritalStatus', e.target.value)}
                             >
-                              <option value="">Select No Preference</option>
+                              <option value="">Select</option>
                               <option>No Preference</option>
                               <option>Single</option>
                               <option>Married</option>
@@ -433,7 +346,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                       );
                     })()}
 
-                    <div className="form-actions border-t border-slate-100 pt-4 mt-6">
+                    <div className="form-actions">
                       <button type="button" className="button button-secondary" onClick={() => setIsFillingDetails(false)}>
                         ← Add More Roles
                       </button>
@@ -445,103 +358,67 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName 
                 )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* ==== VIEW: ORDERS & CANDIDATES ==== */}
         {activeMenu === 'ORDERS' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-              <div className="border-b border-slate-100 pb-3 mb-4">
-                <h2 className="text-lg font-bold text-slate-900">Active Hiring Requisitions</h2>
-                <p className="text-xs text-slate-500 mt-1">Review candidate matches sourced for your active job requisitions.</p>
-              </div>
+          <>
+            <h2 className="section-title">Active Hiring Requisitions</h2>
 
-              {isLoadingOrders ? (
-                <div className="text-center py-10 text-sm text-slate-400">Loading requisitions data...</div>
-              ) : (
-                <div className="space-y-6">
-                  {orders.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400 text-sm border border-dashed border-slate-200 rounded-2xl bg-slate-50/20">
-                      No requisitions posted yet.
-                    </div>
-                  ) : null}
+            {isLoadingOrders ? (
+              <p className="field-note">Loading market data...</p>
+            ) : (
+              <div className="card-grid">
+                {orders.length === 0 ? (
+                  <p className="field-note">No orders posted yet.</p>
+                ) : null}
 
-                  {orders.map(order => (
-                    <div key={order.id} className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden hover:border-slate-300 transition-colors">
-                      <div className="p-5 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                        <div>
-                          <h3 className="font-bold text-slate-950 text-base">{order.roleTitle}</h3>
-                          <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-500 font-medium">
-                            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {Array.isArray(order.location) ? order.location.join(', ') : (order.location || '—')}</span>
-                            <span className="flex items-center gap-1.5"><IndianRupee className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {order.salaryRange}</span>
-                            <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-slate-400 shrink-0" /> Exp: {order.expRequired ? `${order.expRequired} yrs` : 'Any'}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button type="button" className="button button-secondary button-small text-xs py-1.5 px-3">Edit</button>
-                          <button 
-                            type="button" 
-                            className="button button-danger button-small text-xs py-1.5 px-3 flex items-center gap-1.5" 
-                            onClick={() => deleteOrder(order.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete
-                          </button>
+                {orders.map(order => (
+                  <div key={order.id} className="order-card">
+                    <div className="order-card__header">
+                      <div>
+                        <h3>{order.roleTitle}</h3>
+                        <div className="order-card__meta">
+                          <span>Location: {Array.isArray(order.location) ? order.location.join(', ') : (order.location || '—')}</span>
+                          <span>Salary: {order.salaryRange}</span>
+                          <span>Education: {order.educationLevel}</span>
                         </div>
                       </div>
+                      <div className="card-actions">
+                        <button type="button" className="button button-danger button-small" onClick={() => deleteOrder(order.id)}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
 
-                      <div className="p-5 space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Matched Candidates ({order.matchedCandidates?.length || 0})</h4>
-                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">Live Sweep Active</span>
-                        </div>
-
-                        {order.matchedCandidates?.length === 0 ? (
-                          <div className="p-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/20 text-center">
-                            <p className="text-xs text-slate-500">Our system is currently sweeping the network. Matches will appear here.</p>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {order.matchedCandidates.map(c => (
-                              <div key={c.id} className="bg-slate-50/50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 transition-colors">
-                                <div className="space-y-3">
-                                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
-                                      <User className="w-3.5 h-3.5" />
-                                    </div>
-                                    <span className="font-mono text-xs font-bold text-slate-700">{c.candidateIdNumber}</span>
-                                  </div>
-                                  
-                                  <div className="space-y-1.5 text-xs text-slate-600">
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Experience:</span>
-                                      <span className="font-semibold text-slate-700">{c.experienceYears} Years</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Education:</span>
-                                      <span className="font-semibold text-slate-700 truncate max-w-[120px] text-right" title={c.topEducation}>{c.topEducation}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Location:</span>
-                                      <span className="font-semibold text-slate-700 truncate max-w-[120px] text-right" title={Array.isArray(c.location) ? c.location.join(', ') : (c.location || '—')}>{Array.isArray(c.location) ? c.location.join(', ') : (c.location || '—')}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <button type="button" className="button button-secondary button-small text-xs py-1.5 px-3 w-full mt-4 font-semibold text-center">
-                                  Request Unblind
-                                </button>
+                    <div className="order-card__body">
+                      <h4 className="section-subtitle">Matched Anonymized Candidates ({order.matchedCandidates?.length || 0})</h4>
+                      {order.matchedCandidates?.length === 0 ? (
+                        <p className="notice-block">Our system is currently sweeping the network. Matches will appear here.</p>
+                      ) : (
+                        <div className="candidate-grid">
+                          {order.matchedCandidates.map(c => (
+                            <div key={c.id} className="candidate-card">
+                              <div className="candidate-card__header">{c.candidateIdNumber}</div>
+                              <div className="candidate-card__meta">
+                                <span><strong>Exp:</strong> {c.experienceYears} Years</span>
+                                <span><strong>Edu:</strong> {c.topEducation}</span>
+                                <span><strong>Base:</strong> {Array.isArray(c.location) ? c.location.join(', ') : (c.location || '—')} | {c.gender}</span>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                              <div className="candidate-actions" style={{ marginTop: '12px' }}>
+                                <button type="button" className="button button-secondary button-small w-full">Request Unblind</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
       </div>
