@@ -358,13 +358,9 @@ export default function CandidatesDirectory({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                  <th className="p-4">Candidate ID</th>
-                  <th className="p-4">Full Name</th>
-                  <th className="p-4">Primary Mobile</th>
-                  <th className="p-4">Targeted Roles</th>
-                  <th className="p-4">Languages</th>
-                  <th className="p-4">Present District</th>
-                  <th className="p-4">Preferred Districts</th>
+                  <th className="p-4">Candidate Details</th>
+                  <th className="p-4">Roles & Languages</th>
+                  <th className="p-4">Locations</th>
                   <th className="p-4">Expected Salary</th>
                   <th className="p-4">Registered Date</th>
                   {(filter === 'SHORTLISTED' || filter === 'PLACED') ? (
@@ -378,36 +374,63 @@ export default function CandidatesDirectory({
               <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
                 {candidates.map((candidate) => (
                   <tr key={candidate.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-mono text-xs text-emerald-600 font-bold">#{candidate.id}</td>
-                    <td className="p-4 font-semibold text-slate-900">{candidate.fullName || 'N/A'}</td>
-                    <td className="p-4 font-mono">{candidate.phoneNumber1}</td>
+                    {/* Candidate Details */}
                     <td className="p-4">
-                      {candidate.jobRoles && candidate.jobRoles.length > 0 ? (
-                        candidate.jobRoles.slice(0, 2).map((role, idx) => (
-                          <span key={idx} className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-xs mr-1 inline-block">{role}</span>
-                        ))
-                      ) : <span className="text-slate-400">-</span>}
+                      <div className="font-semibold text-slate-900 flex items-center">
+                        {candidate.fullName || 'N/A'}
+                        {duplicatePhones.has(candidate.phoneNumber1) && (
+                          <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 ml-1.5" title="Duplicate phone" />
+                        )}
+                      </div>
+                      <div className="flex gap-2 items-center mt-1 text-[11px]">
+                        <span className="font-mono text-emerald-600 font-bold">#{candidate.id}</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="font-mono text-slate-500">{candidate.phoneNumber1}</span>
+                      </div>
                     </td>
-                    <td className="p-4">
-                      {candidate.languagesKnown && candidate.languagesKnown.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {candidate.languagesKnown.map((lang, idx) => (
-                            <span key={idx} className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded text-xs font-medium">{lang}</span>
-                          ))}
+
+                    {/* Roles & Languages */}
+                    <td className="p-4 space-y-1">
+                      <div className="flex flex-wrap gap-1">
+                        {candidate.jobRoles && candidate.jobRoles.length > 0 ? (
+                          candidate.jobRoles.slice(0, 2).map((role, idx) => (
+                            <span key={idx} className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-[11px] inline-block">{role}</span>
+                          ))
+                        ) : <span className="text-slate-400">-</span>}
+                      </div>
+                      {candidate.languagesKnown && candidate.languagesKnown.length > 0 && (
+                        <div className="text-[11px] text-slate-500">
+                          Languages: <span className="font-medium text-slate-700">{candidate.languagesKnown.join(', ')}</span>
                         </div>
-                      ) : <span className="text-slate-400">-</span>}
+                      )}
                     </td>
-                    <td className="p-4">{candidate.presentDistrict || 'N/A'}</td>
-                    <td className="p-4 max-w-[150px] truncate" title={candidate.preferredDistricts?.join(', ')}>
-                      {candidate.preferredDistricts && candidate.preferredDistricts.length > 0 ? candidate.preferredDistricts.join(', ') : 'N/A'}
+
+                    {/* Locations */}
+                    <td className="p-4 text-xs space-y-1">
+                      <div><span className="text-slate-400">Present:</span> <span className="font-medium text-slate-700">{candidate.presentDistrict || 'N/A'}</span></div>
+                      <div className="max-w-[180px] truncate" title={candidate.preferredDistricts?.join(', ')}>
+                        <span className="text-slate-400">Preferred:</span>{' '}
+                        <span className="font-medium text-slate-700">
+                          {candidate.preferredDistricts && candidate.preferredDistricts.length > 0 ? (
+                            candidate.preferredDistricts.length > 2 
+                              ? `${candidate.preferredDistricts.slice(0, 2).join(', ')} +${candidate.preferredDistricts.length - 2}` 
+                              : candidate.preferredDistricts.join(', ')
+                          ) : 'N/A'}
+                        </span>
+                      </div>
                     </td>
+
+                    {/* Expected Salary */}
                     <td className="p-4 font-semibold text-indigo-600">{candidate.expectedSalary || 'N/A'}</td>
-                    <td className="p-4 whitespace-nowrap">
+
+                    {/* Registered Date */}
+                    <td className="p-4 whitespace-nowrap text-xs">
                       {candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                     </td>
                     
+                    {/* Status / Company */}
                     {(filter === 'SHORTLISTED' || filter === 'PLACED') ? (
-                      <td className="p-4 font-bold text-slate-900 bg-amber-50/10">
+                      <td className="p-4 font-bold text-slate-900 bg-amber-50/10 text-xs">
                         🏢 {getCompanyLabel(candidate)}
                       </td>
                     ) : (
@@ -420,6 +443,7 @@ export default function CandidatesDirectory({
                       </td>
                     )}
 
+                    {/* Actions */}
                     {filter === 'PENDING_ADMIN_CALL' && (
                       <td className="p-4 text-right">
                         <button 
