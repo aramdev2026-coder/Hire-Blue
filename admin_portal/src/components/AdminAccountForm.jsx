@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { TN_DISTRICTS } from '../constants';
 
 export default function AdminAccountForm({
   form, setForm, errors, editing = false, showDistrict = false, onSubmit, onCancel, submitting, submitLabel,
 }) {
+  const [showPassword, setShowPassword] = useState(false);
   const inputCls = (field) =>
     `w-full mt-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
       errors[field] ? 'border-rose-300' : 'border-slate-200'
@@ -38,9 +40,18 @@ export default function AdminAccountForm({
         <label className="text-xs font-semibold text-slate-600 uppercase">
           Password {!editing && <span className="text-rose-500">*</span>}
         </label>
-        <input type="password" required={!editing} value={form.password}
-          placeholder={editing ? 'Leave blank to keep current' : ''}
-          onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputCls('password')} />
+        <div className="relative mt-1">
+          <input type={showPassword ? "text" : "password"} required={!editing} value={form.password}
+            placeholder={editing ? 'Leave blank to keep current' : ''}
+            onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${inputCls('password').replace('mt-1', '')} pr-10`} />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
         {errors.password && <p className="text-xs text-rose-600 mt-0.5">{errors.password}</p>}
       </div>
 

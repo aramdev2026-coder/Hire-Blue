@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import LegalModal from './LegalModal';
 
 export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' }); // type: 'error' | 'success'
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -127,7 +129,36 @@ export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
             <input className="input" type="text" placeholder="Email or Phone Number" value={form.identifier} onChange={e => upd('identifier', e.target.value)} required />
           )}
 
-          <input className="input" type="password" placeholder="Secure Password" value={form.password} onChange={e => upd('password', e.target.value)} required />
+          <div className="relative-container" style={{ position: 'relative', width: '100%' }}>
+            <input
+              className="input"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Secure Password"
+              value={form.password}
+              onChange={(e) => upd('password', e.target.value)}
+              required
+              style={{ width: '100%', paddingRight: '40px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px',
+              }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
 
           <button type="submit" disabled={loading} className="button button-primary button-full">
             {loading ? 'Processing...' : isLogin ? 'Access Dashboard' : 'Register Company'}

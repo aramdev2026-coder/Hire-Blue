@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Shield, Plus, UserX, Loader } from 'lucide-react';
+import { Shield, Plus, UserX, UserCheck, Loader, Trash2 } from 'lucide-react';
 import AdminAccountForm from './AdminAccountForm';
 import { validateAdminAccount } from '../utils/validation';
+import { useConfirm } from '../context/ConfirmContext';
 
 const EMPTY = { name: '', email: '', phone: '', password: '' };
 
-export default function AdminManagement({ admins, loading, onCreate, onDeactivate }) {
+export default function AdminManagement({ admins, loading, onCreate, onDeactivate, onDelete, onActivate }) {
+  const { showConfirm } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
@@ -92,14 +94,41 @@ export default function AdminManagement({ admins, loading, onCreate, onDeactivat
                       {a.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="p-3">
-                    {a.isActive && (
-                      <button
-                        onClick={() => window.confirm(`Deactivate ${a.name}?`) && onDeactivate(a.id)}
-                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
-                      >
-                        <UserX className="w-4 h-4" />
-                      </button>
+                  <td className="p-3 space-x-1">
+                    {!a.name.startsWith('[Deleted]') && (
+                      <>
+                        {a.isActive ? (
+                          <button
+                            onClick={() => showConfirm('Deactivate Admin', `Are you sure you want to deactivate ${a.name}?`, () => onDeactivate(a.id), 'danger')}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
+                            title="Deactivate"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => showConfirm('Activate Admin', `Are you sure you want to activate ${a.name}?`, () => onActivate(a.id), 'success')}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer"
+                            title="Activate"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            showConfirm(
+                              'Delete Admin Permanently',
+                              `Are you absolutely sure you want to PERMANENTLY delete Admin "${a.name}"? This will revert all their assigned candidates to unassigned and free their email credentials. This action cannot be undone.`,
+                              () => onDelete(a.id),
+                              'danger'
+                            );
+                          }}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-800 rounded cursor-pointer"
+                          title="Delete Permanently"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

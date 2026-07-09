@@ -2,11 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Search, Users, Loader, AlertTriangle } from 'lucide-react';
 import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass } from '../constants';
 
+import { useConfirm } from '../context/ConfirmContext';
+
 export default function AssignmentScreen({
   candidates, subAdmins, loading, onAssign, duplicates = [],
 }) {
+  const { showAlert } = useConfirm();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('PENDING_ADMIN_CALL');
   const [districtFilter, setDistrictFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
@@ -54,12 +57,12 @@ export default function AssignmentScreen({
 
   const handleAssign = () => {
     const ids = [...selected];
-    if (!ids.length) return window.alert('Select at least one candidate.');
+    if (!ids.length) return showAlert('Assignment Alert', 'Select at least one candidate.', 'warning');
     if (roundRobin) {
-      if (!selectedSubAdmins.length) return window.alert('Select sub-admins for round-robin.');
+      if (!selectedSubAdmins.length) return showAlert('Assignment Alert', 'Select sub-admins for round-robin.', 'warning');
       onAssign({ candidateIds: ids, subAdminIds: selectedSubAdmins, strategy: 'ROUND_ROBIN' });
     } else {
-      if (!subAdminId) return window.alert('Select a sub-admin.');
+      if (!subAdminId) return showAlert('Assignment Alert', 'Select a sub-admin.', 'warning');
       onAssign({ candidateIds: ids, subAdminId });
     }
     setSelected(new Set());

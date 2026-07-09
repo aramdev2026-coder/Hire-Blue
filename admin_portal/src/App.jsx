@@ -32,6 +32,8 @@ export default function App() {
   const [employers_filter, setEmployersFilter] = useState('ACTIVE');
   const [candidates, setCandidates] = useState([]);
   const [candidates_filter, setCandidatesFilter] = useState('PENDING_ADMIN_CALL');
+  const [candidates_district, setCandidatesDistrict] = useState('');
+  const [candidates_role, setCandidatesRole] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [jobs, setJobs] = useState([]);
   const [matchedCandidates, setMatchedCandidates] = useState([]);
@@ -40,6 +42,7 @@ export default function App() {
   const [admins, setAdmins] = useState([]);
   const [duplicates, setDuplicates] = useState([]);
   const [subAdminStats, setSubAdminStats] = useState(null);
+  const [smtpError, setSmtpError] = useState(null);
 
   const role = user?.role;
   const isSuperAdmin = role === 'SUPER_ADMIN';
@@ -51,6 +54,24 @@ export default function App() {
       fetchMe().then(setUser).catch(() => setUser(null)).finally(() => setAuthLoading(false));
     }
   }, []);
+
+  useEffect(() => {
+    if (user && user.role === 'SUPER_ADMIN') {
+      apiFetch('/api/super-admin/smtp-status')
+        .then((res) => {
+          if (res.healthy === false) {
+            setSmtpError(res.error || 'Authentication Failed');
+          } else {
+            setSmtpError(null);
+          }
+        })
+        .catch((err) => {
+          console.error('SMTP check failed:', err);
+        });
+    } else {
+      setSmtpError(null);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (successMessage) {
@@ -84,7 +105,10 @@ export default function App() {
     setError('');
     try {
       const query = new URLSearchParams();
-      if (candidates_filter && !isSubAdmin) query.append('status', candidates_filter);
+      const targetStatus = activeTab === 'assignment' ? '' : candidates_filter;
+      if (targetStatus && !isSubAdmin) query.append('status', targetStatus);
+      if (candidates_district && activeTab !== 'assignment') query.append('district', candidates_district);
+      if (candidates_role && activeTab !== 'assignment') query.append('role', candidates_role);
       if (searchQuery) query.append('search', searchQuery);
 
       const path = isSubAdmin
@@ -112,7 +136,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [candidates_filter, searchQuery, sortBy, isSubAdmin]);
+  }, [activeTab, candidates_filter, candidates_district, candidates_role, searchQuery, sortBy, isSubAdmin]);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -183,11 +207,11 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'candidates') {
+    if (activeTab === 'candidates' || activeTab === 'assignment') {
       fetchCandidates();
       if (isSubAdmin) fetchSubAdminStats();
     }
-  }, [activeTab, candidates_filter, searchQuery, sortBy, user, fetchCandidates, fetchSubAdminStats, isSubAdmin]);
+  }, [activeTab, candidates_filter, candidates_district, candidates_role, searchQuery, sortBy, user, fetchCandidates, fetchSubAdminStats, isSubAdmin]);
 
   useEffect(() => {
     if (!user) return;
@@ -275,37 +299,125 @@ export default function App() {
   };
 
   const handleSubAdminCreate = async (form) => {
-    await apiFetch('/api/super-admin/sub-admins', { method: 'POST', body: JSON.stringify(form) });
-    setSuccessMessage('Sub-admin created');
-    fetchSubAdmins();
+    try {
+      await apiFetch('/api/super-admin/sub-admins', { method: 'POST', body: JSON.stringify(form) });
+      setSuccessMessage('Sub-admin created');
+      fetchSubAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
   };
 
   const handleSubAdminUpdate = async (id, form) => {
-    const { password, ...rest } = form;
-    await apiFetch(`/api/super-admin/sub-admins/${id}`, { method: 'PUT', body: JSON.stringify(rest) });
-    setSuccessMessage('Sub-admin updated');
-    fetchSubAdmins();
+    try {
+      const { password, ...rest } = form;
+      await apiFetch(`/api/super-admin/sub-admins/${id}`, { method: 'PUT', body: JSON.stringify(rest) });
+      setSuccessMessage('Sub-admin updated');
+      fetchSubAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
   };
 
   const handleSubAdminDeactivate = async (id, reassignOpenCandidatesTo) => {
-    await apiFetch(`/api/super-admin/sub-admins/${id}/deactivate`, {
-      method: 'PUT',
-      body: JSON.stringify({ reassignOpenCandidatesTo }),
-    });
-    setSuccessMessage('Sub-admin deactivated');
-    fetchSubAdmins();
+    try {
+      await apiFetch(`/api/super-admin/sub-admins/${id}/deactivate`, {
+        method: 'PUT',
+        body: JSON.stringify({ reassignOpenCandidatesTo }),
+      });
+      setSuccessMessage('Sub-admin deactivated');
+      fetchSubAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
   };
 
   const handleAdminCreate = async (form) => {
-    await apiFetch('/api/super-admin/admins', { method: 'POST', body: JSON.stringify(form) });
-    setSuccessMessage('Admin created');
-    fetchAdmins();
+    try {
+      await apiFetch('/api/super-admin/admins', { method: 'POST', body: JSON.stringify(form) });
+      setSuccessMessage('Admin created');
+      fetchAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
   };
 
   const handleAdminDeactivate = async (id) => {
-    await apiFetch(`/api/super-admin/admins/${id}/deactivate`, { method: 'PUT' });
-    setSuccessMessage('Admin deactivated');
-    fetchAdmins();
+    try {
+      await apiFetch(`/api/super-admin/admins/${id}/deactivate`, { method: 'PUT' });
+      setSuccessMessage('Admin deactivated');
+      fetchAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
+  };
+
+  const handleSubAdminActivate = async (id) => {
+    try {
+      await apiFetch(`/api/super-admin/sub-admins/${id}/activate`, { method: 'PUT' });
+      setSuccessMessage('Sub-admin successfully activated');
+      fetchSubAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
+  };
+
+  const handleAdminActivate = async (id) => {
+    try {
+      await apiFetch(`/api/super-admin/admins/${id}/activate`, { method: 'PUT' });
+      setSuccessMessage('Admin successfully activated');
+      fetchAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
+  };
+
+  const handleSubAdminDelete = async (id) => {
+    try {
+      await apiFetch(`/api/super-admin/sub-admins/${id}`, { method: 'DELETE' });
+      setSuccessMessage('Sub-admin permanently deleted');
+      fetchSubAdmins();
+      fetchCandidates();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
+  };
+
+  const handleAdminDelete = async (id) => {
+    try {
+      await apiFetch(`/api/super-admin/admins/${id}`, { method: 'DELETE' });
+      setSuccessMessage('Admin permanently deleted');
+      fetchAdmins();
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
+        handleLogout();
+      }
+    }
   };
 
   const handleAddCandidate = async (data) => {
@@ -362,6 +474,14 @@ export default function App() {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header activeTab={activeTab} user={user} />
 
+        {isSuperAdmin && smtpError && (
+          <div className="bg-rose-50 border-b border-rose-200 px-4 py-2.5 text-xs font-semibold text-rose-700 flex items-center justify-between shadow-sm shrink-0">
+            <span className="flex items-center gap-2">
+              ⚠️ Warning: SMTP Mail Transporter is failing: "{smtpError}". Users will not receive OTP emails. Please check your credentials or network setup.
+            </span>
+          </div>
+        )}
+
         <Toast
           error={error}
           successMessage={successMessage}
@@ -385,6 +505,10 @@ export default function App() {
               candidates={candidates}
               filter={candidates_filter}
               setFilter={setCandidatesFilter}
+              districtFilter={candidates_district}
+              setDistrictFilter={setCandidatesDistrict}
+              roleFilter={candidates_role}
+              setRoleFilter={setCandidatesRole}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}
@@ -432,6 +556,8 @@ export default function App() {
               onCreate={handleSubAdminCreate}
               onUpdate={handleSubAdminUpdate}
               onDeactivate={handleSubAdminDeactivate}
+              onDelete={handleSubAdminDelete}
+              onActivate={handleSubAdminActivate}
             />
           )}
 
@@ -441,6 +567,8 @@ export default function App() {
               loading={loading}
               onCreate={handleAdminCreate}
               onDeactivate={handleAdminDeactivate}
+              onDelete={handleAdminDelete}
+              onActivate={handleAdminActivate}
             />
           )}
 

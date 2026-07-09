@@ -32,12 +32,13 @@ export default function AnalyticsDashboard() {
   const [timeToPlacement, setTimeToPlacement] = useState([]);
   const [placementRates, setPlacementRates] = useState([]);
   const [aging, setAging] = useState({});
+  const [logs, setLogs] = useState([]);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
-        const [f, lb, src, dist, ttp, pr, ag] = await Promise.all([
+        const [f, lb, src, dist, ttp, pr, ag, al] = await Promise.all([
           apiFetch('/api/super-admin/analytics/funnel'),
           apiFetch('/api/super-admin/analytics/sub-admin-leaderboard'),
           apiFetch('/api/super-admin/analytics/source-breakdown'),
@@ -45,6 +46,7 @@ export default function AnalyticsDashboard() {
           apiFetch('/api/super-admin/analytics/time-to-placement'),
           apiFetch('/api/super-admin/analytics/placement-rate'),
           apiFetch('/api/super-admin/analytics/aging'),
+          apiFetch('/api/super-admin/analytics/activity-logs'),
         ]);
         setFunnel(f.funnel || []);
         setLeaderboard(lb.leaderboard || []);
@@ -53,6 +55,7 @@ export default function AnalyticsDashboard() {
         setTimeToPlacement(ttp.timeToPlacement || []);
         setPlacementRates(pr.rates || []);
         setAging(ag.aging || {});
+        setLogs(al.logs || []);
       } catch (err) {
         console.error('Analytics load failed:', err);
       } finally {
@@ -137,6 +140,31 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
           ))
+        )}
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <h4 className="font-semibold text-sm mb-3 text-slate-700">Sub-Admin Audit Activity Logs</h4>
+        {logs.length === 0 ? (
+          <p className="text-sm text-slate-400">No activity logs recorded in the last 30 days.</p>
+        ) : (
+          <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto pr-2">
+            {logs.map((log) => (
+              <div key={log.id} className="py-2.5 flex items-start gap-3">
+                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${
+                  log.type === 'status' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                  log.type === 'assignment' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                  'bg-amber-50 text-amber-700 border border-amber-100'
+                }`}>
+                  {log.type}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-700 leading-normal">{log.text}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{new Date(log.timestamp).toLocaleString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

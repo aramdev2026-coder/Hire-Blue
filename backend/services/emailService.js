@@ -11,14 +11,23 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+let smtpHealthy = false;
+let smtpError = null;
+
 // Verify transporter connection on startup
 transporter.verify((error, success) => {
   if (error) {
     logger.error(`❌ Email transporter error: ${error.message || error}`);
+    smtpHealthy = false;
+    smtpError = error.message || String(error);
   } else {
     logger.info('📧 Email server is ready to send messages');
+    smtpHealthy = true;
+    smtpError = null;
   }
 });
+
+export const getSmtpStatus = () => ({ healthy: smtpHealthy, error: smtpError });
 
 export const sendOTPEmail = async (email, otp) => {
   await transporter.sendMail({

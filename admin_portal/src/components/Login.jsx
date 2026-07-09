@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Loader } from 'lucide-react';
+import { Lock, Mail, Loader, Eye, EyeOff } from 'lucide-react';
 import { login } from '../api';
 
 export default function Login({ onLoginSuccess }) {
@@ -7,6 +7,7 @@ export default function Login({ onLoginSuccess }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,13 +59,20 @@ export default function Login({ onLoginSuccess }) {
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="w-full pl-9 pr-10 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

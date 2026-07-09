@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Lock, X, Key } from 'lucide-react';
+import { Lock, X, Key, Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '../api';
 
 const TAB_TITLES = {
-  verification: 'Company Management',
+  verification: 'Employer Management',
   candidates: 'Candidates Dashboard',
   tracker: 'Employer Requirements Tracker',
   match: 'Match Engine Pipeline',
@@ -30,6 +30,9 @@ export default function Header({ activeTab, user }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const handleOpen = () => {
     setOldPassword('');
@@ -37,10 +40,16 @@ export default function Header({ activeTab, user }) {
     setConfirmPassword('');
     setError('');
     setSuccess('');
+    setShowOldPass(false);
+    setShowNewPass(false);
+    setShowConfirmPass(false);
     setIsOpen(true);
   };
 
   const handleClose = () => {
+    setShowOldPass(false);
+    setShowNewPass(false);
+    setShowConfirmPass(false);
     setIsOpen(false);
   };
 
@@ -122,38 +131,65 @@ export default function Header({ activeTab, user }) {
 
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Current Password</label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showOldPass ? 'text' : 'password'}
+                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPass(!showOldPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showOldPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">New Password</label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPass ? 'text' : 'password'}
+                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Confirm New Password</label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPass ? 'text' : 'password'}
+                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

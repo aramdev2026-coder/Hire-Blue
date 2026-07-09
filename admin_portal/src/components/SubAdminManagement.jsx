@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Users, Plus, Edit2, UserX, Loader } from 'lucide-react';
+import { Users, Plus, Edit2, UserX, UserCheck, Loader, Trash2 } from 'lucide-react';
 import AdminAccountForm from './AdminAccountForm';
 import { validateSubAdminAccount } from '../utils/validation';
+import { useConfirm } from '../context/ConfirmContext';
 
 const EMPTY = { name: '', email: '', phone: '', password: '', region: '' };
 
 export default function SubAdminManagement({
-  subAdmins, loading, readOnly, onCreate, onUpdate, onDeactivate,
+  subAdmins, loading, readOnly, onCreate, onUpdate, onDeactivate, onDelete, onActivate,
 }) {
+  const { showConfirm } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -49,7 +51,6 @@ export default function SubAdminManagement({
   };
 
   const handleDeactivate = async (sa) => {
-    if (!window.confirm(`Deactivate ${sa.name}?`)) return;
     setSubmitting(true);
     try {
       await onDeactivate(sa.id, reassignTo || null);
@@ -131,10 +132,37 @@ export default function SubAdminManagement({
                       {sa.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  {!readOnly && sa.isActive && (
+                  {!readOnly && (
                     <td className="p-3 space-x-1">
-                      <button onClick={() => startEdit(sa)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => setDeactivating(sa)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"><UserX className="w-4 h-4" /></button>
+                      {!sa.name.startsWith('[Deleted]') && (
+                        <>
+                          {sa.isActive ? (
+                            <>
+                              <button onClick={() => startEdit(sa)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                              <button onClick={() => setDeactivating(sa)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer" title="Deactivate"><UserX className="w-4 h-4" /></button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => startEdit(sa)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                              <button onClick={() => showConfirm('Activate Sub-Admin', `Activate sub-admin "${sa.name}"?`, () => onActivate(sa.id), 'success')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer" title="Activate"><UserCheck className="w-4 h-4" /></button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => {
+                              showConfirm(
+                                'Delete Sub-Admin Permanently',
+                                `Are you absolutely sure you want to PERMANENTLY delete Sub-Admin "${sa.name}"? This will revert all their assigned candidates to unassigned and free their email credentials. This action cannot be undone.`,
+                                () => onDelete(sa.id),
+                                'danger'
+                              );
+                            }}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-800 rounded cursor-pointer"
+                            title="Delete Permanently"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </td>
                   )}
                 </tr>

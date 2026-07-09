@@ -1,14 +1,43 @@
 import React from 'react';
-import { Loader } from 'lucide-react';
+import { Loader, Download } from 'lucide-react';
+import { useConfirm } from '../context/ConfirmContext';
 
 export default function CompanyVerification({ employers, filter, setFilter, loading, onUpdateStatus }) {
+  const { showAlert } = useConfirm();
+  const handleExportCSV = () => {
+    if (!employers.length) return showAlert('Export Alert', 'No company data to export.', 'warning');
+    
+    const headers = ['Company Name', 'Email', 'Phone Number', 'Status'];
+    const rows = employers.map(emp => [
+      emp.companyName || '',
+      emp.email || '',
+      emp.phoneNumber || '',
+      emp.status || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Employers_Export_${filter || 'ALL'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-4 max-w-4xl w-full px-2 sm:px-0">
+    <div className="space-y-4 w-full">
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-800">
         💡 <strong>Company Management:</strong> Toggle company accounts between active and blocked. Blocked companies cannot log in or view candidates.
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center w-full">
         <button 
           onClick={() => setFilter('ACTIVE')}
           className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'ACTIVE' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}
@@ -20,6 +49,13 @@ export default function CompanyVerification({ employers, filter, setFilter, load
           className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'SUSPENDED' ? 'bg-rose-600 text-white border-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
         >
           Blocked
+        </button>
+
+        <button
+          onClick={handleExportCSV}
+          className="ml-auto px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+        >
+          <Download className="w-3.5 h-3.5" /> Export CSV
         </button>
       </div>
 

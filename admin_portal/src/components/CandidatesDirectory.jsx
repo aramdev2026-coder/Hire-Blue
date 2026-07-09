@@ -1,15 +1,64 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ArrowUpDown, Loader, Users, Send, AlertTriangle } from 'lucide-react';
-import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass } from '../constants';
+import { Search, Filter, ArrowUpDown, Loader, Users, Send, AlertTriangle, Download } from 'lucide-react';
+import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass, TN_DISTRICTS, JOB_ROLES } from '../constants';
+import { useConfirm } from '../context/ConfirmContext';
+import ShortlistJobModal from './ShortlistJobModal';
 
 export default function CandidatesDirectory({ 
-  candidates, filter, setFilter, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [],
+  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [],
 }) {
+  const { showConfirm, showAlert } = useConfirm();
   const [delegationMode, setDelegationMode] = useState(false);
+  const [shortlistTarget, setShortlistTarget] = useState(null);
   const [delDistrict, setDelDistrict] = useState('');
   const [delRole, setDelRole] = useState('');
   const [delCount, setDelCount] = useState('');
   const [delSubAdmin, setDelSubAdmin] = useState('');
+
+  const handleExportCSV = () => {
+    if (!candidates.length) return showAlert('Export Alert', 'No candidate data to export.', 'warning');
+    
+    const headers = [
+      'Candidate ID',
+      'Name',
+      'Phone',
+      'Alternate Phone',
+      'District',
+      'Roles',
+      'Status',
+      'Source',
+      'Assigned To',
+      'Registered Date'
+    ];
+    
+    const rows = candidates.map(c => [
+      c.id,
+      c.fullName || '',
+      c.phoneNumber1 || '',
+      c.phoneNumber2 || '',
+      c.presentDistrict || '',
+      (c.jobRoles || []).join('; '),
+      c.status || '',
+      c.source || '',
+      c.assignedTo?.name || 'Unassigned',
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Candidates_Directory_${filter || 'ALL'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const duplicatePhones = useMemo(() => {
     const set = new Set();
@@ -29,11 +78,11 @@ export default function CandidatesDirectory({
   }, [candidates, delDistrict, delRole]);
 
   const handleDelegationSubmit = () => {
-    if (!delSubAdmin) return window.alert("Please select a Sub Admin.");
+    if (!delSubAdmin) return showAlert('Delegation Warning', "Please select a Sub Admin.", 'warning');
     
     const countToAssign = delCount ? parseInt(delCount) : delegatedCandidates.length;
     if (countToAssign <= 0 || countToAssign > delegatedCandidates.length) {
-      return window.alert(`Invalid count. Max available for this filter is ${delegatedCandidates.length}.`);
+      return showAlert('Delegation Error', `Invalid count. Max available for this filter is ${delegatedCandidates.length}.`, 'danger');
     }
 
     const candidateIdsToAssign = delegatedCandidates.slice(0, countToAssign).map(c => c.id);
@@ -44,22 +93,23 @@ export default function CandidatesDirectory({
 
   const handleStatusTransition = (candidateId, currentJobId, targetStatus) => {
     if (targetStatus === 'SHORTLISTED') {
-      const jobOptions = jobs.map((j) => `${j.id}: ${j.roleTitle} @ ${j.employerName || j.employer?.companyName || 'Unknown'}`).join('\n');
-      const choice = window.prompt(`Enter Job ID to shortlist for:\n\n${jobOptions || 'No jobs available'}`);
-      if (choice === null) return;
-      if (!choice.trim()) {
-        window.alert('Action Cancelled: Job ID is required.');
-        return;
-      }
-      onUpdateStatus(candidateId, 'SHORTLISTED', choice.trim());
+      setShortlistTarget({ candidateId, currentJobId });
     } 
     else if (targetStatus === 'PLACED') {
-      const confirm = window.confirm('Mark this candidate as PLACED?');
-      if (confirm) onUpdateStatus(candidateId, 'PLACED', currentJobId);
+      showConfirm(
+        'Confirm Placement',
+        'Mark this candidate as PLACED?',
+        () => onUpdateStatus(candidateId, 'PLACED', currentJobId),
+        'success'
+      );
     } 
     else if (targetStatus === 'PENDING_ADMIN_CALL') {
-      const confirmRevoke = window.confirm("Are you sure you want to revoke this candidate back to the Pending Call list?");
-      if (confirmRevoke) onUpdateStatus(candidateId, 'PENDING_ADMIN_CALL', null);
+      showConfirm(
+        'Revoke Candidate',
+        'Are you sure you want to revoke this candidate back to the Pending Call list?',
+        () => onUpdateStatus(candidateId, 'PENDING_ADMIN_CALL', null),
+        'warning'
+      );
     }
   };
 
@@ -154,17 +204,48 @@ export default function CandidatesDirectory({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center w-full justify-between">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
+          >
+            <option value="">All Statuses</option>
+            {ALL_CANDIDATE_STATUSES.map((s) => (
+              <option key={s} value={s}>{formatStatus(s)}</option>
+            ))}
+          </select>
+
+          <select
+            value={districtFilter}
+            onChange={(e) => setDistrictFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
+          >
+            <option value="">All Districts</option>
+            {TN_DISTRICTS.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-white cursor-pointer"
+          >
+            <option value="">All Job Roles</option>
+            {JOB_ROLES.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={handleExportCSV}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
         >
-          <option value="">All Statuses</option>
-          {ALL_CANDIDATE_STATUSES.map((s) => (
-            <option key={s} value={s}>{formatStatus(s)}</option>
-          ))}
-        </select>
+          <Download className="w-3.5 h-3.5" /> Export CSV
+        </button>
       </div>
 
       {loading ? (
@@ -361,6 +442,17 @@ export default function CandidatesDirectory({
             </table>
           </div>
         </>
+      )}
+
+      {shortlistTarget && (
+        <ShortlistJobModal
+          jobs={jobs}
+          onClose={() => setShortlistTarget(null)}
+          onConfirm={(jobId) => {
+            onUpdateStatus(shortlistTarget.candidateId, 'SHORTLISTED', jobId);
+            setShortlistTarget(null);
+          }}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { authenticateAdmin, requireRole } from '../middleware/auth.js';
 import { hashPassword } from '../utils/password.js';
 import { serializeAdminUser } from '../utils/serializers.js';
 import { validateAdminAccountInput, normalizePhone, isValidEmail, isValidPhone, isValidDistrict } from '../utils/validation.js';
+import { getSmtpStatus } from '../services/emailService.js';
 
 export default function createSuperAdminRoutes(prisma) {
   const router = express.Router();
@@ -442,6 +443,170 @@ export default function createSuperAdminRoutes(prisma) {
     } catch (err) {
       console.error('Analytics activity:', err.message);
       res.status(500).json({ error: 'Failed to fetch activity calendar' });
+    }
+  });
+
+  // Permanent soft-deletion for Admins/Sub-Admins (preserves history, frees credentials, resets assignments)
+  const softDeleteAdminUser = async (req, res, targetRole) => {
+    const targetId = req.params.id;
+    if (targetId === req.admin.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
+
+    try {
+      const target = await prisma.admin.findFirst({
+        where: { id: targetId, role: targetRole },
+      });
+      if (!target) {
+        return res.status(404).json({ error: `${targetRole === 'SUB_ADMIN' ? 'Sub-Admin' : 'Admin'} not found` });
+      }
+
+      // Check if they are already deleted
+      if (target.name.startsWith('[Deleted]')) {
+        return res.status(400).json({ error: 'Account is already deleted' });
+      }
+
+      // Update in a transaction
+      await prisma.$transaction([
+        // 1. Revert all assigned candidates back to unassigned status
+        prisma.candidate.updateMany({
+          where: { assignedToId: targetId },
+          data: { assignedToId: null },
+        }),
+        // 2. Soft-delete the admin account by renaming, scrambling password, resetting phone, and marking inactive
+        prisma.admin.update({
+          where: { id: targetId },
+          data: {
+            name: `[Deleted] ${target.name}`,
+            email: `deleted_${Date.now()}_${target.email}`,
+            phone: null,
+            password: `DELETED_DISABLED_${Math.random().toString(36).slice(2)}`,
+            isActive: false,
+          },
+        }),
+      ]);
+
+      res.json({ success: true, message: `${targetRole === 'SUB_ADMIN' ? 'Sub-Admin' : 'Admin'} permanently deleted and credentials freed.` });
+    } catch (err) {
+      console.error(`Delete ${targetRole.toLowerCase()}:`, err.message);
+      res.status(500).json({ error: `Failed to delete ${targetRole === 'SUB_ADMIN' ? 'sub-admin' : 'admin'}` });
+    }
+  };
+
+  router.delete('/admins/:id', (req, res) => softDeleteAdminUser(req, res, 'ADMIN'));
+  router.delete('/sub-admins/:id', (req, res) => softDeleteAdminUser(req, res, 'SUB_ADMIN'));
+
+  router.put('/admins/:id/activate', async (req, res) => {
+    try {
+      const admin = await prisma.admin.update({
+        where: { id: req.params.id, role: 'ADMIN' },
+        data: { isActive: true },
+      });
+      res.json({ success: true, admin: serializeAdminUser(admin) });
+    } catch (err) {
+      console.error('Activate admin:', err.message);
+      res.status(500).json({ error: 'Failed to activate admin' });
+    }
+  });
+
+  router.put('/sub-admins/:id/activate', async (req, res) => {
+    try {
+      const subAdmin = await prisma.admin.update({
+        where: { id: req.params.id, role: 'SUB_ADMIN' },
+        data: { isActive: true },
+      });
+      res.json({ success: true, subAdmin: serializeAdminUser(subAdmin) });
+    } catch (err) {
+      console.error('Activate sub-admin:', err.message);
+      res.status(500).json({ error: 'Failed to activate sub-admin' });
+    }
+  });
+
+  router.get('/smtp-status', (req, res) => {
+    res.json({ success: true, ...getSmtpStatus() });
+  });
+
+  router.get('/analytics/activity-logs', async (req, res) => {
+    try {
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // last 30 days
+      const [statusChanges, assignments, notes] = await Promise.all([
+        prisma.statusHistory.findMany({
+          where: { changedAt: { gte: since } },
+          include: {
+            changedBy: { select: { name: true, role: true } },
+            candidate: { select: { id: true, fullName: true } },
+          },
+          orderBy: { changedAt: 'desc' },
+          take: 50,
+        }),
+        prisma.assignmentLog.findMany({
+          where: { assignedAt: { gte: since } },
+          include: {
+            assignedBy: { select: { name: true, role: true } },
+            assignedTo: { select: { name: true, role: true } },
+            candidate: { select: { id: true, fullName: true } },
+          },
+          orderBy: { assignedAt: 'desc' },
+          take: 50,
+        }),
+        prisma.communicationLog.findMany({
+          where: { createdAt: { gte: since } },
+          include: {
+            author: { select: { name: true, role: true } },
+            candidate: { select: { id: true, fullName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        }),
+      ]);
+
+      const formatRole = (role) => {
+        if (role === 'SUPER_ADMIN') return 'Super Admin';
+        if (role === 'ADMIN') return 'Admin';
+        if (role === 'SUB_ADMIN') return 'Sub-Admin';
+        return 'User';
+      };
+
+      const logs = [];
+
+      statusChanges.forEach((s) => {
+        const actorRole = formatRole(s.changedBy?.role);
+        logs.push({
+          id: `status-${s.id}`,
+          text: `${actorRole} "${s.changedBy?.name || 'System'}" updated Candidate #${s.candidateId} (${s.candidate?.fullName || 'N/A'}) status from ${s.fromStatus || 'None'} to ${s.toStatus}`,
+          timestamp: s.changedAt,
+          type: 'status',
+        });
+      });
+
+      assignments.forEach((a) => {
+        const actorRole = formatRole(a.assignedBy?.role);
+        const targetRole = formatRole(a.assignedTo?.role);
+        logs.push({
+          id: `assign-${a.id}`,
+          text: `${actorRole} "${a.assignedBy?.name || 'System'}" assigned Candidate #${a.candidateId} (${a.candidate?.fullName || 'N/A'}) to ${targetRole} "${a.assignedTo?.name || 'N/A'}"`,
+          timestamp: a.assignedAt,
+          type: 'assignment',
+        });
+      });
+
+      notes.forEach((n) => {
+        const actorRole = formatRole(n.author?.role);
+        logs.push({
+          id: `note-${n.id}`,
+          text: `${actorRole} "${n.author?.name || 'System'}" added note for Candidate #${n.candidateId} (${n.candidate?.fullName || 'N/A'}): "${n.note.slice(0, 80)}${n.note.length > 80 ? '...' : ''}"`,
+          timestamp: n.createdAt,
+          type: 'note',
+        });
+      });
+
+      // Sort combined logs by timestamp desc
+      logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      res.json({ success: true, logs: logs.slice(0, 50) });
+    } catch (err) {
+      console.error('Analytics activity logs:', err.message);
+      res.status(500).json({ error: 'Failed to fetch activity logs' });
     }
   });
 
