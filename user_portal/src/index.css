@@ -865,6 +865,7 @@ button {
 .chip:hover {
   border-color: var(--primary);
   color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .tag-chip.selected,
@@ -875,7 +876,16 @@ button {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(67, 56, 202, 0.22);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22);
+}
+
+.tag-chip--selected:hover,
+.role-chip--selected:hover,
+.role-pill.active:hover,
+.chip.active:hover {
+  background: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: #fff !important;
 }
 
 .chip--success {
