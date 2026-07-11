@@ -497,6 +497,7 @@ export default function App() {
               setFilter={setEmployersFilter}
               loading={loading}
               onUpdateStatus={updateEmployerStatus}
+              onRefresh={fetchEmployers}
             />
           )}
 
@@ -533,7 +534,7 @@ export default function App() {
           )}
 
           {isAdmin && activeTab === 'tracker' && (
-            <RequirementsTracker jobs={jobs} loading={loading} />
+            <RequirementsTracker jobs={jobs} loading={loading} onRefresh={fetchJobs} />
           )}
 
           {isAdmin && activeTab === 'match' && (

@@ -1,9 +1,12 @@
-import React from 'react';
-import { Loader, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Loader, Download, Plus } from 'lucide-react';
 import { useConfirm } from '../context/ConfirmContext';
+import AddEmployerModal from './AddEmployerModal';
 
-export default function CompanyVerification({ employers, filter, setFilter, loading, onUpdateStatus }) {
+export default function CompanyVerification({ employers, filter, setFilter, loading, onUpdateStatus, onRefresh }) {
   const { showAlert } = useConfirm();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const handleExportCSV = () => {
     if (!employers.length) return showAlert('Export Alert', 'No company data to export.', 'warning');
     
@@ -37,26 +40,37 @@ export default function CompanyVerification({ employers, filter, setFilter, load
         💡 <strong>Company Management:</strong> Toggle company accounts between active and blocked. Blocked companies cannot log in or view candidates.
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center w-full">
-        <button 
-          onClick={() => setFilter('ACTIVE')}
-          className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'ACTIVE' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}
-        >
-          Active
-        </button>
-        <button 
-          onClick={() => setFilter('SUSPENDED')}
-          className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'SUSPENDED' ? 'bg-rose-600 text-white border-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
-        >
-          Blocked
-        </button>
+      <div className="flex flex-wrap gap-2 justify-between items-center w-full">
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setFilter('ACTIVE')}
+            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'ACTIVE' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}
+          >
+            Active
+          </button>
+          <button 
+            onClick={() => setFilter('SUSPENDED')}
+            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'SUSPENDED' ? 'bg-rose-600 text-white border-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
+          >
+            Blocked
+          </button>
+        </div>
 
-        <button
-          onClick={handleExportCSV}
-          className="ml-auto px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-        >
-          <Download className="w-3.5 h-3.5" /> Export CSV
-        </button>
+        <div className="flex gap-2 items-center ml-auto">
+          <button
+            onClick={handleExportCSV}
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5" /> Export CSV
+          </button>
+          
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Employer
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -158,6 +172,14 @@ export default function CompanyVerification({ employers, filter, setFilter, load
           </div>
         </>
       )}
+
+      <AddEmployerModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onEmployerAdded={() => {
+          if (onRefresh) onRefresh();
+        }}
+      />
     </div>
   );
 }

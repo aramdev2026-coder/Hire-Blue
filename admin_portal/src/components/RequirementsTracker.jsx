@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Loader, Folder, FolderOpen, ArrowLeft, Briefcase, Users, Search, Filter } from 'lucide-react';
+import { Loader, Folder, FolderOpen, ArrowLeft, Briefcase, Users, Search, Filter, Plus } from 'lucide-react';
+import AddRequirementModal from './AddRequirementModal';
 
-export default function RequirementsTracker({ jobs, loading }) {
+export default function RequirementsTracker({ jobs, loading, backendUrl, token, onRefresh }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL_ROLES');
@@ -89,6 +91,16 @@ export default function RequirementsTracker({ jobs, loading }) {
         </div>
       )}
 
+      {/* Action Bar */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+        >
+          <Plus size={16} /> Add Requirement
+        </button>
+      </div>
+
       {!selectedCompany ? (
         <div className="space-y-4">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -173,6 +185,14 @@ export default function RequirementsTracker({ jobs, loading }) {
           </div>
         </div>
       )}
+
+      <AddRequirementModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onRequirementAdded={() => {
+          if (onRefresh) onRefresh();
+        }}
+      />
     </div>
   );
 }
