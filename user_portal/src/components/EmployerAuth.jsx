@@ -76,91 +76,305 @@ export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card auth-card--employer text-center">
-        <img src="/employer-logo.png" alt="Aram FTC Logo" className="brand-logo" style={{ margin: '0 auto 16px', display: 'block' }} />
-        <div className="auth-tab-switch">
+    <div className="auth-shell" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+      <style>{`
+        .employer-auth-card {
+          width: 100%;
+          max-width: 440px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 32px;
+          box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
+          text-align: center;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .employer-auth-card:hover {
+          box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.12), 0 1px 4px rgba(0, 0, 0, 0.03);
+          border-color: #cbd5e1;
+        }
+        .employer-brand-logo {
+          height: 48px;
+          object-fit: contain;
+          margin: 0 auto 20px;
+          display: block;
+        }
+        .employer-auth-title {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 6px;
+          letter-spacing: -0.025em;
+        }
+        .employer-auth-subtitle {
+          font-size: 0.875rem;
+          color: #64748b;
+          margin-bottom: 24px;
+        }
+        .employer-tab-container {
+          background: #f1f5f9;
+          padding: 4px;
+          border-radius: 10px;
+          display: flex;
+          gap: 4px;
+          margin-bottom: 24px;
+        }
+        .employer-tab-btn {
+          flex: 1;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background: transparent;
+          color: #64748b;
+        }
+        .employer-tab-btn.active {
+          background: #ffffff;
+          color: #2563eb;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        .employer-form {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          text-align: left;
+        }
+        .employer-input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .employer-label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .employer-input {
+          width: 100%;
+          padding: 10px 14px;
+          font-size: 0.875rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          outline: none;
+          background: #ffffff;
+          color: #0f172a;
+          transition: all 0.2s ease;
+        }
+        .employer-input:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        .employer-checkbox-container {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin: 4px 0 8px;
+        }
+        .employer-checkbox {
+          width: 16px;
+          height: 16px;
+          border-radius: 4px;
+          border: 1px solid #cbd5e1;
+          cursor: pointer;
+          accent-color: #2563eb;
+          margin-top: 2px;
+        }
+        .employer-checkbox-label {
+          font-size: 0.785rem;
+          color: #475569;
+          line-height: 1.4;
+        }
+        .employer-btn-inline {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #2563eb;
+          font-weight: 600;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+        .employer-submit-btn {
+          width: 100%;
+          padding: 12px;
+          background: #2563eb;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .employer-submit-btn:hover:not(:disabled) {
+          background: #1d4ed8;
+          box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.2);
+        }
+        .employer-submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      `}</style>
+
+      <div className="employer-auth-card">
+        <img src="/employer-logo.png" alt="Employer Portal Logo" className="employer-brand-logo" />
+        
+        <h1 className="employer-auth-title">Employer Portal</h1>
+        <p className="employer-auth-subtitle">
+          {isLogin ? 'Log in to manage hiring requisitions' : 'Register your corporate account'}
+        </p>
+
+        <div className="employer-tab-container">
           <button
             type="button"
-            className={`auth-tab-button ${isLogin ? 'active' : ''}`}
-            onClick={() => { setIsLogin(true); setMsg({type:'',text:''}); }}
+            className={`employer-tab-btn ${isLogin ? 'active' : ''}`}
+            onClick={() => { setIsLogin(true); setMsg({ type: '', text: '' }); }}
           >
             Login
           </button>
           <button
             type="button"
-            className={`auth-tab-button ${!isLogin ? 'active' : ''}`}
-            onClick={() => { setIsLogin(false); setMsg({type:'',text:''}); }}
+            className={`employer-tab-btn ${!isLogin ? 'active' : ''}`}
+            onClick={() => { setIsLogin(false); setMsg({ type: '', text: '' }); }}
           >
             Sign Up
           </button>
         </div>
 
         {msg.text && (
-          <div className={`alert-box ${msg.type === 'error' ? 'error' : 'success'}`}>
+          <div 
+            className={`alert-box ${msg.type === 'error' ? 'error' : 'success'}`} 
+            style={{ 
+              marginBottom: '20px', 
+              padding: '12px 16px', 
+              fontSize: '0.825rem', 
+              borderRadius: '8px', 
+              textAlign: 'left',
+              borderLeftWidth: '4px'
+            }}
+          >
+            {msg.type === 'error' ? '⚠️ ' : '✅ '}
             {msg.text}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="form-stack">
+        <form onSubmit={handleSubmit} className="employer-form">
           {!isLogin && (
             <>
-              <input className="input" type="text" placeholder="Company Name" value={form.companyName} onChange={e => upd('companyName', e.target.value)} required />
-              <input className="input" type="email" placeholder="Corporate Email" value={form.email} onChange={e => upd('email', e.target.value)} required />
-              <input className="input" type="tel" placeholder="Phone Number" maxLength={10} value={form.phoneNumber} onChange={e => upd('phoneNumber', e.target.value.replace(/\D/g, ''))} required />
+              <div className="employer-input-group">
+                <label className="employer-label">Company Name *</label>
+                <input 
+                  className="employer-input" 
+                  type="text" 
+                  placeholder="e.g. Acme Corporation" 
+                  value={form.companyName} 
+                  onChange={e => upd('companyName', e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div className="employer-input-group">
+                <label className="employer-label">Corporate Email *</label>
+                <input 
+                  className="employer-input" 
+                  type="email" 
+                  placeholder="name@company.com" 
+                  value={form.email} 
+                  onChange={e => upd('email', e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div className="employer-input-group">
+                <label className="employer-label">Phone Number *</label>
+                <input 
+                  className="employer-input" 
+                  type="tel" 
+                  placeholder="10-digit mobile number" 
+                  maxLength={10} 
+                  value={form.phoneNumber} 
+                  onChange={e => upd('phoneNumber', e.target.value.replace(/\D/g, ''))} 
+                  required 
+                />
+              </div>
               
-              <div className="field flex items-start gap-2 text-left" style={{ margin: '8px 0 16px', display: 'flex', gap: '8px', alignItems: 'flex-start', textAlign: 'left' }}>
+              <div className="employer-checkbox-container">
                 <input 
                   type="checkbox" 
                   id="employer-accept-terms" 
                   checked={acceptedTerms} 
                   onChange={(e) => setAcceptedTerms(e.target.checked)} 
-                  className="checkbox"
-                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                  className="employer-checkbox"
                 />
-                <label htmlFor="employer-accept-terms" className="text-xs text-slate-600 leading-normal" style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.4 }}>
-                  I accept the <button type="button" onClick={() => setShowLegal(true)} className="btn-inline text-xs font-semibold" style={{ display: 'inline', border: 'none', background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--primary)', cursor: 'pointer' }}>Terms and Conditions</button> and <button type="button" onClick={() => setShowLegal(true)} className="btn-inline text-xs font-semibold" style={{ display: 'inline', border: 'none', background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--primary)', cursor: 'pointer' }}>Privacy Policy</button>.
+                <label htmlFor="employer-accept-terms" className="employer-checkbox-label">
+                  I accept the{' '}
+                  <button type="button" onClick={() => setShowLegal(true)} className="employer-btn-inline">
+                    Terms and Conditions
+                  </button>{' '}
+                  and{' '}
+                  <button type="button" onClick={() => setShowLegal(true)} className="employer-btn-inline">
+                    Privacy Policy
+                  </button>.
                 </label>
               </div>
             </>
           )}
 
           {isLogin && (
-            <input className="input" type="text" placeholder="Email or Phone Number" value={form.identifier} onChange={e => upd('identifier', e.target.value)} required />
+            <div className="employer-input-group">
+              <label className="employer-label">Email or Phone Number *</label>
+              <input 
+                className="employer-input" 
+                type="text" 
+                placeholder="hr@company.com or mobile" 
+                value={form.identifier} 
+                onChange={e => upd('identifier', e.target.value)} 
+                required 
+              />
+            </div>
           )}
 
-          <div className="relative-container" style={{ position: 'relative', width: '100%' }}>
-            <input
-              className="input"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Secure Password"
-              value={form.password}
-              onChange={(e) => upd('password', e.target.value)}
-              required
-              style={{ width: '100%', paddingRight: '40px' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#64748b',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '4px',
-              }}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+          <div className="employer-input-group">
+            <label className="employer-label">Secure Password *</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                className="employer-input"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => upd('password', e.target.value)}
+                required
+                style={{ paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px',
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
-          <button type="submit" disabled={loading} className="button button-primary button-full">
+          <button type="submit" disabled={loading} className="employer-submit-btn">
             {loading ? 'Processing...' : isLogin ? 'Access Dashboard' : 'Register Company'}
           </button>
         </form>

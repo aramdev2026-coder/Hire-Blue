@@ -209,6 +209,32 @@ export default function createSuperAdminRoutes(prisma) {
 
   // --- Analytics ---
 
+  router.get('/analytics/summary', async (req, res) => {
+    try {
+      const [totalEmployers, totalRequirements, vacancyAggregation] = await Promise.all([
+        prisma.employer.count(),
+        prisma.jobRequirement.count(),
+        prisma.jobRequirement.aggregate({
+          _sum: {
+            vacanciesCount: true
+          }
+        })
+      ]);
+
+      res.json({
+        success: true,
+        summary: {
+          employers: totalEmployers,
+          requirements: totalRequirements,
+          vacancies: vacancyAggregation._sum.vacanciesCount || 0
+        }
+      });
+    } catch (err) {
+      console.error('Analytics summary:', err.message);
+      res.status(500).json({ error: 'Failed to fetch summary analytics' });
+    }
+  });
+
   router.get('/analytics/funnel', async (req, res) => {
     try {
       const statuses = await prisma.candidate.groupBy({

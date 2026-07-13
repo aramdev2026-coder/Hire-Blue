@@ -92,14 +92,15 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
-      const data = await apiFetch(`/api/admin/employers?status=${employers_filter}`);
+      const targetFilter = activeTab === 'tracker' ? 'ACTIVE' : employers_filter;
+      const data = await apiFetch(`/api/admin/employers?status=${targetFilter}`);
       setEmployers(data.employers || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [employers_filter]);
+  }, [activeTab, employers_filter]);
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
@@ -204,7 +205,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'verification' && isAdmin) fetchEmployers();
+    if ((activeTab === 'verification' || activeTab === 'tracker') && isAdmin) fetchEmployers();
   }, [activeTab, employers_filter, user, isAdmin, fetchEmployers]);
 
   useEffect(() => {
@@ -269,6 +270,36 @@ export default function App() {
       fetchEmployers();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleCreateEmployer = async (employerData) => {
+    try {
+      setError('');
+      await apiFetch('/api/admin/employers', {
+        method: 'POST',
+        body: JSON.stringify(employerData),
+      });
+      setSuccessMessage('Employer account created successfully.');
+      fetchEmployers();
+    } catch (err) {
+      setError(err.message || 'Failed to create employer account');
+      throw err;
+    }
+  };
+
+  const handleCreateRequirement = async (requirementData) => {
+    try {
+      setError('');
+      await apiFetch('/api/admin/jobs', {
+        method: 'POST',
+        body: JSON.stringify(requirementData),
+      });
+      setSuccessMessage('Job requirement posted successfully.');
+      fetchJobs();
+    } catch (err) {
+      setError(err.message || 'Failed to post job requirement');
+      throw err;
     }
   };
 
@@ -522,6 +553,7 @@ export default function App() {
               setFilter={setEmployersFilter}
               loading={loading}
               onUpdateStatus={updateEmployerStatus}
+              onCreateEmployer={handleCreateEmployer}
             />
           )}
 
@@ -560,7 +592,13 @@ export default function App() {
           )}
 
           {isAdmin && activeTab === 'tracker' && (
-            <RequirementsTracker jobs={jobs} loading={loading} />
+            <RequirementsTracker 
+              jobs={jobs} 
+              loading={loading} 
+              employers={employers}
+              onCreateRequirement={handleCreateRequirement}
+              onCreateEmployer={handleCreateEmployer}
+            />
           )}
 
           {isSuperAdmin && activeTab === 'match' && (

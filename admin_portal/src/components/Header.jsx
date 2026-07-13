@@ -103,7 +103,7 @@ export default function Header({ activeTab, user }) {
           </div>
           <button
             onClick={handleOpen}
-            className="flex items-center gap-1 text-slate-500 hover:text-emerald-600 text-xs bg-slate-100 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-100 px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer"
+            className="flex items-center gap-1 text-slate-500 hover:text-indigo-600 text-xs bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-100 px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer"
             title="Change Password"
           >
             <Key className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ export default function Header({ activeTab, user }) {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-600" />
+                <Lock className="w-4 h-4 text-indigo-600" />
                 <h3 className="font-bold text-slate-800 text-sm sm:text-base">Change Password</h3>
               </div>
               <button onClick={handleClose} className="p-1 cursor-pointer text-slate-400 hover:text-slate-600">
@@ -134,7 +134,7 @@ export default function Header({ activeTab, user }) {
                 <div className="relative">
                   <input
                     type={showOldPass ? 'text' : 'password'}
-                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
                     placeholder="Enter current password"
@@ -155,7 +155,7 @@ export default function Header({ activeTab, user }) {
                 <div className="relative">
                   <input
                     type={showNewPass ? 'text' : 'password'}
-                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password"
@@ -176,7 +176,7 @@ export default function Header({ activeTab, user }) {
                 <div className="relative">
                   <input
                     type={showConfirmPass ? 'text' : 'password'}
-                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full pl-3 pr-10 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm new password"
@@ -203,7 +203,7 @@ export default function Header({ activeTab, user }) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 disabled:opacity-60 cursor-pointer"
                 >
                   {loading ? 'Changing...' : 'Change Password'}
                 </button>

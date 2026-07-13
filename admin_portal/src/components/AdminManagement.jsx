@@ -36,12 +36,12 @@ export default function AdminManagement({ admins, loading, onCreate, onDeactivat
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-amber-600" />
+          <Shield className="w-5 h-5 text-indigo-600" />
           <h3 className="font-bold text-lg">Admin Management</h3>
         </div>
         <button
           onClick={() => { setShowForm(!showForm); setErrors({}); }}
-          className="flex items-center gap-1.5 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors"
         >
           <Plus className="w-4 h-4" /> Add Admin
         </button>
@@ -64,7 +64,7 @@ export default function AdminManagement({ admins, loading, onCreate, onDeactivat
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader className="w-6 h-6 animate-spin text-amber-600" /></div>
+        <div className="flex justify-center py-12"><Loader className="w-6 h-6 animate-spin text-indigo-600" /></div>
       ) : (
         <>
           {/* Card View for Mobile Screens */}

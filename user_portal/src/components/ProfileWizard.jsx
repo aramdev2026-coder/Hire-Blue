@@ -890,41 +890,21 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 const trimmedQuery = roleQuery.trim().toLowerCase();
                 const allSearchableRoles = [...new Set([...ALL_JOB_ROLES, ...wizardRoles])];
                 const filteredSuggestions = allSearchableRoles.filter(r =>
-                  r.toLowerCase().startsWith(trimmedQuery)
-                );
+                  r.toLowerCase().includes(trimmedQuery)
+                ).slice(0, 10);
                 const isExactMatch = allSearchableRoles.some(r => r.toLowerCase() === trimmedQuery);
 
                 return (
-                  <div className="search-dropdown-menu" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    zIndex: 100,
-                    background: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    marginTop: '4px'
-                  }}>
+                  <div className="search-dropdown-menu">
                     {filteredSuggestions.map(r => {
                       const isSelected = form.jobRoles.includes(r);
                       return (
                         <div
                           key={r}
                           className="search-dropdown-item"
+                          onMouseDown={(e) => e.preventDefault()}
                           style={{
-                            padding: '10px 14px',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #f1f5f9',
-                            background: isSelected ? '#f8fafc' : '#ffffff',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            fontSize: '14px',
-                            fontWeight: 500
+                            background: isSelected ? '#f8fafc' : '#ffffff'
                           }}
                           onClick={() => handleSelectRole(r)}
                         >
@@ -940,15 +920,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                     {!isExactMatch && (
                       <div
                         className="search-dropdown-item custom-add-item"
-                        style={{
-                          padding: '10px 14px',
-                          cursor: 'pointer',
-                          background: '#eff6ff',
-                          color: '#1d4ed8',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          borderBottom: 'none'
-                        }}
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelectRole(roleQuery)}
                       >
                         + Add "{roleQuery.trim()}" as a new role

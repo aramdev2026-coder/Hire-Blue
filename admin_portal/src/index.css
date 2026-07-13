@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Range Slider Styles */
 .range-slider-input::-webkit-slider-thumb {
   height: 18px;
@@ -33,4 +40,25 @@
 
 .range-slider-input::-moz-range-thumb:hover {
   transform: scale(1.15);
+}
+
+/* Custom scrollbar styling for webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom smooth transitions for B2B interactive buttons */
+button, input, select, textarea {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

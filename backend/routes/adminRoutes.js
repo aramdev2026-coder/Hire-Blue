@@ -4,6 +4,7 @@ import {
   enrichCandidateWithSourceLabel,
 } from '../utils/serializers.js';
 import { sanitizeString, validateCandidateInput, normalizePhone } from '../utils/validation.js';
+import { hashPassword } from '../utils/password.js';
 import {
   updateCandidateStatus,
   assignCandidates,
@@ -34,6 +35,57 @@ export default function createAdminRoutes(prisma) {
     } catch (err) {
       console.error('Fetch employers:', err.message);
       res.status(500).json({ error: 'Failed to fetch employers' });
+    }
+  });
+
+  router.post('/employers', async (req, res) => {
+    try {
+      const { companyName, phoneNumber, email, password, status = 'ACTIVE' } = req.body;
+
+      if (!companyName?.trim()) {
+        return res.status(400).json({ error: 'Company Name is required' });
+      }
+      if (!phoneNumber?.trim()) {
+        return res.status(400).json({ error: 'Phone Number is required' });
+      }
+
+      const normalizedPhone = String(phoneNumber).replace(/\D/g, '').slice(-10);
+      if (normalizedPhone.length !== 10) {
+        return res.status(400).json({ error: 'Phone number must be a valid 10-digit number' });
+      }
+
+      // Generate a unique placeholder email if optional email is not specified
+      const normalizedEmail = email?.trim()
+        ? email.trim().toLowerCase()
+        : `employer-${normalizedPhone}@aramftc.com`;
+
+      // Check duplicates
+      const existing = await prisma.employer.findFirst({
+        where: { OR: [{ email: normalizedEmail }, { phoneNumber: normalizedPhone }] }
+      });
+      if (existing) {
+        return res.status(409).json({ error: 'Email or Phone Number is already registered.' });
+      }
+
+      const pwd = password?.trim() || 'Aram@12345';
+      const hashedPassword = await hashPassword(pwd);
+
+      const created = await prisma.employer.create({
+        data: {
+          companyName: sanitizeString(companyName, 200),
+          email: normalizedEmail,
+          phoneNumber: normalizedPhone,
+          password: hashedPassword,
+          status: status || 'ACTIVE',
+          approvedById: status === 'ACTIVE' ? req.admin.id : null,
+          approvedAt: status === 'ACTIVE' ? new Date() : null,
+        }
+      });
+
+      res.status(201).json({ success: true, employer: created });
+    } catch (err) {
+      console.error('Create employer:', err.message);
+      res.status(500).json({ error: 'Failed to create employer account: ' + err.message });
     }
   });
 
@@ -539,6 +591,43 @@ export default function createAdminRoutes(prisma) {
     } catch (err) {
       console.error('Admin edit candidate:', err.message);
       res.status(500).json({ error: 'Failed to update candidate' });
+    }
+  });
+
+  router.post('/jobs', async (req, res) => {
+    try {
+      const { employerId, roleTitle, salaryRange, location, maritalStatus, educationLevel, expRequired } = req.body;
+
+      if (!employerId) {
+        return res.status(400).json({ error: 'Employer ID is required' });
+      }
+      if (!roleTitle?.trim()) {
+        return res.status(400).json({ error: 'Role Title is required' });
+      }
+
+      // Verify employer exists
+      const employer = await prisma.employer.findUnique({ where: { id: employerId } });
+      if (!employer) {
+        return res.status(404).json({ error: 'Employer not found' });
+      }
+
+      const job = await prisma.jobRequirement.create({
+        data: {
+          employerId,
+          roleTitle: sanitizeString(roleTitle, 200),
+          salaryRange: sanitizeString(salaryRange, 100),
+          location: Array.isArray(location) ? location.map(l => sanitizeString(l, 100)) : [],
+          maritalStatus: sanitizeString(maritalStatus, 50),
+          educationLevel: sanitizeString(educationLevel, 200),
+          expRequired: typeof expRequired === 'number' ? expRequired : 0,
+          isActive: true
+        }
+      });
+
+      res.status(201).json({ success: true, job });
+    } catch (err) {
+      console.error('Create job requirement by admin:', err.message);
+      res.status(500).json({ error: 'Failed to create job requirement: ' + err.message });
     }
   });
 

@@ -14,7 +14,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
     <div className="space-y-6 w-full px-1 sm:px-0">
       {loading && !selectedJob ? (
         <div className="flex justify-center items-center py-12">
-          <Loader className="w-6 h-6 animate-spin text-emerald-600" />
+          <Loader className="w-6 h-6 animate-spin text-indigo-600" />
         </div>
       ) : (
         <>
@@ -28,7 +28,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                   placeholder="Filter by company or job role..." 
                   value={companySearch} 
                   onChange={(e) => setCompanySearch(e.target.value)} 
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
             </div>
@@ -50,7 +50,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                   }
                 }}
                 value={selectedJob?.id || ''}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
               >
                 <option value="">Choose a job...</option>
                 {jobs.length > 1 && (
@@ -67,7 +67,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
 
           {selectedJob && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between border-t-4 border-t-emerald-600 sticky top-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between border-t-4 border-t-indigo-650 sticky top-4">
                 <div className="space-y-4">
                   <div>
                     <span className="bg-slate-900 text-white text-[10px] font-mono uppercase px-2 py-0.5 rounded font-medium">Active Order Match</span>
@@ -106,7 +106,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                     const matchingJobs = jobs.filter(j => candidate.jobRoles?.includes(j.roleTitle));
 
                     return (
-                      <div key={candidate.id} className="border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between sm:items-center bg-emerald-50/40 border-emerald-100 hover:shadow-md transition-shadow">
+                      <div key={candidate.id} className="border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between sm:items-center bg-indigo-50/40 border-indigo-100 hover:shadow-md transition-shadow">
                         <div className="space-y-0.5">
                           <p className="text-sm font-semibold text-slate-900">{candidate.fullName || 'Candidate'}</p>
                           <p className="text-xs text-slate-500">
@@ -126,7 +126,7 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                           {selectedJob.id !== 'all' ? (
                             <button 
                               onClick={() => onUpdateStatus(candidate.id, 'SHORTLISTED', selectedJob.id)}
-                              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 sm:py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer shadow-xs text-center"
+                              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 sm:py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer shadow-xs text-center"
                             >
                               Shortlist
                             </button>
@@ -135,14 +135,14 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                           ) : matchingJobs.length === 1 ? (
                             <button 
                               onClick={() => onUpdateStatus(candidate.id, 'SHORTLISTED', matchingJobs[0].id)}
-                              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer shadow-xs text-center"
+                              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer shadow-xs text-center"
                             >
                               Shortlist ({matchingJobs[0].employerName || matchingJobs[0].employer?.companyName || 'Job'})
                             </button>
                           ) : (
                             <select
                               onChange={(e) => e.target.value && onUpdateStatus(candidate.id, 'SHORTLISTED', e.target.value)}
-                              className="w-full sm:w-auto text-xs border border-emerald-300 rounded px-2 py-1 bg-white text-emerald-800 focus:outline-none"
+                              className="w-full sm:w-auto text-xs border border-indigo-300 rounded px-2 py-1 bg-white text-indigo-800 focus:outline-none"
                               value=""
                             >
                               <option value="">Shortlist for...</option>

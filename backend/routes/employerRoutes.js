@@ -100,7 +100,8 @@ export default function createEmployerRoutes(prisma) {
       location: Array.isArray(job.location) ? job.location.map(l => sanitizeString(l, 50)) : (job.location ? [sanitizeString(job.location, 50)] : []),
       maritalStatus: sanitizeString(job.maritalStatus, 50),
       educationLevel: sanitizeString(job.educationLevel, 100),
-      expRequired: typeof job.expRequired === 'number' ? job.expRequired : (parseInt(job.expRequired, 10) || 0)
+      expRequired: typeof job.expRequired === 'number' ? job.expRequired : (parseInt(job.expRequired, 10) || 0),
+      vacanciesCount: typeof job.vacanciesCount === 'number' ? job.vacanciesCount : (parseInt(job.vacanciesCount, 10) || 1)
     }));
 
     await prisma.jobRequirement.createMany({ data: jobData });
@@ -156,6 +157,33 @@ export default function createEmployerRoutes(prisma) {
   }));
 
   // ─────────────────────────────────────────────────────────────────
+  // UPDATE REQUISITION DETAILS
+  // ─────────────────────────────────────────────────────────────────
+  router.put('/orders/:orderId', authenticateEmployer, asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const { salaryRange, location, maritalStatus, educationLevel, expRequired, vacanciesCount } = req.body;
+
+    const order = await prisma.jobRequirement.findFirst({
+      where: { id: orderId, employerId: req.employer.id, isActive: true }
+    });
+    if (!order) throw new AppError('Active job requirement not found.', 404);
+
+    const updated = await prisma.jobRequirement.update({
+      where: { id: orderId },
+      data: {
+        salaryRange: salaryRange !== undefined ? sanitizeString(salaryRange, 100) : undefined,
+        location: Array.isArray(location) ? location.map(l => sanitizeString(l, 50)) : undefined,
+        maritalStatus: maritalStatus !== undefined ? sanitizeString(maritalStatus, 50) : undefined,
+        educationLevel: educationLevel !== undefined ? sanitizeString(educationLevel, 100) : undefined,
+        expRequired: typeof expRequired === 'number' ? expRequired : (expRequired !== undefined ? (parseInt(expRequired, 10) || 0) : undefined),
+        vacanciesCount: typeof vacanciesCount === 'number' ? vacanciesCount : (vacanciesCount !== undefined ? (parseInt(vacanciesCount, 10) || 1) : undefined)
+      }
+    });
+
+    res.status(200).json({ success: true, job: updated });
+  }));
+
+  // ─────────────────────────────────────────────────────────────────
   // REQUISITION CLOSURE (SOFT DELETE)
   // ─────────────────────────────────────────────────────────────────
   router.delete('/orders/:orderId', authenticateEmployer, asyncHandler(async (req, res) => {
@@ -168,6 +196,70 @@ export default function createEmployerRoutes(prisma) {
 
     await prisma.jobRequirement.update({ where: { id: orderId }, data: { isActive: false } });
     res.status(200).json({ success: true });
+  }));
+
+  // GET PROFILE DETAILS
+  router.get('/profile', authenticateEmployer, asyncHandler(async (req, res) => {
+    const employer = await prisma.employer.findUnique({
+      where: { id: req.employer.id },
+      select: { id: true, companyName: true, email: true, phoneNumber: true }
+    });
+    if (!employer) throw new AppError('Employer profile not found.', 404);
+    res.status(200).json({ success: true, employer });
+  }));
+
+  // UPDATE PROFILE (EMAIL AND PASSWORD)
+  router.put('/profile', authenticateEmployer, asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const employerId = req.employer.id;
+
+    const data = {};
+
+    if (email !== undefined) {
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!trimmedEmail) {
+        throw new AppError('Email address cannot be empty.', 400);
+      }
+      
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        throw new AppError('Invalid email format.', 400);
+      }
+
+      // Check duplicates
+      const existing = await prisma.employer.findFirst({
+        where: { email: trimmedEmail, NOT: { id: employerId } }
+      });
+      if (existing) {
+        throw new AppError('Email address is already registered by another account.', 400);
+      }
+
+      data.email = trimmedEmail;
+    }
+
+    if (password !== undefined) {
+      const trimmedPassword = password.trim();
+      if (!trimmedPassword || trimmedPassword.length < 6) {
+        throw new AppError('Password must be at least 6 characters.', 400);
+      }
+      data.password = await hashPassword(trimmedPassword);
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new AppError('No changes provided.', 400);
+    }
+
+    const updated = await prisma.employer.update({
+      where: { id: employerId },
+      data
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      companyName: updated.companyName,
+      email: updated.email
+    });
   }));
 
   return router;

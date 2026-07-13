@@ -126,9 +126,10 @@ export default function App() {
   };
 
   const isLandingPage = (portalMode === 'CANDIDATE' && candView === 'LOGIN' && !candToken) || (portalMode === 'EMPLOYER' && !empToken);
+  const isDashboard = (portalMode === 'CANDIDATE' && candToken && candView === 'DASHBOARD') || (portalMode === 'EMPLOYER' && empToken);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isDashboard ? 'full-width-shell' : ''}`}>
       <header className={`header ${isLandingPage ? 'landing-container-header-override' : ''}`}>
         <div className="brand">
           <img src="/favicon.png" alt="Aram Logo" className="brand-logo" />
@@ -149,7 +150,7 @@ export default function App() {
             </button>
           )}
 
-          {((portalMode === 'CANDIDATE' && candToken) || (portalMode === 'EMPLOYER' && empToken)) && (
+          {portalMode === 'CANDIDATE' && candToken && (
             <button type="button" className="button button-danger" onClick={handleLogout}>
               Logout
             </button>
@@ -249,7 +250,7 @@ export default function App() {
             )}
 
             {portalMode === 'EMPLOYER' && empToken && (
-              <EmployerDashboard backendUrl={BACKEND} employerId={empId} companyName={empName} authToken={empToken} />
+              <EmployerDashboard backendUrl={BACKEND} employerId={empId} companyName={empName} authToken={empToken} onLogout={handleLogoutEmployer} />
             )}
           </>
         )}

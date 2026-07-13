@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { ALL_CANDIDATE_STATUSES, formatStatus } from '../constants';
 import AddCandidateModal from './AddCandidateModal';
+import CandidateDetailsModal from './CandidateDetailsModal';
 
 const SUB_ADMIN_STATUSES = ALL_CANDIDATE_STATUSES.filter(
   (s) => !['PLACED', 'REJECTED_BY_EMPLOYER'].includes(s),
@@ -22,6 +23,7 @@ export default function SubAdminCandidates({
   const [submitting, setSubmitting] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   const displayedCandidates = candidates.filter((c) => {
     const matchesSearch = c.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -127,12 +129,12 @@ export default function SubAdminCandidates({
             placeholder="Search your assigned candidates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           />
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer shadow-sm"
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer shadow-sm"
         >
           <Plus className="w-4 h-4" /> Add Candidate
         </button>
@@ -157,7 +159,7 @@ export default function SubAdminCandidates({
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader className="w-6 h-6 animate-spin text-emerald-600" /></div>
+        <div className="flex justify-center py-12"><Loader className="w-6 h-6 animate-spin text-indigo-600" /></div>
       ) : displayedCandidates.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">
           No assigned candidates found in your queue.
@@ -169,14 +171,19 @@ export default function SubAdminCandidates({
               <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-bold text-slate-900">{candidate.fullName || 'N/A'}</h4>
+                    <h4 
+                      onClick={() => setSelectedCandidate(candidate)} 
+                      className="font-bold text-indigo-600 hover:text-indigo-850 hover:underline cursor-pointer transition-colors"
+                    >
+                      {candidate.fullName || 'N/A'}
+                    </h4>
                     {isCallbackDue(candidate) && (
                       <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-100 text-rose-700 border border-rose-200">
                         CALLBACK DUE
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] font-mono text-emerald-600">#{candidate.id}</p>
+                  <p className="text-[11px] font-mono text-indigo-600">#{candidate.id}</p>
                   <div className="text-xs text-slate-600 mt-1 space-y-0.5">
                     <p><strong>Mobile:</strong> {candidate.phoneNumber1}</p>
                     <p><strong>District:</strong> {candidate.presentDistrict || 'N/A'}</p>
@@ -249,7 +256,7 @@ export default function SubAdminCandidates({
                     <button
                       onClick={() => handleAddNote(candidate.id)}
                       disabled={submitting}
-                      className="px-4 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg cursor-pointer disabled:opacity-60"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg cursor-pointer disabled:opacity-60"
                     >
                       Add Note
                     </button>
@@ -278,6 +285,13 @@ export default function SubAdminCandidates({
           onSubmit={(payload) => handleEdit(editingCandidate.id, payload)}
           submitting={submitting}
           candidate={editingCandidate}
+        />
+      )}
+
+      {selectedCandidate && (
+        <CandidateDetailsModal
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
         />
       )}
     </div>

@@ -66,7 +66,7 @@ function TagPicker({ options, selected, onToggle, error }) {
               type="button"
               onClick={() => onToggle(opt)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
-                on ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                on ? 'bg-indigo-600 text-white border-indigo-750' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
               {opt}
@@ -402,7 +402,7 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting, candi
                       <div className="range-slider-container relative w-full h-6 mt-2">
                         <div className="range-slider-track absolute top-1/2 left-0 right-0 h-1.5 bg-slate-200 -translate-y-1/2 rounded-full" />
                         <div
-                          className="range-slider-highlight absolute top-1/2 h-1.5 bg-emerald-600 -translate-y-1/2 rounded-full"
+                          className="range-slider-highlight absolute top-1/2 h-1.5 bg-indigo-600 -translate-y-1/2 rounded-full"
                           style={{
                             left: `${leftPercent}%`,
                             width: `${rightPercent - leftPercent}%`
@@ -456,7 +456,7 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting, candi
                   )}
                 </div>
               ))}
-              <button type="button" className="text-xs text-emerald-600 cursor-pointer" onClick={() => addRow('education', { institution: '', course: '' })}>+ Add education row</button>
+              <button type="button" className="text-xs text-indigo-600 font-medium cursor-pointer" onClick={() => addRow('education', { institution: '', course: '' })}>+ Add education row</button>
 
               <p className="text-xs font-bold uppercase text-slate-500 pt-2">Technical Qualifications</p>
               {form.technical.map((row, i) => (
@@ -468,7 +468,7 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting, candi
                   )}
                 </div>
               ))}
-              <button type="button" className="text-xs text-emerald-600 cursor-pointer" onClick={() => addRow('technical', { institution: '', course: '' })}>+ Add technical row</button>
+              <button type="button" className="text-xs text-indigo-600 font-medium cursor-pointer" onClick={() => addRow('technical', { institution: '', course: '' })}>+ Add technical row</button>
 
               <p className="text-xs font-bold uppercase text-slate-500 pt-2">Work Experience</p>
               {form.experience.map((row, i) => (
@@ -482,7 +482,7 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting, candi
                   )}
                 </div>
               ))}
-              <button type="button" className="text-xs text-emerald-600 cursor-pointer" onClick={() => addRow('experience', { institution: '', role: '', fromYear: '', toYear: '' })}>+ Add experience row</button>
+              <button type="button" className="text-xs text-indigo-600 font-medium cursor-pointer" onClick={() => addRow('experience', { institution: '', role: '', fromYear: '', toYear: '' })}>+ Add experience row</button>
             </>
           )}
         </div>
@@ -493,7 +493,7 @@ export default function AddCandidateModal({ onClose, onSubmit, submitting, candi
             <ChevronLeft className="w-4 h-4" /> {step > 1 ? 'Back' : 'Cancel'}
           </button>
           <button type="button" onClick={handleNext} disabled={submitting}
-            className="flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg cursor-pointer disabled:opacity-60">
+            className="flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg cursor-pointer disabled:opacity-60">
             {submitting ? 'Saving...' : step === 3 ? 'Create Candidate' : 'Continue'}
             {step < 3 && !submitting && <ChevronRight className="w-4 h-4" />}
           </button>

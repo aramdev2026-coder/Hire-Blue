@@ -59,7 +59,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
         onClick={() => { setActiveTab(item.id); setIsOpen(false); }}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
           isActive
-            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/30 font-semibold'
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/30 font-semibold'
             : 'hover:bg-slate-800 hover:text-slate-100'
         }`}
       >
@@ -94,7 +94,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
 
             {adminItems.length > 0 && (
               <div className="space-y-1.5 border-t border-b border-slate-800 py-4 my-4 bg-slate-900/45 p-2 rounded-xl">
-                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider px-2 block mb-1">User Administration</span>
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider px-2 block mb-1">User Administration</span>
                 {adminItems.map(renderNavItem)}
               </div>
             )}

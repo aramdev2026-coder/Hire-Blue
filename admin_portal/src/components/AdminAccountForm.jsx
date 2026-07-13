@@ -11,7 +11,7 @@ export default function AdminAccountForm({
   ) || 'Tamil Nadu';
   const [subAdminState, setSubAdminState] = useState(initialRegionState);
   const inputCls = (field) =>
-    `w-full mt-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
+    `w-full mt-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
       errors[field] ? 'border-rose-300' : 'border-slate-200'
     }`;
 
@@ -81,11 +81,11 @@ export default function AdminAccountForm({
         </>
       )}
 
-      <div className="sm:col-span-2 flex gap-2">
-        <button type="submit" disabled={submitting} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer disabled:opacity-60">
+      <div className="sm:col-span-2 flex gap-2 pt-2">
+        <button type="submit" disabled={submitting} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-60 transition-colors">
           {submitting ? 'Saving...' : submitLabel}
         </button>
-        <button type="button" onClick={onCancel} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-lg text-sm cursor-pointer">Cancel</button>
+        <button type="button" onClick={onCancel} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-colors">Cancel</button>
       </div>
     </form>
   );

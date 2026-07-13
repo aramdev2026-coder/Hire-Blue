@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ArrowUpDown, Loader, Users, Send, AlertTriangle, Download } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, Loader, Send, AlertTriangle, Download } from 'lucide-react';
 import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass, JOB_ROLES } from '../constants';
 import { STATES_AND_DISTRICTS } from '../utils/locationData';
 const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
 import { useConfirm } from '../context/ConfirmContext';
 import ShortlistJobModal from './ShortlistJobModal';
+import CandidateDetailsModal from './CandidateDetailsModal';
 
 export default function CandidatesDirectory({ 
   candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [], statusCounts = {},
 }) {
   const { showConfirm, showAlert } = useConfirm();
   const [selectedStateFilter, setSelectedStateFilter] = useState('Tamil Nadu');
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [delegationMode, setDelegationMode] = useState(false);
   const [shortlistTarget, setShortlistTarget] = useState(null);
   const [delDistrict, setDelDistrict] = useState('');
@@ -89,18 +91,10 @@ export default function CandidatesDirectory({
             placeholder="Search by Name, ID, or Contact Number..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
           />
         </div>
         <div className="flex gap-2 justify-end">
-          <button 
-            onClick={() => setDelegationMode(!delegationMode)}
-            className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              delegationMode ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" /> Delegate
-          </button>
           <button 
             onClick={() => setSortBy(sortBy === 'salary' ? 'name' : 'salary')}
             className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 transition-colors cursor-pointer whitespace-nowrap"
@@ -109,60 +103,6 @@ export default function CandidatesDirectory({
           </button>
         </div>
       </div>
-
-      {delegationMode && (
-        <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <Send className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-sm font-bold text-indigo-900">Bulk Assign to Sub-Admin</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-indigo-800 uppercase">Filter District</label>
-              <select value={delDistrict} onChange={(e) => setDelDistrict(e.target.value)} className="w-full p-2 text-sm border border-indigo-200 rounded-md bg-white">
-                <option value="">All Districts</option>
-                {uniqueDistricts.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-indigo-800 uppercase">Filter Role</label>
-              <select value={delRole} onChange={(e) => setDelRole(e.target.value)} className="w-full p-2 text-sm border border-indigo-200 rounded-md bg-white">
-                <option value="">All Roles</option>
-                {uniqueRoles.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-indigo-800 uppercase">Select Sub-Admin</label>
-              <select value={delSubAdmin} onChange={(e) => setDelSubAdmin(e.target.value)} className="w-full p-2 text-sm border border-indigo-200 rounded-md bg-white">
-                <option value="">-- Choose --</option>
-                {subAdmins.map(sa => <option key={sa.id} value={sa.id}>{sa.name}</option>)}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-indigo-800 uppercase">Count (Max: {delegatedCandidates.length})</label>
-              <input 
-                type="number" 
-                placeholder={`All ${delegatedCandidates.length}`}
-                value={delCount} 
-                onChange={(e) => setDelCount(e.target.value)}
-                max={delegatedCandidates.length}
-                className="w-full p-2 text-sm border border-indigo-200 rounded-md bg-white outline-none"
-              />
-            </div>
-
-            <button 
-              onClick={handleDelegationSubmit}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-md text-sm transition-colors cursor-pointer shadow-sm"
-            >
-              Assign Selected
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center w-full justify-between">
         <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
@@ -225,7 +165,7 @@ export default function CandidatesDirectory({
 
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <Loader className="w-6 h-6 animate-spin text-emerald-600" />
+          <Loader className="w-6 h-6 animate-spin text-indigo-600" />
         </div>
       ) : candidates.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">
@@ -239,12 +179,17 @@ export default function CandidatesDirectory({
                 <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
                   <div>
                     <h4 className="font-bold text-slate-900 text-base">
-                      {candidate.fullName || 'N/A'}
+                      <span 
+                        onClick={() => setSelectedCandidate(candidate)} 
+                        className="hover:underline hover:text-indigo-650 cursor-pointer text-indigo-600 transition-colors"
+                      >
+                        {candidate.fullName || 'N/A'}
+                      </span>
                       {duplicatePhones.has(candidate.phoneNumber1) && (
                         <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 ml-1" title="Duplicate phone" />
                       )}
                     </h4>
-                    <p className="text-[11px] font-mono font-bold text-emerald-600 mt-0.5">#{candidate.id}</p>
+                    <p className="text-[11px] font-mono font-bold text-indigo-600 mt-0.5">#{candidate.id}</p>
                     <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full border ${sourceBadgeClass(candidate.sourceLabel)}`}>
                       {candidate.sourceLabel || candidate.source}
                     </span>
@@ -301,7 +246,7 @@ export default function CandidatesDirectory({
                     {filter === 'PENDING_ADMIN_CALL' && (
                       <button 
                         onClick={() => handleStatusTransition(candidate.id, candidate.shortlistedJobId, 'SHORTLISTED')}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer text-center"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer text-center"
                       >
                         Shortlist
                       </button>
@@ -352,13 +297,18 @@ export default function CandidatesDirectory({
                     {/* Candidate Details */}
                     <td className="p-4">
                       <div className="font-semibold text-slate-900 flex items-center">
-                        {candidate.fullName || 'N/A'}
+                        <span 
+                          onClick={() => setSelectedCandidate(candidate)} 
+                          className="hover:underline hover:text-indigo-650 cursor-pointer text-indigo-600 transition-colors"
+                        >
+                          {candidate.fullName || 'N/A'}
+                        </span>
                         {duplicatePhones.has(candidate.phoneNumber1) && (
                           <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 ml-1.5" title="Duplicate phone" />
                         )}
                       </div>
                       <div className="flex gap-2 items-center mt-1 text-[11px]">
-                        <span className="font-mono text-emerald-600 font-bold">#{candidate.id}</span>
+                        <span className="font-mono text-indigo-600 font-bold">#{candidate.id}</span>
                         <span className="text-slate-300">|</span>
                         <span className="font-mono text-slate-500">{candidate.phoneNumber1}</span>
                       </div>
@@ -423,7 +373,7 @@ export default function CandidatesDirectory({
                       <td className="p-4 text-right">
                         <button 
                           onClick={() => handleStatusTransition(candidate.id, candidate.shortlistedJobId, 'SHORTLISTED')}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer"
                         >
                           Shortlist
                         </button>
@@ -462,6 +412,13 @@ export default function CandidatesDirectory({
             onUpdateStatus(shortlistTarget.candidateId, 'SHORTLISTED', jobId);
             setShortlistTarget(null);
           }}
+        />
+      )}
+
+      {selectedCandidate && (
+        <CandidateDetailsModal
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
         />
       )}
     </div>
