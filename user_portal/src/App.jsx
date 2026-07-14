@@ -5,6 +5,7 @@ import ProfileWizard from './components/ProfileWizard';
 import DigitalResume from './components/DigitalResume';
 import EmployerAuth from './components/EmployerAuth';
 import EmployerDashboard from './components/EmployerDashboard';
+import { fetchCandidateProfile } from './services/candidateService';
 
 // 🛡️ Use environment variable instead of hardcoded URL
 const BACKEND = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
@@ -50,23 +51,20 @@ export default function App() {
 
   useEffect(() => {
     if (!candToken || !candId) return;
-    // 🛡️ Include Authorization header in candidate profile fetch
-    fetch(`${BACKEND}/candidate/profile/${candId}`, {
-      headers: { Authorization: `Bearer ${candToken}` },
-    })
-      .then((res) => {
-        if (res.status === 401) {
-          handleLogoutCandidate();
-          return null;
-        }
-        return res.ok ? res.json() : null;
-      })
+    
+    fetchCandidateProfile(candId, candToken)
       .then((data) => {
         if (data?.candidate) setProfile(data.candidate);
         const status = data?.candidate?.status || localStorage.getItem('candidate_status');
         setCandView(status === 'PENDING_ADMIN_CALL' ? 'DASHBOARD' : 'WIZARD');
       })
-      .catch(() => setCandView('WIZARD'));
+      .catch((err) => {
+        if (err.message?.includes('expired') || err.message?.includes('session')) {
+          handleLogoutCandidate();
+        } else {
+          setCandView('WIZARD');
+        }
+      });
   }, [candToken, candId]);
 
   const handleCandAuth = (token, id, phoneNumber, status, profileData) => {

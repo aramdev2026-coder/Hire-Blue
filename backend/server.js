@@ -17,6 +17,7 @@ import createAdminRoutes from './routes/adminRoutes.js';
 import createSuperAdminRoutes from './routes/superAdminRoutes.js';
 import createCandidateRoutes from './routes/candidateRoutes.js';
 import createEmployerRoutes from './routes/employerRoutes.js';
+import { startBirthdayScheduler } from './services/emailService.js';
 
 const { PrismaClient } = pkg;
 const app = express();
@@ -140,6 +141,9 @@ setInterval(async () => {
     logger.error('❌ OTP cleanup error:', err);
   }
 }, 60 * 60 * 1000); // every 60 minutes
+
+// Automatically run birthday scheduler checks
+startBirthdayScheduler(prisma);
 
 // ============================================================================
 // 🚀 SERVER START

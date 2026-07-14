@@ -7,6 +7,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { validateEmployerInput, sanitizeString } from '../utils/validation.js';
 import { authenticateEmployer, enforceEmployerOwnership } from '../middleware/security.js';
+import { sendWelcomeEmployerEmail } from '../services/emailService.js';
 
 export default function createEmployerRoutes(prisma) {
   const router = express.Router();
@@ -40,7 +41,7 @@ export default function createEmployerRoutes(prisma) {
 
     const hashedPassword = await hashPassword(password);
 
-    await prisma.employer.create({
+    const employer = await prisma.employer.create({
       data: {
         companyName: sanitizeString(companyName, 200),
         email: normalizedEmail,
@@ -48,6 +49,10 @@ export default function createEmployerRoutes(prisma) {
         password: hashedPassword,
         status: 'ACTIVE',
       }
+    });
+
+    sendWelcomeEmployerEmail(employer.email, employer.companyName).catch(err => {
+      console.error(`Failed sending welcome employer email async: ${err.message}`);
     });
 
     res.status(201).json({ success: true, message: 'Account created successfully. You can log in now.' });
@@ -101,7 +106,9 @@ export default function createEmployerRoutes(prisma) {
       maritalStatus: sanitizeString(job.maritalStatus, 50),
       educationLevel: sanitizeString(job.educationLevel, 100),
       expRequired: typeof job.expRequired === 'number' ? job.expRequired : (parseInt(job.expRequired, 10) || 0),
-      vacanciesCount: typeof job.vacanciesCount === 'number' ? job.vacanciesCount : (parseInt(job.vacanciesCount, 10) || 1)
+      vacanciesCount: typeof job.vacanciesCount === 'number' ? job.vacanciesCount : (parseInt(job.vacanciesCount, 10) || 1),
+      minAge: typeof job.minAge === 'number' ? job.minAge : (parseInt(job.minAge, 10) || 18),
+      maxAge: typeof job.maxAge === 'number' ? job.maxAge : (parseInt(job.maxAge, 10) || 99)
     }));
 
     await prisma.jobRequirement.createMany({ data: jobData });
@@ -161,7 +168,7 @@ export default function createEmployerRoutes(prisma) {
   // ─────────────────────────────────────────────────────────────────
   router.put('/orders/:orderId', authenticateEmployer, asyncHandler(async (req, res) => {
     const { orderId } = req.params;
-    const { salaryRange, location, maritalStatus, educationLevel, expRequired, vacanciesCount } = req.body;
+    const { salaryRange, location, maritalStatus, educationLevel, expRequired, vacanciesCount, minAge, maxAge } = req.body;
 
     const order = await prisma.jobRequirement.findFirst({
       where: { id: orderId, employerId: req.employer.id, isActive: true }
@@ -176,7 +183,9 @@ export default function createEmployerRoutes(prisma) {
         maritalStatus: maritalStatus !== undefined ? sanitizeString(maritalStatus, 50) : undefined,
         educationLevel: educationLevel !== undefined ? sanitizeString(educationLevel, 100) : undefined,
         expRequired: typeof expRequired === 'number' ? expRequired : (expRequired !== undefined ? (parseInt(expRequired, 10) || 0) : undefined),
-        vacanciesCount: typeof vacanciesCount === 'number' ? vacanciesCount : (vacanciesCount !== undefined ? (parseInt(vacanciesCount, 10) || 1) : undefined)
+        vacanciesCount: typeof vacanciesCount === 'number' ? vacanciesCount : (vacanciesCount !== undefined ? (parseInt(vacanciesCount, 10) || 1) : undefined),
+        minAge: typeof minAge === 'number' ? minAge : (minAge !== undefined ? (parseInt(minAge, 10) || 18) : undefined),
+        maxAge: typeof maxAge === 'number' ? maxAge : (maxAge !== undefined ? (parseInt(maxAge, 10) || 99) : undefined)
       }
     });
 

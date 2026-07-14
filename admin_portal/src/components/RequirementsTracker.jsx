@@ -3,109 +3,7 @@ import { Loader, Folder, FolderOpen, ArrowLeft, Briefcase, Users, Search, Filter
 import { STATES_AND_DISTRICTS } from '../utils/locationData';
 const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
 
-const ALL_JOB_ROLES = [
-  "Agricultural Laborer",
-  "Aircraft Mechanic",
-  "Assembly Line Worker",
-  "Assembly Technician",
-  "Auto Body Repair Technician",
-  "Auto Mechanic",
-  "Automotive Painter",
-  "Baker",
-  "Blaster",
-  "Boiler Operator",
-  "Butcher",
-  "CNC Machine Operator",
-  "Carpenter",
-  "Concrete Finisher",
-  "Crane Operator",
-  "Delivery Executive",
-  "Diesel Mechanic",
-  "Dispatcher",
-  "Drilling Machine Operator",
-  "Drywall Installer",
-  "Dyeing Machine Operator",
-  "Electrician",
-  "Elevator Mechanic",
-  "Embroidery Machine Operator",
-  "Event Crew",
-  "Fabric Cutter",
-  "Facility Manager",
-  "Farm Equipment Operator",
-  "Fire and Safety Officer",
-  "Fitter",
-  "Fleet Maintenance Supervisor",
-  "Forklift Operator",
-  "Foundry Worker",
-  "General Laborer",
-  "Groundskeeper",
-  "HVAC Technician",
-  "Heavy Equipment Operator",
-  "Heavy Truck Driver",
-  "Housekeeper",
-  "Industrial Electrician",
-  "Industrial Painter",
-  "Injection Molding Operator",
-  "Inventory Clerk",
-  "Ironworker",
-  "Irrigation Technician",
-  "Janitor",
-  "Kitchen Helper",
-  "Light Vehicle Driver",
-  "Line Cook",
-  "Loader / Unloader",
-  "Logistics Coordinator",
-  "Machinist",
-  "Maintenance Technician",
-  "Mason",
-  "Material Handler",
-  "Miner",
-  "Packaging Operator",
-  "Painter",
-  "Picker and Packer",
-  "Plumber",
-  "Production Supervisor",
-  "Quality Control Inspector",
-  "Roofer",
-  "Scaffolder",
-  "Security Guard",
-  "Sewing Machine Operator",
-  "Site Supervisor",
-  "Surveyor Assistant",
-  "Tailor",
-  "Tire Technician",
-  "Tool and Die Maker",
-  "Turner",
-  "Waiter",
-  "Warehouse Associate",
-  "Weaver",
-  "Welder"
-];
-
-const HIGH_DEMAND_ROLES = [
-  'Merchandiser',
-  'Office Assistant',
-  'HR Manager',
-  'Store In-Charge',
-  'Marketing Staff',
-  'Delivery Staff',
-  'M/c Operator',
-  'Driver',
-  'Follow-up',
-  'Data Entry',
-  'Quality Controller',
-  'Sales Rep',
-  'Supervisor',
-  'Documentation',
-  'Accountant',
-  'Packing / Checking',
-  'Production Follow-up'
-];
-
-const SALARY_STEPS = [
-  10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 40000, 45000, 50000,
-  60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 200000, 220000, 250000, 275000, 300000, 330000, 350000, 375000, 400000, 425000, 450000, 475000, 500000
-];
+import { ALL_JOB_ROLES, HIGH_DEMAND_ROLES, SALARY_STEPS } from '../constants';
 
 const parseSalaryRange = (salaryStr) => {
   const defaultMin = 15000;
@@ -176,6 +74,8 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
   const [educationLevel, setEducationLevel] = useState('');
   const [expRequired, setExpRequired] = useState(0);
   const [vacanciesCount, setVacanciesCount] = useState(1);
+  const [minAge, setMinAge] = useState('');
+  const [maxAge, setMaxAge] = useState('');
   const [modalError, setModalError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -243,6 +143,17 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
       return;
     }
 
+    const minAgeVal = minAge === '' ? 18 : Number(minAge);
+    const maxAgeVal = maxAge === '' ? 99 : Number(maxAge);
+    if (isNaN(minAgeVal) || minAgeVal < 18) {
+      setModalError('Minimum age must be at least 18');
+      return;
+    }
+    if (isNaN(maxAgeVal) || maxAgeVal < minAgeVal) {
+      setModalError('Maximum age must be greater than or equal to minimum age');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await onCreateRequirement({
@@ -253,7 +164,9 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         maritalStatus: maritalStatus || 'No Preference',
         educationLevel: educationLevel || 'No Education Mandate',
         expRequired,
-        vacanciesCount: parseInt(vacanciesCount, 10) || 1
+        vacanciesCount: parseInt(vacanciesCount, 10) || 1,
+        minAge: minAgeVal,
+        maxAge: maxAgeVal
       });
       // Reset & close
       setShowAddModal(false);
@@ -267,6 +180,8 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
       setEducationLevel('');
       setExpRequired(0);
       setVacanciesCount(1);
+      setMinAge('');
+      setMaxAge('');
     } catch (err) {
       setModalError(err.message || 'Failed to post job requirement');
     } finally {
@@ -470,7 +385,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold text-slate-500 px-1 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-semibold text-slate-500 px-1 pt-1">
                   <div>
                     <span className="text-slate-400 block mb-0.5 font-bold uppercase tracking-wider text-[10px]">📍 Locations</span>
                     <span className="text-slate-800 text-sm">
@@ -484,6 +399,12 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
                   <div>
                     <span className="text-slate-400 block mb-0.5 font-bold uppercase tracking-wider text-[10px]">⏳ Experience Mandate</span>
                     <span className="text-slate-800 text-sm">{job.expRequired === 0 ? 'Freshers Welcomed' : `${job.expRequired} Years`}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-0.5 font-bold uppercase tracking-wider text-[10px]">👶 Age Bracket</span>
+                    <span className="text-slate-800 text-sm">
+                      {job.minAge && job.maxAge ? `${job.minAge} - ${job.maxAge} Yrs` : '18 - 99 Yrs'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -865,6 +786,46 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
                     placeholder="e.g. 5"
                     value={vacanciesCount}
                     onChange={(e) => setVacanciesCount(parseInt(e.target.value, 10) || 1)}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Min Age */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Min Age Requirement
+                  </label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="99"
+                    placeholder="18"
+                    value={minAge}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMinAge(val === '' ? '' : parseInt(val, 10));
+                    }}
+                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  />
+                </div>
+
+                {/* Max Age */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Max Age Requirement
+                  </label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="99"
+                    placeholder="99"
+                    value={maxAge}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMaxAge(val === '' ? '' : parseInt(val, 10));
+                    }}
                     className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                   />
                 </div>

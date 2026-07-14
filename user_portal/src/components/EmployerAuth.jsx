@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import LegalModal from './LegalModal';
+import { logInEmployer, signUpEmployer } from '../services/employerService';
+import { isValidEmail } from '../utils/validation';
 
 export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,21 +27,8 @@ export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
         setMsg({ type: 'error', text: 'Please accept the terms and privacy policy to proceed.' });
         return;
       }
-      const emailTrimmed = form.email.trim().toLowerCase();
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      const domainTypos = [
-        'gamil.com', 'gamil.co', 'gmaill.com', 'gmaile.com', 'gmile.com', 'gmail.con', 'gmail.col',
-        'yaho.com', 'yhoo.com', 'yahoo.co', 'hotmal.com', 'hotmale.com', 'outlok.com', 'outloock.com',
-        'gamil.in', 'gamil.net', 'gamil.org', 'yaho.in', 'yahoo.con', 'hotmail.con'
-      ];
-      const [localPart, domainPart] = emailTrimmed.split('@');
 
-      if (
-        !emailRegex.test(emailTrimmed) ||
-        (localPart.length > 5 && !/[aeiouy]/.test(localPart)) ||
-        /([a-zA-Z0-9])\1{4,}/.test(localPart) ||
-        domainTypos.includes(domainPart)
-      ) {
+      if (!isValidEmail(form.email)) {
         setMsg({ type: 'error', text: 'Please enter a valid, legitimate corporate email address.' });
         return;
       }
@@ -49,20 +38,10 @@ export default function EmployerAuth({ backendUrl, onAuthSuccess }) {
 
     try {
       if (isLogin) {
-        const res = await fetch(`${backendUrl}/employer/login`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: form.identifier, password: form.password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        const data = await logInEmployer(form.identifier, form.password);
         onAuthSuccess(data.token, data.employerId, data.companyName);
       } else {
-        const res = await fetch(`${backendUrl}/employer/signup`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ companyName: form.companyName, email: form.email, phoneNumber: form.phoneNumber, password: form.password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        await signUpEmployer(form.companyName, form.email, form.phoneNumber, form.password);
         
         setMsg({ type: 'success', text: 'Account created successfully. You can log in now.' });
         setForm({ companyName: '', email: '', phoneNumber: '', password: '', identifier: '' });

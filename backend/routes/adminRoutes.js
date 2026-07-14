@@ -12,6 +12,8 @@ import {
   findDuplicatePhones,
 } from '../services/candidateService.js';
 import { createFullCandidate } from '../services/createCandidate.js';
+import { CANDIDATE_DEEP_INCLUDE } from '../utils/queries.js';
+import { sendWelcomeEmployerEmail } from '../services/emailService.js';
 
 export default function createAdminRoutes(prisma) {
   const router = express.Router();
@@ -82,6 +84,12 @@ export default function createAdminRoutes(prisma) {
         }
       });
 
+      if (created && created.email && !created.email.endsWith('@aramftc.com')) {
+        sendWelcomeEmployerEmail(created.email, created.companyName).catch(err => {
+          console.error(`Failed sending welcome employer email async: ${err.message}`);
+        });
+      }
+
       res.status(201).json({ success: true, employer: created });
     } catch (err) {
       console.error('Create employer:', err.message);
@@ -116,9 +124,7 @@ export default function createAdminRoutes(prisma) {
       let candidates = await prisma.candidate.findMany({
         where: filters,
         include: {
-          education: true,
-          technical: true,
-          experience: true,
+          ...CANDIDATE_DEEP_INCLUDE,
           createdBy: { select: { id: true, name: true, role: true } },
           assignedTo: { select: { id: true, name: true } },
           shortlistedJob: { include: { employer: { select: { id: true, companyName: true } } } },
@@ -201,9 +207,7 @@ export default function createAdminRoutes(prisma) {
       const candidate = await prisma.candidate.findUnique({
         where: { id: candidateId },
         include: {
-          education: true,
-          technical: true,
-          experience: true,
+          ...CANDIDATE_DEEP_INCLUDE,
           createdBy: { select: { id: true, name: true } },
           assignedTo: { select: { id: true, name: true } },
           shortlistedJob: { include: { employer: true } },
@@ -400,10 +404,20 @@ export default function createAdminRoutes(prisma) {
       });
       if (!job) return res.status(404).json({ error: 'Job not found' });
 
+      const minAgeVal = job.minAge || 18;
+      const maxAgeVal = job.maxAge || 99;
+      const today = new Date();
+      const maxDob = new Date(today.getFullYear() - minAgeVal, today.getMonth(), today.getDate());
+      const minDob = new Date(today.getFullYear() - maxAgeVal - 1, today.getMonth(), today.getDate() + 1);
+
       const candidates = await prisma.candidate.findMany({
         where: {
           status: { in: ['PENDING_ADMIN_CALL', 'VERIFIED', 'NEW'] },
           jobRoles: { hasSome: [job.roleTitle] },
+          dob: {
+            gte: minDob,
+            lte: maxDob
+          },
           OR: [
             { preferredDistricts: { hasSome: job.location?.length ? job.location : [] } },
             { preferredDistricts: { has: 'All Locations' } },
@@ -596,7 +610,7 @@ export default function createAdminRoutes(prisma) {
 
   router.post('/jobs', async (req, res) => {
     try {
-      const { employerId, roleTitle, salaryRange, location, maritalStatus, educationLevel, expRequired } = req.body;
+      const { employerId, roleTitle, salaryRange, location, maritalStatus, educationLevel, expRequired, vacanciesCount, minAge, maxAge } = req.body;
 
       if (!employerId) {
         return res.status(400).json({ error: 'Employer ID is required' });
@@ -619,7 +633,10 @@ export default function createAdminRoutes(prisma) {
           location: Array.isArray(location) ? location.map(l => sanitizeString(l, 100)) : [],
           maritalStatus: sanitizeString(maritalStatus, 50),
           educationLevel: sanitizeString(educationLevel, 200),
-          expRequired: typeof expRequired === 'number' ? expRequired : 0,
+          expRequired: typeof expRequired === 'number' ? expRequired : (parseInt(expRequired, 10) || 0),
+          vacanciesCount: typeof vacanciesCount === 'number' ? vacanciesCount : (parseInt(vacanciesCount, 10) || 1),
+          minAge: typeof minAge === 'number' ? minAge : (parseInt(minAge, 10) || 18),
+          maxAge: typeof maxAge === 'number' ? maxAge : (parseInt(maxAge, 10) || 99),
           isActive: true
         }
       });

@@ -2,111 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Plus, List, Settings, Eye, EyeOff, Briefcase, MapPin, Users, Building2, BadgePercent, Trash2, ArrowRight, ShieldCheck, HelpCircle, LogOut } from 'lucide-react';
 
 import { STATES_AND_DISTRICTS } from '../utils/locationData';
+import {
+  fetchEmployerOrders,
+  updateEmployerOrder,
+  fetchEmployerProfile,
+  saveEmployerProfile,
+  deleteEmployerOrder,
+  createJobRequisition,
+} from '../services/employerService';
 const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
 
-const ALL_JOB_ROLES = [
-  "Agricultural Laborer",
-  "Aircraft Mechanic",
-  "Assembly Line Worker",
-  "Assembly Technician",
-  "Auto Body Repair Technician",
-  "Auto Mechanic",
-  "Automotive Painter",
-  "Baker",
-  "Blaster",
-  "Boiler Operator",
-  "Butcher",
-  "CNC Machine Operator",
-  "Carpenter",
-  "Concrete Finisher",
-  "Crane Operator",
-  "Delivery Executive",
-  "Diesel Mechanic",
-  "Dispatcher",
-  "Drilling Machine Operator",
-  "Drywall Installer",
-  "Dyeing Machine Operator",
-  "Electrician",
-  "Elevator Mechanic",
-  "Embroidery Machine Operator",
-  "Event Crew",
-  "Fabric Cutter",
-  "Facility Manager",
-  "Farm Equipment Operator",
-  "Fire and Safety Officer",
-  "Fitter",
-  "Fleet Maintenance Supervisor",
-  "Forklift Operator",
-  "Foundry Worker",
-  "General Laborer",
-  "Groundskeeper",
-  "HVAC Technician",
-  "Heavy Equipment Operator",
-  "Heavy Truck Driver",
-  "Housekeeper",
-  "Industrial Electrician",
-  "Industrial Painter",
-  "Injection Molding Operator",
-  "Inventory Clerk",
-  "Ironworker",
-  "Irrigation Technician",
-  "Janitor",
-  "Kitchen Helper",
-  "Light Vehicle Driver",
-  "Line Cook",
-  "Loader / Unloader",
-  "Logistics Coordinator",
-  "Machinist",
-  "Maintenance Technician",
-  "Mason",
-  "Material Handler",
-  "Miner",
-  "Packaging Operator",
-  "Painter",
-  "Picker and Packer",
-  "Plumber",
-  "Production Supervisor",
-  "Quality Control Inspector",
-  "Roofer",
-  "Scaffolder",
-  "Security Guard",
-  "Sewing Machine Operator",
-  "Site Supervisor",
-  "Surveyor Assistant",
-  "Tailor",
-  "Tire Technician",
-  "Tool and Die Maker",
-  "Turner",
-  "Waiter",
-  "Warehouse Associate",
-  "Weaver",
-  "Welder"
-];
-
-const HIGH_DEMAND_ROLES = [
-  'Merchandiser',
-  'Office Assistant',
-  'HR Manager',
-  'Store In-Charge',
-  'Marketing Staff',
-  'Delivery Staff',
-  'M/c Operator',
-  'Driver',
-  'Follow-up',
-  'Data Entry',
-  'Quality Controller',
-  'Sales Rep',
-  'Supervisor',
-  'Documentation',
-  'Accountant',
-  'Packing / Checking',
-  'Production Follow-up'
-];
-
-const SALARY_STEPS = [
-  10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 40000, 45000, 50000,
-  60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 200000, 220000, 250000, 275000, 300000, 330000, 350000, 375000, 400000, 425000, 450000, 475000, 500000
-];
+import ConfirmModal from './ConfirmModal';
+import { ALL_JOB_ROLES, HIGH_DEMAND_ROLES, SALARY_STEPS } from '../constants';
 
 const parseSalaryRange = (salaryStr) => {
   const defaultMin = 15000;
@@ -155,7 +62,7 @@ const EDUCATION_OPTIONS = [
   "No Education Mandate"
 ];
 
-const EMPTY_DETAILS = { salaryRange:'', location:[], maritalStatus:'', educationLevel:'', expRequired:0, vacanciesCount:1 };
+const EMPTY_DETAILS = { salaryRange:'', location:[], maritalStatus:'', educationLevel:'', expRequired:0, vacanciesCount:1, minAge:'', maxAge:'' };
 
 export default function EmployerDashboard({ backendUrl, employerId, companyName, authToken, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('POST_JOBS'); // 'POST_JOBS' or 'ORDERS' or 'SETTINGS'
@@ -212,38 +119,21 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
   const fetchOrders = async () => {
     setIsLoadingOrders(true);
     try {
-      const res = await fetch(`${backendUrl}/employer/orders/${employerId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('employer_token')}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.jobs || []);
-      }
-    } catch (e) { console.error('Failed to fetch orders'); }
+      const data = await fetchEmployerOrders(employerId);
+      setOrders(data.jobs || []);
+    } catch (e) {
+      console.error('Failed to fetch orders', e);
+    }
     setIsLoadingOrders(false);
   };
 
   const updateOrder = async (orderId, updatedDetails) => {
     try {
-      const res = await fetch(`${backendUrl}/employer/orders/${orderId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('employer_token')}`
-        },
-        body: JSON.stringify(updatedDetails)
-      });
-      if (res.ok) {
-        fetchOrders();
-        return true;
-      } else {
-        const data = await res.json();
-        setModalError(data.error || 'Failed to update requisition.');
-        return false;
-      }
+      await updateEmployerOrder(orderId, updatedDetails);
+      fetchOrders();
+      return true;
     } catch (e) {
-      console.error(e);
-      setModalError('Failed to connect to server.');
+      setModalError(e.message || 'Failed to update requisition.');
       return false;
     }
   };
@@ -254,20 +144,12 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
     setPasswordError('');
     setPasswordSuccess('');
     try {
-      const res = await fetch(`${backendUrl}/employer/profile`, {
-        headers: { Authorization: `Bearer ${authToken || localStorage.getItem('employer_token')}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.employer) {
-          setSettingsEmail(data.employer.email || '');
-        }
-      } else {
-        const data = await res.json();
-        setEmailError(data.error || 'Failed to load profile.');
+      const data = await fetchEmployerProfile();
+      if (data.employer) {
+        setSettingsEmail(data.employer.email || '');
       }
     } catch (e) {
-      setEmailError('Failed to connect to server.');
+      setEmailError(e.message || 'Failed to load profile.');
     }
   };
 
@@ -283,22 +165,10 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
 
     setIsSavingEmail(true);
     try {
-      const res = await fetch(`${backendUrl}/employer/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken || localStorage.getItem('employer_token')}`
-        },
-        body: JSON.stringify({ email: settingsEmail.trim() })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setEmailSuccess('Email address updated successfully.');
-      } else {
-        setEmailError(data.error || 'Failed to update email.');
-      }
-    } catch (e) {
-      setEmailError('Failed to connect to server.');
+      await saveEmployerProfile({ email: settingsEmail.trim() });
+      setEmailSuccess('Email address updated successfully.');
+    } catch (err) {
+      setEmailError(err.message || 'Failed to update email.');
     } finally {
       setIsSavingEmail(false);
     }
@@ -326,24 +196,12 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
 
     setIsSavingPassword(true);
     try {
-      const res = await fetch(`${backendUrl}/employer/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken || localStorage.getItem('employer_token')}`
-        },
-        body: JSON.stringify({ password: settingsPassword.trim() })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPasswordSuccess('Password changed successfully.');
-        setSettingsPassword('');
-        setSettingsConfirmPassword('');
-      } else {
-        setPasswordError(data.error || 'Failed to change password.');
-      }
-    } catch (e) {
-      setPasswordError('Failed to connect to server.');
+      await saveEmployerProfile({ password: settingsPassword.trim() });
+      setPasswordSuccess('Password changed successfully.');
+      setSettingsPassword('');
+      setSettingsConfirmPassword('');
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to change password.');
     } finally {
       setIsSavingPassword(false);
     }
@@ -396,7 +254,10 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
         location: ['Coimbatore'],
         maritalStatus: 'No Preference',
         educationLevel: '12th Pass / ITI',
-        expRequired: 2
+        expRequired: 2,
+        vacanciesCount: 1,
+        minAge: '',
+        maxAge: ''
       }
     }));
   };
@@ -430,12 +291,24 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
         setGeneratorError(`Please specify a valid Number of Vacancies (at least 1) for role: ${role}`);
         return;
       }
+      const minAgeVal = details.minAge === '' || details.minAge === undefined ? 18 : Number(details.minAge);
+      const maxAgeVal = details.maxAge === '' || details.maxAge === undefined ? 99 : Number(details.maxAge);
+      if (isNaN(minAgeVal) || minAgeVal < 18) {
+        setGeneratorError(`Minimum age must be at least 18 for role: ${role}`);
+        return;
+      }
+      if (isNaN(maxAgeVal) || maxAgeVal < minAgeVal) {
+        setGeneratorError(`Maximum age must be greater than or equal to minimum age for role: ${role}`);
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
       const promises = addedRoles.map(async (role) => {
         const details = jobDetails[role];
+        const minAgeVal = details.minAge === '' || details.minAge === undefined ? 18 : Number(details.minAge);
+        const maxAgeVal = details.maxAge === '' || details.maxAge === undefined ? 99 : Number(details.maxAge);
         const payload = [{
           roleTitle: role,
           salaryRange: details.salaryRange,
@@ -443,17 +316,12 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
           maritalStatus: details.maritalStatus,
           educationLevel: details.educationLevel,
           expRequired: Number(details.expRequired) || 0,
-          vacanciesCount: Number(details.vacanciesCount) || 1
+          vacanciesCount: Number(details.vacanciesCount) || 1,
+          minAge: minAgeVal,
+          maxAge: maxAgeVal
         }];
 
-        return fetch(`${backendUrl}/employer/jobs`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('employer_token')}`
-          },
-          body: JSON.stringify({ employerId, jobs: payload })
-        });
+        return createJobRequisition(employerId, payload);
       });
 
       const results = await Promise.all(promises);
@@ -482,17 +350,10 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
     setDeletingOrderId(null);
     setOrdersError('');
     try {
-      const res = await fetch(`${backendUrl}/employer/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('employer_token')}` }
-      });
-      if (res.ok) {
-        fetchOrders();
-      } else {
-        setOrdersError('Failed to delete order.');
-      }
+      await deleteEmployerOrder(orderId);
+      fetchOrders();
     } catch (e) {
-      setOrdersError('Failed to delete order.');
+      setOrdersError(e.message || 'Failed to delete order.');
     }
   };
 
@@ -1494,6 +1355,40 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                                         placeholder="1"
                                       />
                                     </div>
+
+                                    <div className="emp-field">
+                                      <label className="emp-field-label">Min Age Limit</label>
+                                      <input
+                                        className="emp-input"
+                                        type="number"
+                                        min="18"
+                                        max="99"
+                                        value={details.minAge === undefined || details.minAge === null ? '' : details.minAge}
+                                        onChange={e => {
+                                          const val = e.target.value;
+                                          const numVal = val === '' ? '' : parseInt(val, 10);
+                                          handleDetailChange(activeRole, 'minAge', numVal);
+                                        }}
+                                        placeholder="18"
+                                      />
+                                    </div>
+
+                                    <div className="emp-field">
+                                      <label className="emp-field-label">Max Age Limit</label>
+                                      <input
+                                        className="emp-input"
+                                        type="number"
+                                        min="18"
+                                        max="99"
+                                        value={details.maxAge === undefined || details.maxAge === null ? '' : details.maxAge}
+                                        onChange={e => {
+                                          const val = e.target.value;
+                                          const numVal = val === '' ? '' : parseInt(val, 10);
+                                          handleDetailChange(activeRole, 'maxAge', numVal);
+                                        }}
+                                        placeholder="99"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -2133,6 +2028,40 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                     placeholder="1"
                   />
                 </div>
+
+                <div className="emp-field">
+                  <label className="emp-field-label">Min Age Limit</label>
+                  <input
+                    className="emp-input"
+                    type="number"
+                    min="18"
+                    max="99"
+                    value={editingOrder.minAge === undefined || editingOrder.minAge === null ? '' : editingOrder.minAge}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const numVal = val === '' ? '' : parseInt(val, 10);
+                      setEditingOrder(prev => ({ ...prev, minAge: numVal }));
+                    }}
+                    placeholder="18"
+                  />
+                </div>
+
+                <div className="emp-field">
+                  <label className="emp-field-label">Max Age Limit</label>
+                  <input
+                    className="emp-input"
+                    type="number"
+                    min="18"
+                    max="99"
+                    value={editingOrder.maxAge === undefined || editingOrder.maxAge === null ? '' : editingOrder.maxAge}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const numVal = val === '' ? '' : parseInt(val, 10);
+                      setEditingOrder(prev => ({ ...prev, maxAge: numVal }));
+                    }}
+                    placeholder="99"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2176,13 +2105,25 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                     setModalError('Please specify a valid Number of Vacancies (at least 1).');
                     return;
                   }
+                  const minAgeVal = editingOrder.minAge === '' || editingOrder.minAge === undefined ? 18 : Number(editingOrder.minAge);
+                  const maxAgeVal = editingOrder.maxAge === '' || editingOrder.maxAge === undefined ? 99 : Number(editingOrder.maxAge);
+                  if (isNaN(minAgeVal) || minAgeVal < 18) {
+                    setModalError('Minimum age must be at least 18.');
+                    return;
+                  }
+                  if (isNaN(maxAgeVal) || maxAgeVal < minAgeVal) {
+                    setModalError('Maximum age must be greater than or equal to minimum age.');
+                    return;
+                  }
                   const success = await updateOrder(editingOrder.id, {
                     salaryRange: editingOrder.salaryRange,
                     location: editingOrder.location,
                     maritalStatus: editingOrder.maritalStatus,
                     educationLevel: editingOrder.educationLevel,
                     expRequired: editingOrder.expRequired,
-                    vacanciesCount: Number(editingOrder.vacanciesCount) || 1
+                    vacanciesCount: Number(editingOrder.vacanciesCount) || 1,
+                    minAge: minAgeVal,
+                    maxAge: maxAgeVal
                   });
                   if (success) {
                     setEditingOrder(null);
@@ -2197,56 +2138,15 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
         </div>
       )}
 
-      {deletingOrderId && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 2000,
-          padding: '16px'
-        }}>
-          <div className="emp-card" style={{ width: '100%', maxWidth: '400px', margin: 0, overflow: 'visible', borderTop: '4px solid #ef4444' }}>
-            <div className="emp-card-header" style={{ padding: '16px 20px', background: '#fef2f2', borderBottom: '1px solid #fee2e2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontWeight: '800', fontSize: '1rem', color: '#991b1b', margin: 0 }}>Delete Requisition</h3>
-              <button 
-                type="button" 
-                style={{ background: 'none', border: 'none', color: '#991b1b', fontSize: '1.25rem', lineHeight: 1, cursor: 'pointer', padding: 0 }}
-                onClick={() => setDeletingOrderId(null)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="emp-card-body" style={{ padding: '20px', fontSize: '0.875rem', color: '#475569' }}>
-              Are you sure you want to delete this requisition? This action will mark it inactive and remove it from candidate matches.
-            </div>
-            <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button
-                type="button"
-                className="role-preset-btn"
-                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#f1f5f9', color: '#475569', borderColor: '#cbd5e1' }}
-                onClick={() => setDeletingOrderId(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="employer-submit-btn"
-                style={{ width: 'auto', padding: '6px 16px', background: '#ef4444', borderColor: '#ef4444', color: '#ffffff', fontSize: '0.8rem', fontWeight: '700' }}
-                onClick={() => confirmDeleteOrder(deletingOrderId)}
-              >
-                Delete Requisition
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!deletingOrderId}
+        title="Delete Requisition"
+        message="Are you sure you want to delete this requisition? This action will mark it inactive and remove it from candidate matches."
+        onConfirm={() => confirmDeleteOrder(deletingOrderId)}
+        onCancel={() => setDeletingOrderId(null)}
+        confirmText="Delete Requisition"
+        type="danger"
+      />
     </div>
   );
 }

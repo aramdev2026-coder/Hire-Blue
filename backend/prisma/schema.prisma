@@ -79,6 +79,7 @@ model Candidate {
   phoneNumber2       String?
   fullName           String?
   dob                DateTime?
+  lastBirthdayWishYear Int?
   sex                String?
   maritalStatus      String?
   familyPhonePrimary String?
@@ -232,6 +233,8 @@ model JobRequirement {
   educationLevel String
   expRequired    Int      @default(0) // 0=Any, 1-10, 11=10+
   vacanciesCount Int      @default(1)
+  minAge         Int      @default(18)
+  maxAge         Int      @default(99)
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
 

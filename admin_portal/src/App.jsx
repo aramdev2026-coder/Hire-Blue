@@ -13,6 +13,44 @@ import SubAdminManagement from './components/SubAdminManagement';
 import AdminManagement from './components/AdminManagement';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { apiFetch, getStoredUser, fetchMe } from './api';
+import { formatStatus } from './constants';
+import {
+  listEmployers,
+  createEmployer,
+  updateEmployerStatus as apiUpdateEmployerStatus,
+  fetchEmployerJobs,
+} from './services/employerService';
+import {
+  listCandidatesAdmin,
+  listCandidatesSubAdmin,
+  listCandidateDuplicates,
+  fetchCandidateAdmin,
+  createCandidateSubAdmin,
+  assignCandidates,
+  updateCandidateAdmin,
+  updateCandidateSubAdmin,
+  updateCandidateStatusAdmin,
+  updateCandidateStatusSubAdmin,
+  fetchCandidateNotes,
+  addCandidateNote,
+  fetchJobMatches as apiFetchJobMatches,
+} from './services/candidateService';
+import {
+  listSubAdmins,
+  listAdmins,
+  fetchSubAdminStats as apiFetchSubAdminStats,
+  fetchSmtpStatus,
+  createAdmin,
+  createSubAdmin,
+  updateAdmin,
+  updateSubAdmin,
+  activateAdmin,
+  deactivateAdmin,
+  activateSubAdmin,
+  deactivateSubAdmin,
+  deleteAdmin,
+  deleteSubAdmin,
+} from './services/adminService';
 
 function defaultTab(role) {
   if (role === 'SUB_ADMIN') return 'candidates';
@@ -35,6 +73,8 @@ export default function App() {
   const [candidates_filter, setCandidatesFilter] = useState('PENDING_ADMIN_CALL');
   const [candidates_district, setCandidatesDistrict] = useState('');
   const [candidates_role, setCandidatesRole] = useState('');
+  const [candidates_minAge, setCandidatesMinAge] = useState('');
+  const [candidates_maxAge, setCandidatesMaxAge] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [jobs, setJobs] = useState([]);
   const [matchedCandidates, setMatchedCandidates] = useState([]);
@@ -58,7 +98,7 @@ export default function App() {
 
   useEffect(() => {
     if (user && user.role === 'SUPER_ADMIN') {
-      apiFetch('/api/super-admin/smtp-status')
+      fetchSmtpStatus()
         .then((res) => {
           if (res.healthy === false) {
             setSmtpError(res.error || 'Authentication Failed');
@@ -93,7 +133,7 @@ export default function App() {
     setError('');
     try {
       const targetFilter = activeTab === 'tracker' ? 'ACTIVE' : employers_filter;
-      const data = await apiFetch(`/api/admin/employers?status=${targetFilter}`);
+      const data = await listEmployers(targetFilter);
       setEmployers(data.employers || []);
     } catch (err) {
       setError(err.message);
@@ -111,13 +151,15 @@ export default function App() {
       if (targetStatus && !isSubAdmin) query.append('status', targetStatus);
       if (candidates_district && activeTab !== 'assignment') query.append('district', candidates_district);
       if (candidates_role && activeTab !== 'assignment') query.append('role', candidates_role);
+      if (candidates_minAge && activeTab !== 'assignment') query.append('minAge', candidates_minAge);
+      if (candidates_maxAge && activeTab !== 'assignment') query.append('maxAge', candidates_maxAge);
       if (searchQuery) query.append('search', searchQuery);
 
-      const path = isSubAdmin
-        ? `/api/sub-admin/candidates?${query}`
-        : `/api/admin/candidates?${query}`;
+      const queryString = query.toString();
+      const data = isSubAdmin
+        ? await listCandidatesSubAdmin(queryString)
+        : await listCandidatesAdmin(queryString);
 
-      const data = await apiFetch(path);
       let list = data.candidates || [];
       if (sortBy === 'salary') {
         const parseSalaryValue = (val) => {
@@ -139,7 +181,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, candidates_filter, candidates_district, candidates_role, searchQuery, sortBy, isSubAdmin]);
+  }, [activeTab, candidates_filter, candidates_district, candidates_role, candidates_minAge, candidates_maxAge, searchQuery, sortBy, isSubAdmin]);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -157,7 +199,7 @@ export default function App() {
 
   const fetchSubAdmins = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/admin/sub-admins');
+      const data = await listSubAdmins();
       setSubAdmins(data.subAdmins || []);
     } catch (err) {
       console.error(err);
@@ -166,7 +208,7 @@ export default function App() {
 
   const fetchAdmins = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/super-admin/admins');
+      const data = await listAdmins();
       setAdmins(data.admins || []);
     } catch (err) {
       console.error(err);
@@ -175,7 +217,7 @@ export default function App() {
 
   const fetchDuplicates = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/admin/candidates/duplicates');
+      const data = await listCandidateDuplicates();
       setDuplicates(data.duplicates || []);
     } catch (err) {
       console.error(err);
@@ -184,7 +226,7 @@ export default function App() {
 
   const fetchSubAdminStats = useCallback(async () => {
     try {
-      const data = await apiFetch('/api/sub-admin/me/stats');
+      const data = await apiFetchSubAdminStats();
       setSubAdminStats(data.stats);
     } catch (err) {
       console.error(err);
@@ -194,7 +236,7 @@ export default function App() {
   const fetchJobMatches = async (jobId) => {
     setLoading(true);
     try {
-      const data = await apiFetch(`/api/admin/jobs/${jobId}/matches`);
+      const data = await apiFetchJobMatches(jobId);
       setMatchedCandidates(data.matches || []);
     } catch (err) {
       setMatchedCandidates([]);
@@ -214,7 +256,7 @@ export default function App() {
       fetchCandidates();
       if (isSubAdmin) fetchSubAdminStats();
     }
-  }, [activeTab, candidates_filter, candidates_district, candidates_role, searchQuery, sortBy, user, fetchCandidates, fetchSubAdminStats, isSubAdmin]);
+  }, [activeTab, candidates_filter, candidates_district, candidates_role, candidates_minAge, candidates_maxAge, searchQuery, sortBy, user, fetchCandidates, fetchSubAdminStats, isSubAdmin]);
 
   useEffect(() => {
     if (!user) return;
@@ -262,10 +304,7 @@ export default function App() {
 
   const updateEmployerStatus = async (employerId, newStatus) => {
     try {
-      await apiFetch(`/api/admin/employers/${employerId}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await apiUpdateEmployerStatus(employerId, newStatus);
       setSuccessMessage(`Employer ${newStatus.toLowerCase()}!`);
       fetchEmployers();
     } catch (err) {
@@ -276,10 +315,7 @@ export default function App() {
   const handleCreateEmployer = async (employerData) => {
     try {
       setError('');
-      await apiFetch('/api/admin/employers', {
-        method: 'POST',
-        body: JSON.stringify(employerData),
-      });
+      await createEmployer(employerData);
       setSuccessMessage('Employer account created successfully.');
       fetchEmployers();
     } catch (err) {
@@ -313,12 +349,12 @@ export default function App() {
         body.note = note || shortlistedJobIdOrNote;
       }
 
-      const path = isSubAdmin
-        ? `/api/sub-admin/candidates/${candidateId}/status`
-        : `/api/admin/candidates/${candidateId}/status`;
-
-      await apiFetch(path, { method: 'PUT', body: JSON.stringify(body) });
-      setSuccessMessage(`Candidate status updated to ${newStatus.replace(/_/g, ' ').toLowerCase()}`);
+      if (isSubAdmin) {
+        await updateCandidateStatusSubAdmin(candidateId, body);
+      } else {
+        await updateCandidateStatusAdmin(candidateId, body);
+      }
+      setSuccessMessage(`Candidate status updated to ${formatStatus(newStatus).toLowerCase()}`);
       if (activeTab === 'candidates' || activeTab === 'assignment') fetchCandidates();
       if (activeTab === 'match' && selectedJob) fetchJobMatches(selectedJob.id);
     } catch (err) {
@@ -328,10 +364,7 @@ export default function App() {
 
   const handleAssign = async (payload) => {
     try {
-      await apiFetch('/api/admin/candidates/assign', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      await assignCandidates(payload);
       setSuccessMessage(`Successfully assigned ${payload.candidateIds.length} candidates!`);
       fetchCandidates();
     } catch (err) {
@@ -341,7 +374,7 @@ export default function App() {
 
   const handleSubAdminCreate = async (form) => {
     try {
-      await apiFetch('/api/super-admin/sub-admins', { method: 'POST', body: JSON.stringify(form) });
+      await createSubAdmin(form);
       setSuccessMessage('Sub-admin created');
       fetchSubAdmins();
     } catch (err) {
@@ -355,7 +388,7 @@ export default function App() {
   const handleSubAdminUpdate = async (id, form) => {
     try {
       const { password, ...rest } = form;
-      await apiFetch(`/api/super-admin/sub-admins/${id}`, { method: 'PUT', body: JSON.stringify(rest) });
+      await updateSubAdmin(id, rest);
       setSuccessMessage('Sub-admin updated');
       fetchSubAdmins();
     } catch (err) {
@@ -368,10 +401,7 @@ export default function App() {
 
   const handleSubAdminDeactivate = async (id, reassignOpenCandidatesTo) => {
     try {
-      await apiFetch(`/api/super-admin/sub-admins/${id}/deactivate`, {
-        method: 'PUT',
-        body: JSON.stringify({ reassignOpenCandidatesTo }),
-      });
+      await deactivateSubAdmin(id, { reassignOpenCandidatesTo });
       setSuccessMessage('Sub-admin deactivated');
       fetchSubAdmins();
     } catch (err) {
@@ -384,7 +414,7 @@ export default function App() {
 
   const handleAdminCreate = async (form) => {
     try {
-      await apiFetch('/api/super-admin/admins', { method: 'POST', body: JSON.stringify(form) });
+      await createAdmin(form);
       setSuccessMessage('Admin created');
       fetchAdmins();
     } catch (err) {
@@ -397,7 +427,7 @@ export default function App() {
 
   const handleAdminDeactivate = async (id) => {
     try {
-      await apiFetch(`/api/super-admin/admins/${id}/deactivate`, { method: 'PUT' });
+      await deactivateAdmin(id);
       setSuccessMessage('Admin deactivated');
       fetchAdmins();
     } catch (err) {
@@ -410,7 +440,7 @@ export default function App() {
 
   const handleSubAdminActivate = async (id) => {
     try {
-      await apiFetch(`/api/super-admin/sub-admins/${id}/activate`, { method: 'PUT' });
+      await activateSubAdmin(id);
       setSuccessMessage('Sub-admin successfully activated');
       fetchSubAdmins();
     } catch (err) {
@@ -423,7 +453,7 @@ export default function App() {
 
   const handleAdminActivate = async (id) => {
     try {
-      await apiFetch(`/api/super-admin/admins/${id}/activate`, { method: 'PUT' });
+      await activateAdmin(id);
       setSuccessMessage('Admin successfully activated');
       fetchAdmins();
     } catch (err) {
@@ -436,7 +466,7 @@ export default function App() {
 
   const handleSubAdminDelete = async (id) => {
     try {
-      await apiFetch(`/api/super-admin/sub-admins/${id}`, { method: 'DELETE' });
+      await deleteSubAdmin(id);
       setSuccessMessage('Sub-admin permanently deleted');
       fetchSubAdmins();
       fetchCandidates();
@@ -450,7 +480,7 @@ export default function App() {
 
   const handleAdminDelete = async (id) => {
     try {
-      await apiFetch(`/api/super-admin/admins/${id}`, { method: 'DELETE' });
+      await deleteAdmin(id);
       setSuccessMessage('Admin permanently deleted');
       fetchAdmins();
     } catch (err) {
@@ -464,7 +494,7 @@ export default function App() {
   const handleAddCandidate = async (data) => {
     try {
       setError('');
-      await apiFetch('/api/sub-admin/candidates', { method: 'POST', body: JSON.stringify(data) });
+      await createCandidateSubAdmin(data);
       setSuccessMessage('Candidate added');
       fetchCandidates();
     } catch (err) {
@@ -476,10 +506,11 @@ export default function App() {
   const handleEditCandidate = async (candidateId, data) => {
     try {
       setError('');
-      const path = isSubAdmin
-        ? `/api/sub-admin/candidates/${candidateId}`
-        : `/api/admin/candidates/${candidateId}`;
-      await apiFetch(path, { method: 'PUT', body: JSON.stringify(data) });
+      if (isSubAdmin) {
+        await updateCandidateSubAdmin(candidateId, data);
+      } else {
+        await updateCandidateAdmin(candidateId, data);
+      }
       setSuccessMessage('Candidate details updated successfully.');
       fetchCandidates();
     } catch (err) {
@@ -489,15 +520,12 @@ export default function App() {
   };
 
   const handleAddNote = async (candidateId, note, callbackScheduledFor) => {
-    await apiFetch(`/api/sub-admin/candidates/${candidateId}/notes`, {
-      method: 'POST',
-      body: JSON.stringify({ note, callbackScheduledFor }),
-    });
+    await addCandidateNote(candidateId, { note, callbackScheduledFor });
     setSuccessMessage('Note added');
   };
 
   const handleFetchNotes = async (candidateId) => {
-    const data = await apiFetch(`/api/sub-admin/candidates/${candidateId}/notes`);
+    const data = await fetchCandidateNotes(candidateId);
     return data.logs || [];
   };
 
@@ -566,6 +594,10 @@ export default function App() {
               setDistrictFilter={setCandidatesDistrict}
               roleFilter={candidates_role}
               setRoleFilter={setCandidatesRole}
+              minAge={candidates_minAge}
+              setMinAge={setCandidatesMinAge}
+              maxAge={candidates_maxAge}
+              setMaxAge={setCandidatesMaxAge}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}

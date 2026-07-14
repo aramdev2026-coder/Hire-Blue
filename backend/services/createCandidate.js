@@ -1,3 +1,5 @@
+import { sendWelcomeCandidateEmail } from './emailService.js';
+
 export async function createFullCandidate(prisma, data, meta) {
   const {
     fullName, phoneNumber1, phoneNumber2, dob, sex, maritalStatus,
@@ -82,6 +84,12 @@ export async function createFullCandidate(prisma, data, meta) {
       include: { education: true, technical: true, experience: true },
     });
   });
+
+  if (candidate && candidate.emailId) {
+    sendWelcomeCandidateEmail(candidate.emailId, candidate.fullName).catch(err => {
+      console.error(`Failed sending welcome candidate email async: ${err.message}`);
+    });
+  }
 
   return candidate;
 }

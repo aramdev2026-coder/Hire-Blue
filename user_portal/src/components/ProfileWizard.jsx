@@ -1,110 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User, Briefcase, GraduationCap, Trash2, Plus } from 'lucide-react';
+import { saveWizardStep, finalizeWizard } from '../services/candidateService';
 import LegalModal from './LegalModal';
+import { composeAddress } from '../utils/validation';
 
-const ALL_JOB_ROLES = [
-  "Agricultural Laborer",
-  "Aircraft Mechanic",
-  "Assembly Line Worker",
-  "Assembly Technician",
-  "Auto Body Repair Technician",
-  "Auto Mechanic",
-  "Automotive Painter",
-  "Baker",
-  "Blaster",
-  "Boiler Operator",
-  "Butcher",
-  "CNC Machine Operator",
-  "Carpenter",
-  "Concrete Finisher",
-  "Crane Operator",
-  "Delivery Executive",
-  "Diesel Mechanic",
-  "Dispatcher",
-  "Drilling Machine Operator",
-  "Drywall Installer",
-  "Dyeing Machine Operator",
-  "Electrician",
-  "Elevator Mechanic",
-  "Embroidery Machine Operator",
-  "Event Crew",
-  "Fabric Cutter",
-  "Facility Manager",
-  "Farm Equipment Operator",
-  "Fire and Safety Officer",
-  "Fitter",
-  "Fleet Maintenance Supervisor",
-  "Forklift Operator",
-  "Foundry Worker",
-  "General Laborer",
-  "Groundskeeper",
-  "HVAC Technician",
-  "Heavy Equipment Operator",
-  "Heavy Truck Driver",
-  "Housekeeper",
-  "Industrial Electrician",
-  "Industrial Painter",
-  "Injection Molding Operator",
-  "Inventory Clerk",
-  "Ironworker",
-  "Irrigation Technician",
-  "Janitor",
-  "Kitchen Helper",
-  "Light Vehicle Driver",
-  "Line Cook",
-  "Loader / Unloader",
-  "Logistics Coordinator",
-  "Machinist",
-  "Maintenance Technician",
-  "Mason",
-  "Material Handler",
-  "Miner",
-  "Packaging Operator",
-  "Painter",
-  "Picker and Packer",
-  "Plumber",
-  "Production Supervisor",
-  "Quality Control Inspector",
-  "Roofer",
-  "Scaffolder",
-  "Security Guard",
-  "Sewing Machine Operator",
-  "Site Supervisor",
-  "Surveyor Assistant",
-  "Tailor",
-  "Tire Technician",
-  "Tool and Die Maker",
-  "Turner",
-  "Waiter",
-  "Warehouse Associate",
-  "Weaver",
-  "Welder"
-];
-
-const HIGH_DEMAND_ROLES = [
-  'Merchandiser',
-  'Office Assistant',
-  'HR Manager',
-  'Store In-Charge',
-  'Marketing Staff',
-  'Delivery Staff',
-  'M/c Operator',
-  'Driver',
-  'Follow-up',
-  'Data Entry',
-  'Quality Controller',
-  'Sales Rep',
-  'Supervisor',
-  'Documentation',
-  'Accountant',
-  'Packing / Checking',
-  'Production Follow-up'
-];
-
-const SALARY_STEPS = [
-  10000, 12000, 15000, 18000, 20000, 22000, 25000, 28000, 30000, 32000, 35000, 40000, 45000, 50000,
-  60000, 70000, 80000, 90000, 100000, 120000, 150000, 180000, 200000, 220000, 250000, 275000, 300000, 330000, 350000, 375000, 400000, 425000, 450000, 475000, 500000
-];
+import { ALL_JOB_ROLES, HIGH_DEMAND_ROLES, SALARY_STEPS } from '../constants';
 
 const parseSalaryRange = (salaryStr) => {
   const defaultMin = 15000;
@@ -199,8 +99,7 @@ function normalizeExperienceItem(item) {
   };
 }
 
-const composeAddr = (s1, s2) =>
-  [s1, s2].map(x => (x || '').trim()).filter(Boolean).join(', ');
+const composeAddr = composeAddress;
 
 function buildInit(init, phone) {
   const splitAddr = (full, street1, street2) => {
@@ -548,15 +447,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
           }))
         };
       }
-      const res = await fetch(`${backendUrl}/candidate/save-wizard-step`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('candidate_token')}`
-        },
-        body: JSON.stringify({ candidateId, sectionIndex: step, updatedPayload: payload }),
-      });
-      if (!res.ok) throw new Error('Could not save.');
+      await saveWizardStep(candidateId, step, payload);
       if (step === 1) {
         const composedPresentAddress = composeAddr(form.presentStreet1, form.presentStreet2);
         const composedPermanentAddress = sameAddr
@@ -571,7 +462,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         }));
       }
     } catch (err) {
-      setServerErr('Could not connect to server. Check your backend.');
+      setServerErr(err.message || 'Could not connect to server. Check your backend.');
       setSaving(false);
       return;
     }
@@ -582,14 +473,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
 
   const handleFinalize = async () => {
     try {
-      await fetch(`${backendUrl}/candidate/finalize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('candidate_token')}`
-        },
-        body: JSON.stringify({ candidateId }),
-      });
+      await finalizeWizard(candidateId);
     } catch { }
     localStorage.removeItem(draftKey);
     localStorage.removeItem(stepKey);

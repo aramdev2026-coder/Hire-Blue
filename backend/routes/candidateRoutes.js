@@ -7,7 +7,8 @@ import AppError from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sanitizeString } from '../utils/validation.js';
 import { authenticateCandidate, enforceCandidateOwnership } from '../middleware/security.js';
-import { sendOTPEmail } from '../services/emailService.js';
+import { sendOTPEmail, sendWelcomeCandidateEmail } from '../services/emailService.js';
+import { CANDIDATE_DEEP_INCLUDE } from '../utils/queries.js';
 import logger from '../utils/logger.js';
 
 export default function createCandidateRoutes(prisma) {
@@ -290,7 +291,16 @@ export default function createCandidateRoutes(prisma) {
   // SUBMIT ROSTER REGISTRATION PROFILE
   // ─────────────────────────────────────────────────────────────────
   router.post('/finalize', authenticateCandidate, asyncHandler(async (req, res) => {
+    const candidate = await prisma.candidate.findUnique({
+      where: { id: req.candidate.id },
+      select: { fullName: true, emailId: true }
+    });
     await prisma.candidate.update({ where: { id: req.candidate.id }, data: { status: 'PENDING_ADMIN_CALL' } });
+    if (candidate && candidate.emailId) {
+      sendWelcomeCandidateEmail(candidate.emailId, candidate.fullName).catch(err => {
+        logger.error(`Failed sending welcome candidate email async: ${err.message}`);
+      });
+    }
     res.json({ success: true });
   }));
 
@@ -300,7 +310,7 @@ export default function createCandidateRoutes(prisma) {
   router.get('/profile/:candidateId', authenticateCandidate, enforceCandidateOwnership, asyncHandler(async (req, res) => {
     const candidate = await prisma.candidate.findUnique({
       where: { id: req.candidate.id },
-      include: { education: true, technical: true, experience: true }
+      include: CANDIDATE_DEEP_INCLUDE
     });
     if (!candidate) throw new AppError('Candidate not found', 404);
     res.json({ success: true, candidate });

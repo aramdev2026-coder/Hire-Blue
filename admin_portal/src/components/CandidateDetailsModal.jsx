@@ -31,7 +31,7 @@ export default function CandidateDetailsModal({ candidate, onClose }) {
             <X className="w-5 h-5" />
           </button>
         </div>
-
+ 
         {/* Scrollable Content */}
         <div className="p-6 overflow-y-auto max-h-[75vh] space-y-6">
           
@@ -49,7 +49,7 @@ export default function CandidateDetailsModal({ candidate, onClose }) {
               </div>
             )}
           </div>
-
+ 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Personal Details */}
@@ -59,7 +59,7 @@ export default function CandidateDetailsModal({ candidate, onClose }) {
               </h4>
               
               <div className="grid grid-cols-1 gap-3 text-sm">
-                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                <div className="flex justify-between items-center py-1.5 border-b border-slate-55">
                   <span className="text-slate-500 font-medium flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" /> Phone</span>
                   <span className="font-mono text-slate-900 font-semibold">{candidate.phoneNumber1 || '—'}</span>
                 </div>

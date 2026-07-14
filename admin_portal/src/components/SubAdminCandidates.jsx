@@ -15,6 +15,8 @@ export default function SubAdminCandidates({
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('ALL');
+  const [minAge, setMinAge] = useState('');
+  const [maxAge, setMaxAge] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [notes, setNotes] = useState({});
   const [noteText, setNoteText] = useState('');
@@ -25,11 +27,37 @@ export default function SubAdminCandidates({
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
+  const getAge = (dobString) => {
+    if (!dobString) return null;
+    const birthDate = new Date(dobString);
+    if (isNaN(birthDate.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const displayedCandidates = candidates.filter((c) => {
     const matchesSearch = c.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.phoneNumber1?.includes(searchQuery);
     const matchesFilter = filter === 'ALL' || c.status === filter;
-    return matchesSearch && matchesFilter;
+    
+    let matchesAge = true;
+    if (minAge || maxAge) {
+      const age = getAge(c.dob);
+      if (age === null) {
+        matchesAge = false;
+      } else {
+        const minVal = minAge === '' || isNaN(Number(minAge)) ? 18 : Number(minAge);
+        const maxVal = maxAge === '' || isNaN(Number(maxAge)) ? 99 : Number(maxAge);
+        matchesAge = age >= minVal && age <= maxVal;
+      }
+    }
+    
+    return matchesSearch && matchesFilter && matchesAge;
   });
 
   const handleExpand = async (candidateId) => {
@@ -140,7 +168,7 @@ export default function SubAdminCandidates({
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -156,6 +184,29 @@ export default function SubAdminCandidates({
             );
           })}
         </select>
+
+        <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg bg-white px-2.5 py-1">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Age:</span>
+          <input
+            type="number"
+            min="18"
+            max="99"
+            placeholder="Min"
+            value={minAge}
+            onChange={(e) => setMinAge(e.target.value)}
+            className="w-10 text-xs font-semibold focus:outline-none bg-transparent"
+          />
+          <span className="text-slate-300 font-normal text-xs">-</span>
+          <input
+            type="number"
+            min="18"
+            max="99"
+            placeholder="Max"
+            value={maxAge}
+            onChange={(e) => setMaxAge(e.target.value)}
+            className="w-10 text-xs font-semibold focus:outline-none bg-transparent"
+          />
+        </div>
       </div>
 
       {loading ? (

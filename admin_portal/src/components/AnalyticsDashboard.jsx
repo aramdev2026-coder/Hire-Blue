@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart3, Loader, Users, Briefcase } from 'lucide-react';
-import { apiFetch } from '../api';
 import { formatStatus } from '../constants';
+import {
+  fetchFunnelData,
+  fetchLeaderboardData,
+  fetchSourceBreakdownData,
+  fetchDistrictDemandData,
+  fetchTimeToPlacementData,
+  fetchPlacementRateData,
+  fetchAgingData,
+  fetchActivityLogs,
+  fetchSummaryData,
+} from '../services/analyticsService';
 
 function BarChart({ data, labelKey, valueKey, color = 'indigo' }) {
   const max = Math.max(...data.map((d) => d[valueKey]), 1);
@@ -46,15 +56,15 @@ export default function AnalyticsDashboard() {
       setLoading(true);
       try {
         const [f, lb, src, dist, ttp, pr, ag, al, summ] = await Promise.all([
-          apiFetch('/api/super-admin/analytics/funnel'),
-          apiFetch('/api/super-admin/analytics/sub-admin-leaderboard'),
-          apiFetch('/api/super-admin/analytics/source-breakdown'),
-          apiFetch('/api/super-admin/analytics/district-demand'),
-          apiFetch('/api/super-admin/analytics/time-to-placement'),
-          apiFetch('/api/super-admin/analytics/placement-rate'),
-          apiFetch('/api/super-admin/analytics/aging'),
-          apiFetch('/api/super-admin/analytics/activity-logs'),
-          apiFetch('/api/super-admin/analytics/summary').catch(() => ({ summary: { employers: 0, requirements: 0, vacancies: 0 } })),
+          fetchFunnelData(),
+          fetchLeaderboardData(),
+          fetchSourceBreakdownData(),
+          fetchDistrictDemandData(),
+          fetchTimeToPlacementData(),
+          fetchPlacementRateData(),
+          fetchAgingData(),
+          fetchActivityLogs(),
+          fetchSummaryData().catch(() => ({ summary: { employers: 0, requirements: 0, vacancies: 0 } })),
         ]);
         setFunnel(f.funnel || []);
         setLeaderboard(lb.leaderboard || []);

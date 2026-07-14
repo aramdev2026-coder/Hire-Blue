@@ -8,7 +8,7 @@ import ShortlistJobModal from './ShortlistJobModal';
 import CandidateDetailsModal from './CandidateDetailsModal';
 
 export default function CandidatesDirectory({ 
-  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [], statusCounts = {},
+  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, minAge, setMinAge, maxAge, setMaxAge, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [], statusCounts = {},
 }) {
   const { showConfirm, showAlert } = useConfirm();
   const [selectedStateFilter, setSelectedStateFilter] = useState('Tamil Nadu');
@@ -160,6 +160,29 @@ export default function CandidatesDirectory({
               <option key={r} value={r}>{r}</option>
             ))}
           </select>
+
+          <div className="flex items-center gap-1.5 border border-slate-200 rounded-lg bg-white px-2.5 py-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Age:</span>
+            <input
+              type="number"
+              min="18"
+              max="99"
+              placeholder="Min"
+              value={minAge}
+              onChange={(e) => setMinAge(e.target.value)}
+              className="w-10 text-xs font-semibold focus:outline-none bg-transparent"
+            />
+            <span className="text-slate-300 font-normal text-xs">-</span>
+            <input
+              type="number"
+              min="18"
+              max="99"
+              placeholder="Max"
+              value={maxAge}
+              onChange={(e) => setMaxAge(e.target.value)}
+              className="w-10 text-xs font-semibold focus:outline-none bg-transparent"
+            />
+          </div>
         </div>
       </div>
 

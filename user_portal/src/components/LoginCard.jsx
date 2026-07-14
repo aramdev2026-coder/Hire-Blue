@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mail, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Mail, CheckCircle, AlertCircle, ArrowRight, RefreshCw, ArrowLeft } from 'lucide-react';
+import { sendOtp, verifyOtp, resendOtp, fetchCandidateProfile } from '../services/candidateService';
+import { isValidEmail } from '../utils/validation';
 
 export default function LoginCard({ backendUrl, onAuthSuccess }) {
   const [step, setStep] = useState('send'); // 'send' | 'verify'
@@ -49,44 +51,21 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
     setSuccessMsg('');
 
     const emailTrimmed = email.trim().toLowerCase();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const domainTypos = [
-      'gamil.com', 'gamil.co', 'gmaill.com', 'gmaile.com', 'gmile.com', 'gmail.con', 'gmail.col',
-      'yaho.com', 'yhoo.com', 'yahoo.co', 'hotmal.com', 'hotmale.com', 'outlok.com', 'outloock.com',
-      'gamil.in', 'gamil.net', 'gamil.org', 'yaho.in', 'yahoo.con', 'hotmail.con'
-    ];
-    const [localPart, domainPart] = emailTrimmed.split('@');
 
-    if (
-      !emailRegex.test(emailTrimmed) ||
-      (localPart.length > 5 && !/[aeiouy]/.test(localPart)) ||
-      /([a-zA-Z0-9])\1{4,}/.test(localPart) ||
-      domainTypos.includes(domainPart)
-    ) {
+    if (!isValidEmail(emailTrimmed)) {
       setError('Please enter a valid, legitimate email address (e.g. name@gmail.com).');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch(`${backendUrl}/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailTrimmed }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Failed to send OTP.');
-        return;
-      }
+      await sendOtp(emailTrimmed);
 
       setStep('verify');
       setResendCountdown(60);
       setSuccessMsg('OTP sent! Please check your email.');
     } catch (err) {
-      setError('Cannot reach server. Please make sure it is running.');
+      setError(err.message || 'Cannot reach server. Please make sure it is running.');
     } finally {
       setLoading(false);
     }
@@ -106,29 +85,13 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
     setLoading(true);
     try {
       const emailTrimmed = email.trim().toLowerCase();
-      const res = await fetch(`${backendUrl}/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailTrimmed, otpCode: trimmedOtp }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Invalid OTP.');
-        return;
-      }
+      const data = await verifyOtp(emailTrimmed, trimmedOtp);
 
       // Fetch existing profile
       let profile = null;
       try {
-        const pr = await fetch(`${backendUrl}/candidate/profile/${data.candidateId}`, {
-          headers: { Authorization: `Bearer ${data.token}` }
-        });
-        if (pr.ok) {
-          const resObj = await pr.json();
-          profile = resObj.candidate;
-        }
+        const resObj = await fetchCandidateProfile(data.candidateId, data.token);
+        profile = resObj.candidate;
       } catch (err) {
         console.error('Failed to pre-fetch profile:', err);
       }
@@ -136,7 +99,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
       const status = profile?.status ?? data.profileStatus;
       onAuthSuccess(data.token, data.candidateId, emailTrimmed, status, profile);
     } catch (err) {
-      setError('Cannot reach server. Please try again.');
+      setError(err.message || 'Cannot reach server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -153,18 +116,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
 
     try {
       const emailTrimmed = email.trim().toLowerCase();
-      const res = await fetch(`${backendUrl}/auth/resend-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailTrimmed }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Failed to resend OTP.');
-        return;
-      }
+      await resendOtp(emailTrimmed);
 
       setResendCountdown(60);
       setSuccessMsg('New OTP sent to your email.');
@@ -174,7 +126,7 @@ export default function LoginCard({ backendUrl, onAuthSuccess }) {
         }
       }, 50);
     } catch (err) {
-      setError('Cannot reach server. Please try again.');
+      setError(err.message || 'Cannot reach server. Please try again.');
     } finally {
       setResendLoading(false);
     }

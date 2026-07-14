@@ -1,3 +1,5 @@
+import { API_ROUTES } from './api/routes';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // ─── Token Management ─────────────────────────────────────────────────
@@ -111,7 +113,7 @@ export async function apiFetch(path, options = {}, role = null) {
 export async function login(email, password) {
   // Login doesn't require an existing valid token
   const headers = { 'Content-Type': 'application/json' };
-  const url = `${API_BASE_URL}/api/admin/auth/login`;
+  const url = `${API_BASE_URL}${API_ROUTES.ADMIN.AUTH.LOGIN}`;
   const response = await fetch(url, {
     method: 'POST',
     headers,
@@ -129,7 +131,7 @@ export async function login(email, password) {
 }
 
 export async function fetchMe() {
-  const data = await apiFetch('/api/admin/auth/me');
+  const data = await apiFetch(API_ROUTES.ADMIN.AUTH.ME);
   setStoredUser(data.user);
   return data.user;
 }

@@ -11,13 +11,22 @@ export default function createSubAdminRoutes(prisma) {
 
   router.get('/candidates', async (req, res) => {
     try {
-      const { status, search } = req.query;
+      const { status, search, minAge, maxAge } = req.query;
       const filters = { assignedToId: req.admin.id };
 
       if (status) {
         filters.status = status;
       } else {
         filters.status = { not: 'PENDING_WIZARD' };
+      }
+
+      if (minAge || maxAge) {
+        const today = new Date();
+        const minVal = parseInt(minAge, 10) || 18;
+        const maxVal = parseInt(maxAge, 10) || 99;
+        const maxDob = new Date(today.getFullYear() - minVal, today.getMonth(), today.getDate());
+        const minDob = new Date(today.getFullYear() - maxVal - 1, today.getMonth(), today.getDate() + 1);
+        filters.dob = { gte: minDob, lte: maxDob };
       }
 
       let candidates = await prisma.candidate.findMany({

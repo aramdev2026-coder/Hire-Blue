@@ -98,6 +98,21 @@ export function buildCandidateFilters(query) {
   if (query.source) filters.source = query.source;
   if (query.district) filters.presentDistrict = query.district;
   if (query.role) filters.jobRoles = { has: query.role };
+
+  if (query.minAge || query.maxAge) {
+    const today = new Date();
+    const minVal = parseInt(query.minAge, 10) || 18;
+    const maxVal = parseInt(query.maxAge, 10) || 99;
+
+    const maxDob = new Date(today.getFullYear() - minVal, today.getMonth(), today.getDate());
+    const minDob = new Date(today.getFullYear() - maxVal - 1, today.getMonth(), today.getDate() + 1);
+
+    filters.dob = {
+      gte: minDob,
+      lte: maxDob
+    };
+  }
+
   return filters;
 }
 
