@@ -118,6 +118,76 @@ export default function createAdminRoutes(prisma) {
     }
   });
 
+  router.post('/employers', async (req, res) => {
+    const { companyName, phoneNumber, email, password } = req.body;
+
+    if (!companyName || !phoneNumber || !password) {
+      return res.status(400).json({ error: 'Company Name, Phone Number, and Password are required.' });
+    }
+
+    const normalizedPhone = String(phoneNumber).replace(/\D/g, '').slice(-10);
+    const normalizedEmail = email ? email.trim().toLowerCase() : `employer_${normalizedPhone}@temp.aramftc.com`;
+
+    try {
+      const existing = await prisma.employer.findFirst({
+        where: { OR: [{ email: normalizedEmail }, { phoneNumber: normalizedPhone }] }
+      });
+      if (existing) {
+        return res.status(400).json({ error: 'An employer with this email or phone already exists.' });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      const employer = await prisma.employer.create({
+        data: {
+          companyName: sanitizeString(companyName, 200),
+          email: normalizedEmail,
+          phoneNumber: normalizedPhone,
+          password: hashedPassword,
+          status: 'ACTIVE',
+          approvedById: req.admin.id,
+          approvedAt: new Date(),
+        }
+      });
+
+      res.status(201).json({ success: true, employer });
+    } catch (err) {
+      console.error('Admin create employer:', err.message);
+      res.status(500).json({ error: 'Failed to create employer' });
+    }
+  });
+
+  router.post('/employers/:id/jobs', async (req, res) => {
+    const { id } = req.params;
+    const { jobs } = req.body;
+
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      return res.status(400).json({ error: 'At least one job is required.' });
+    }
+
+    try {
+      const employer = await prisma.employer.findUnique({ where: { id } });
+      if (!employer) return res.status(404).json({ error: 'Employer not found' });
+
+      const jobData = jobs.map(job => ({
+        employerId: id,
+        roleTitle: sanitizeString(job.roleTitle, 100),
+        salaryRange: sanitizeString(job.salaryRange, 100),
+        location: Array.isArray(job.location) ? job.location.map(l => sanitizeString(l, 50)) : (job.location ? [sanitizeString(job.location, 50)] : []),
+        maritalStatus: sanitizeString(job.maritalStatus, 50) || 'No Preference',
+        educationLevel: sanitizeString(job.educationLevel, 100),
+        expRequired: typeof job.expRequired === 'number' ? job.expRequired : (parseInt(job.expRequired, 10) || 0),
+        vacanciesCount: typeof job.vacanciesCount === 'number' ? job.vacanciesCount : (parseInt(job.vacanciesCount, 10) || 1),
+      }));
+
+      await prisma.jobRequirement.createMany({ data: jobData });
+      res.status(201).json({ success: true, message: 'Jobs added successfully' });
+    } catch (err) {
+      console.error('Admin create employer jobs:', err.message);
+      res.status(500).json({ error: 'Failed to create job requirements' });
+    }
+  });
+
   router.get('/candidates', async (req, res) => {
     try {
       const filters = buildCandidateFilters(req.query);

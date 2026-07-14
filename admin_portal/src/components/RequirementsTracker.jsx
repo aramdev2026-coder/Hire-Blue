@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import { Loader, Folder, FolderOpen, ArrowLeft, Briefcase, Users, Search, Filter, Plus, X, Award, MapPin, Heart, GraduationCap } from 'lucide-react';
 import { STATES_AND_DISTRICTS } from '../utils/locationData';
 const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
@@ -53,6 +54,13 @@ const EDUCATION_OPTIONS = [
 ];
 
 export default function RequirementsTracker({ jobs, loading, employers = [], onCreateRequirement, onCreateEmployer }) {
+=======
+import { Loader, Folder, FolderOpen, ArrowLeft, Briefcase, Users, Search, Filter, Plus } from 'lucide-react';
+import AddRequirementModal from './AddRequirementModal';
+
+export default function RequirementsTracker({ jobs, loading, backendUrl, token, onRefresh }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+>>>>>>> 16a870b8c46e65fe058d98ebd68f0f830f12ee3c
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL_ROLES');
@@ -289,6 +297,16 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         </div>
       )}
 
+      {/* Action Bar */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+        >
+          <Plus size={16} /> Add Requirement
+        </button>
+      </div>
+
       {!selectedCompany ? (
         <div className="space-y-4">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -413,6 +431,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Main Requisition Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
@@ -943,6 +962,15 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
           </div>
         </div>
       )}
+=======
+      <AddRequirementModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onRequirementAdded={() => {
+          if (onRefresh) onRefresh();
+        }}
+      />
+>>>>>>> 16a870b8c46e65fe058d98ebd68f0f830f12ee3c
     </div>
   );
 }

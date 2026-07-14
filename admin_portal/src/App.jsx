@@ -624,9 +624,9 @@ export default function App() {
           )}
 
           {isAdmin && activeTab === 'tracker' && (
-            <RequirementsTracker 
-              jobs={jobs} 
-              loading={loading} 
+            <RequirementsTracker
+              jobs={jobs}
+              loading={loading}
               employers={employers}
               onCreateRequirement={handleCreateRequirement}
               onCreateEmployer={handleCreateEmployer}
