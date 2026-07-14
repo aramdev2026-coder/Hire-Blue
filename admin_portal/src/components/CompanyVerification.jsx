@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
-<<<<<<< HEAD
 import { Loader } from 'lucide-react';
-=======
-import { Loader, Download, Plus } from 'lucide-react';
->>>>>>> 16a870b8c46e65fe058d98ebd68f0f830f12ee3c
 import { useConfirm } from '../context/ConfirmContext';
 import AddEmployerModal from './AddEmployerModal';
 
-<<<<<<< HEAD
 export default function CompanyVerification({ employers, filter, setFilter, loading, onUpdateStatus, onCreateEmployer }) {
   const { showAlert } = useConfirm();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -57,37 +52,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
     } finally {
       setSubmitting(false);
     }
-=======
-export default function CompanyVerification({ employers, filter, setFilter, loading, onUpdateStatus, onRefresh }) {
-  const { showAlert } = useConfirm();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleExportCSV = () => {
-    if (!employers.length) return showAlert('Export Alert', 'No company data to export.', 'warning');
-    
-    const headers = ['Company Name', 'Email', 'Phone Number', 'Status'];
-    const rows = employers.map(emp => [
-      emp.companyName || '',
-      emp.email || '',
-      emp.phoneNumber || '',
-      emp.status || ''
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Employers_Export_${filter || 'ALL'}_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
->>>>>>> 16a870b8c46e65fe058d98ebd68f0f830f12ee3c
   };
 
   return (
@@ -104,7 +68,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
         </button>
       </div>
 
-<<<<<<< HEAD
       <div className="flex flex-wrap gap-2 items-center w-full">
         <button
           onClick={() => setFilter('ACTIVE')}
@@ -118,39 +81,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
         >
           Blocked
         </button>
-=======
-      <div className="flex flex-wrap gap-2 justify-between items-center w-full">
-        <div className="flex gap-2">
-          <button 
-            onClick={() => setFilter('ACTIVE')}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'ACTIVE' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}
-          >
-            Active
-          </button>
-          <button 
-            onClick={() => setFilter('SUSPENDED')}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all cursor-pointer ${filter === 'SUSPENDED' ? 'bg-rose-600 text-white border-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}
-          >
-            Blocked
-          </button>
-        </div>
-
-        <div className="flex gap-2 items-center ml-auto">
-          <button
-            onClick={handleExportCSV}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-          >
-            <Download className="w-3.5 h-3.5" /> Export CSV
-          </button>
-          
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Employer
-          </button>
-        </div>
->>>>>>> 16a870b8c46e65fe058d98ebd68f0f830f12ee3c
       </div>
 
       {loading ? (
@@ -172,7 +102,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                     <p className="text-xs text-slate-500 font-mono mt-0.5">ID: #{employer.id.slice(0, 8)}</p>
                   </div>
                   <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${employer.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' :
-                      'bg-rose-100 text-rose-800'
+                    'bg-rose-100 text-rose-800'
                     }`}>
                     {employer.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED'}
                   </span>
@@ -221,7 +151,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                     <td className="p-4 text-slate-600">{employer.email} | {employer.phoneNumber}</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${employer.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' :
-                          'bg-rose-100 text-rose-800'
+                        'bg-rose-100 text-rose-800'
                         }`}>
                         {employer.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED'}
                       </span>
@@ -250,13 +180,12 @@ export default function CompanyVerification({ employers, filter, setFilter, load
           </div>
         </>
       )}
-<<<<<<< HEAD
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transform transition-all text-left">
             <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
               <h3 className="font-bold text-slate-900 text-base">Add New Employer</h3>
-              <button 
+              <button
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg cursor-pointer font-bold text-lg"
               >
@@ -275,7 +204,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Company Name <span className="text-rose-500">*</span>
                 </label>
-                <input 
+                <input
                   type="text"
                   required
                   value={form.companyName}
@@ -289,7 +218,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Phone Number <span className="text-rose-500">*</span>
                 </label>
-                <input 
+                <input
                   type="tel"
                   required
                   maxLength={10}
@@ -304,7 +233,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Email Address <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
                 </label>
-                <input 
+                <input
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -317,7 +246,7 @@ export default function CompanyVerification({ employers, filter, setFilter, load
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Password <span className="text-rose-500">*</span>
                 </label>
-                <input 
+                <input
                   type="text"
                   required
                   value={form.password}
@@ -361,16 +290,6 @@ export default function CompanyVerification({ employers, filter, setFilter, load
           </div>
         </div>
       )}
-=======
-
-      <AddEmployerModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onEmployerAdded={() => {
-          if (onRefresh) onRefresh();
-        }}
-      />
->>>>>>> 16a870b8c46e65fe058d98ebd68f0f830f12ee3c
     </div>
   );
 }
