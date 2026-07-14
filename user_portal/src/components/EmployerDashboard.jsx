@@ -1455,15 +1455,6 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                   </div>
                 </div>
 
-                <div className="emp-kpi-card purple-kpi">
-                  <div className="emp-kpi-info">
-                    <span className="emp-kpi-label">Platform Coverage</span>
-                    <span className="emp-kpi-value">100%</span>
-                  </div>
-                  <div className="emp-kpi-icon-wrapper">
-                    <ShieldCheck size={20} />
-                  </div>
-                </div>
               </div>
 
               {isLoadingOrders ? (

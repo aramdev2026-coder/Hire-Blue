@@ -289,15 +289,6 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         </div>
       )}
 
-      {/* Action Bar */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
-        >
-          <Plus size={16} /> Add Requirement
-        </button>
-      </div>
 
       {!selectedCompany ? (
         <div className="space-y-4">
