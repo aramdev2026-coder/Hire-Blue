@@ -124,7 +124,7 @@ export default function App() {
   };
 
   const isLandingPage = (portalMode === 'CANDIDATE' && candView === 'LOGIN' && !candToken) || (portalMode === 'EMPLOYER' && !empToken);
-  const isDashboard = (portalMode === 'CANDIDATE' && candToken && candView === 'DASHBOARD') || (portalMode === 'EMPLOYER' && empToken);
+  const isDashboard = portalMode === 'EMPLOYER' && empToken;
 
   return (
     <div className={`app-shell ${isDashboard ? 'full-width-shell' : ''}`}>

@@ -367,9 +367,30 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
           display: flex;
           height: 100%;
           background-color: #f1f5f9;
-          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           width: 100%;
           overflow: hidden;
+        }
+        .emp-sidebar-label,
+        .emp-sidebar-title,
+        .emp-sidebar-link,
+        .emp-section-title,
+        .emp-card-header,
+        .emp-kpi-label,
+        .emp-kpi-value,
+        .emp-field-label,
+        .role-preset-btn,
+        .emp-tab-pill,
+        .order-title,
+        .order-meta-badge,
+        .candidate-kpi-sub,
+        .emp-tag-chip,
+        .employer-submit-btn,
+        .emp-modal-title {
+          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .emp-mono-text {
+          font-family: 'JetBrains Mono', Courier, monospace;
         }
         .emp-sidebar {
           width: 280px;
@@ -1569,7 +1590,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                                 <div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontWeight: '800', fontSize: '0.9rem', color: '#0f172a' }}>{c.fullName || 'Talent Profile'}</span>
-                                    <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: '#f1f5f9', borderRadius: '4px', fontMono: 'true', fontWeight: '700', color: '#475569' }}>
+                                    <span className="emp-mono-text" style={{ fontSize: '0.7rem', padding: '2px 6px', background: '#f1f5f9', borderRadius: '4px', fontWeight: '700', color: '#475569' }}>
                                       {c.candidateIdNumber}
                                     </span>
                                   </div>

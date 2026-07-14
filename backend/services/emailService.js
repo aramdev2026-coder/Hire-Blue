@@ -2,6 +2,24 @@ import nodemailer from 'nodemailer';
 import logger from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const loadEmailTemplate = (templateName, replacements) => {
+  try {
+    const filePath = path.join(__dirname, '..', 'templates', templateName);
+    let html = fs.readFileSync(filePath, 'utf8');
+    for (const [key, value] of Object.entries(replacements)) {
+      html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    }
+    return html;
+  } catch (err) {
+    logger.error(`❌ Failed to load email template ${templateName}: ${err.message}`);
+    return '';
+  }
+};
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -32,95 +50,17 @@ transporter.verify((error, success) => {
 export const getSmtpStatus = () => ({ healthy: smtpHealthy, error: smtpError });
 
 export const sendOTPEmail = async (email, otp) => {
+  const htmlContent = loadEmailTemplate('otp.html', {
+    OTP: otp,
+    YEAR: new Date().getFullYear().toString()
+  });
+
   await transporter.sendMail({
     from: `"AramFTC" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Your OTP for AramFTC Login',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 540px; margin: auto; background-color: #f8fafc; padding: 20px;">
-        <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          
-          <!-- Header Banner -->
-          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
-            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; -webkit-text-stroke: 0.8px #000;">ARAM FINTECH CONCEPT</h1>
-            <p style="margin: 6px 0 0; font-size: 13px; opacity: 0.9; font-weight: 700; color: #facc15; text-transform: uppercase; letter-spacing: 1px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; -webkit-text-stroke: 0.8px #000;">Job to Secure Life</p>
-          </div>
-
-          <!-- Welcome & OTP Code block -->
-          <div style="padding: 32px 24px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-            <p style="color: #475569; font-size: 15px; margin: 0 0 16px; text-align: left;">Dear User,</p>
-            <p style="color: #475569; font-size: 15px; margin: 0 0 24px; text-align: left; line-height: 1.5;">
-              Use the following One-Time Password (OTP) to log in to your Candidate Portal. This code is confidential and should not be shared.
-            </p>
-            
-            <div style="background-color: #eff6ff; border: 1px dashed #bfdbfe; border-radius: 12px; padding: 18px 12px; display: inline-block; margin-bottom: 20px; min-width: 240px; text-align: center;">
-              <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 6px; color: #1e3a8a; display: inline-block; padding-left: 6px; text-align: center; margin: 0 auto;">${otp}</span>
-            </div>
-
-            <div style="font-size: 13px; color: #64748b; margin-top: 8px; line-height: 1.5;">
-              Valid for <strong>10 minutes only</strong>
-            </div>
-          </div>
-
-          <!-- Aram Services Segment -->
-          <div style="padding: 28px 24px; background-color: #fcfdfe;">
-            <h3 style="margin: 0 0 16px; font-size: 14px; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">Aram Ecosystem Services</h3>
-            
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
-              <tr>
-                <td width="50%" style="padding: 0 8px 12px 0; vertical-align: top;">
-                  <div style="border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6; border-radius: 8px; padding: 12px; background: #ffffff; min-height: 54px;">
-                    <div style="margin: 0 0 4px; font-size: 13px; font-weight: bold; color: #0f172a;">Job Search</div>
-                    <div style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">Find matching job opportunities.</div>
-                  </div>
-                </td>
-                <td width="50%" style="padding: 0 0 12px 8px; vertical-align: top;">
-                  <div style="border: 1px solid #e2e8f0; border-left: 3px solid #10b981; border-radius: 8px; padding: 12px; background: #ffffff; min-height: 54px;">
-                    <div style="margin: 0 0 4px; font-size: 13px; font-weight: bold; color: #0f172a;">Employee Selection</div>
-                    <div style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">Hire verified candidates efficiently.</div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td width="50%" style="padding: 0 8px 12px 0; vertical-align: top;">
-                  <div style="border: 1px solid #e2e8f0; border-left: 3px solid #f59e0b; border-radius: 8px; padding: 12px; background: #ffffff; min-height: 54px;">
-                    <div style="margin: 0 0 4px; font-size: 13px; font-weight: bold; color: #0f172a;">Home Loan</div>
-                    <div style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">Get competitive rates pre-approved.</div>
-                  </div>
-                </td>
-                <td width="50%" style="padding: 0 0 12px 8px; vertical-align: top;">
-                  <div style="border: 1px solid #e2e8f0; border-left: 3px solid #f43f5e; border-radius: 8px; padding: 12px; background: #ffffff; min-height: 54px;">
-                    <div style="margin: 0 0 4px; font-size: 13px; font-weight: bold; color: #0f172a;">2/4 Wheeler Loan</div>
-                    <div style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">Flexible vehicle financing options.</div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td width="50%" style="padding: 0 8px 0 0; vertical-align: top;">
-                  <div style="border: 1px solid #e2e8f0; border-left: 3px solid #8b5cf6; border-radius: 8px; padding: 12px; background: #ffffff; min-height: 54px;">
-                    <div style="margin: 0 0 4px; font-size: 13px; font-weight: bold; color: #0f172a;">Insurance</div>
-                    <div style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">Protect family, health, and assets.</div>
-                  </div>
-                </td>
-                <td width="50%" style="padding: 0 0 0 8px; vertical-align: top;">
-                  <div style="border: 1px solid #e2e8f0; border-left: 3px solid #06b6d4; border-radius: 8px; padding: 12px; background: #ffffff; min-height: 54px;">
-                    <div style="margin: 0 0 4px; font-size: 13px; font-weight: bold; color: #0f172a;">Investments</div>
-                    <div style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">Grow your wealth with tailored strategies.</div>
-                  </div>
-                </td>
-              </tr>
-            </table>
-          </div>
-
-          <!-- Footer -->
-          <div style="padding: 24px; background-color: #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.5;">
-            <p style="margin: 0 0 6px;">If you did not request this OTP, please ignore this email. Your account is completely safe.</p>
-            <p style="margin: 0;">© ${new Date().getFullYear()} Aram Fintech Concept. All rights reserved.</p>
-          </div>
-
-        </div>
-      </div>
-    `,
+    text: `Dear User,\n\nUse the following One-Time Password (OTP) to log in to your Candidate Portal: ${otp}.\n\nThis code is valid for 10 minutes.\n\nBest regards,\nAram Fintech Concept`,
+    html: htmlContent,
   });
 };
 
@@ -137,44 +77,17 @@ export const sendWelcomeCandidateEmail = async (email, name) => {
   if (!email || email.endsWith('@aramftc.com')) return;
   const fromUser = process.env.GREETING_EMAIL_USER || process.env.EMAIL_USER;
   try {
+    const htmlContent = loadEmailTemplate('welcome_candidate.html', {
+      NAME: name || 'Candidate',
+      YEAR: new Date().getFullYear().toString()
+    });
+
     await greetingTransporter.sendMail({
       from: `"AramFTC Welcome Service" <${fromUser}>`,
       to: email,
       subject: 'Welcome to Aram Fintech Concept!',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 540px; margin: auto; background-color: #f8fafc; padding: 20px;">
-          <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-            
-            <!-- Header Banner -->
-            <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
-              <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">ARAM FINTECH CONCEPT</h1>
-              <p style="margin: 6px 0 0; font-size: 13px; opacity: 0.9; font-weight: 700; color: #facc15; text-transform: uppercase; letter-spacing: 1px;">Job to Secure Life</p>
-            </div>
-
-            <!-- Body -->
-            <div style="padding: 32px 24px; border-bottom: 1px solid #f1f5f9; line-height: 1.6;">
-              <p style="color: #0f172a; font-size: 16px; font-weight: 700; margin: 0 0 16px;">Dear ${name || 'Candidate'},</p>
-              <p style="color: #334155; font-size: 14px; margin: 0 0 16px;">
-                Thanks for trusting Aram and starting to trail along with us. We will guide you, assist you, and travel with you on your professional journey.
-              </p>
-              <p style="color: #334155; font-size: 14px; margin: 0 0 24px;">
-                Let's build a bright future for the candidates! Our team is dedicated to helping you secure the right opportunity for a secure life.
-              </p>
-              
-              <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 16px; text-align: center; color: #065f46; font-weight: bold; font-size: 14px;">
-                "Lets build a bright future for the candidates"
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="padding: 24px; background-color: #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.5;">
-              <p style="margin: 0 0 6px;">Welcome to the Aram family.</p>
-              <p style="margin: 0;">© ${new Date().getFullYear()} Aram Fintech Concept. All rights reserved.</p>
-            </div>
-
-          </div>
-        </div>
-      `,
+      text: `Dear ${name || 'Candidate'},\n\nWelcome to Aram Fintech Concept!\n\nThank you for trusting us. We are committed to guiding you, assisting you, and helping you build a successful career and a secure life.\n\nHere are the core features of Aram services available to support you:\n• Job Search: Match with verified blue-collar and professional employers.\n• Home Loans: Get pre-approved easily with competitive interest rates.\n• Vehicle Financing: Get flexible 2/4-wheeler loan options.\n• Insurance: Protect your family, health, and assets with tailored plans.\n• Investments: Grow your savings securely with personalized strategies.\n\n"Let's build a bright future for the candidates"\n\nBest regards,\nAram Fintech Concept Team`,
+      html: htmlContent,
     });
     logger.info(`📧 Welcome candidate email sent to ${email}`);
   } catch (err) {
@@ -186,44 +99,17 @@ export const sendWelcomeEmployerEmail = async (email, name) => {
   if (!email || email.endsWith('@aramftc.com')) return;
   const fromUser = process.env.GREETING_EMAIL_USER || process.env.EMAIL_USER;
   try {
+    const htmlContent = loadEmailTemplate('welcome_employer.html', {
+      NAME: name || 'Employer',
+      YEAR: new Date().getFullYear().toString()
+    });
+
     await greetingTransporter.sendMail({
       from: `"AramFTC Corporate Services" <${fromUser}>`,
       to: email,
       subject: 'Welcome to the Aram Corporate Network!',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 540px; margin: auto; background-color: #f8fafc; padding: 20px;">
-          <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-            
-            <!-- Header Banner -->
-            <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
-              <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">ARAM FINTECH CONCEPT</h1>
-              <p style="margin: 6px 0 0; font-size: 13px; opacity: 0.9; font-weight: 700; color: #facc15; text-transform: uppercase; letter-spacing: 1px;">Corporate Client Onboarding</p>
-            </div>
-
-            <!-- Body -->
-            <div style="padding: 32px 24px; border-bottom: 1px solid #f1f5f9; line-height: 1.6;">
-              <p style="color: #0f172a; font-size: 16px; font-weight: 700; margin: 0 0 16px;">Dear ${name || 'Employer'},</p>
-              <p style="color: #334155; font-size: 14px; margin: 0 0 16px;">
-                Thank you for choosing Aram Fintech Concept as your recruitment partner. We highly appreciate your trust and look forward to working closely with your organization.
-              </p>
-              <p style="color: #334155; font-size: 14px; margin: 0 0 24px;">
-                Our platform connects you with pre-verified, qualified candidates to fulfill your staffing demands efficiently and build a stronger workforce.
-              </p>
-              
-              <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; text-align: center; color: #1e40af; font-weight: bold; font-size: 14px;">
-                Connecting Enterprise with Quality Talent
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="padding: 24px; background-color: #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.5;">
-              <p style="margin: 0 0 6px;">Thank you for partnering with Aram Fintech Concept.</p>
-              <p style="margin: 0;">© ${new Date().getFullYear()} Aram Fintech Concept. All rights reserved.</p>
-            </div>
-
-          </div>
-        </div>
-      `,
+      text: `Dear ${name || 'Employer'},\n\nWelcome to Aram Fintech Concept!\n\nThank you for choosing us as your recruitment partner. We highly appreciate your trust and look forward to working closely with your organization.\n\nWe are dedicated to helping you grow your business. Together, we will work to build a stronger workforce by matching you with qualified, pre-verified candidates to fulfill your staffing demands efficiently.\n\nLog in to your Employer Dashboard anytime to manage your hiring requirements, view matched candidates, and download profiles.\n\nBest regards,\nAram Fintech Concept Team`,
+      html: htmlContent,
     });
     logger.info(`📧 Welcome employer email sent to ${email}`);
   } catch (err) {
@@ -235,44 +121,17 @@ export const sendBirthdayEmail = async (email, name) => {
   if (!email || email.endsWith('@aramftc.com')) return;
   const fromUser = process.env.GREETING_EMAIL_USER || process.env.EMAIL_USER;
   try {
+    const htmlContent = loadEmailTemplate('birthday.html', {
+      NAME: name || 'Candidate',
+      YEAR: new Date().getFullYear().toString()
+    });
+
     await greetingTransporter.sendMail({
       from: `"AramFTC Greeting Service" <${fromUser}>`,
       to: email,
       subject: 'Happy Birthday from Aram Fintech Concept! 🎉',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 540px; margin: auto; background-color: #f8fafc; padding: 20px;">
-          <div style="background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-            
-            <!-- Header Banner -->
-            <div style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
-              <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">HAPPY BIRTHDAY! 🎉</h1>
-              <p style="margin: 6px 0 0; font-size: 13px; opacity: 0.9; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1px;">Aram Fintech Concept</p>
-            </div>
-
-            <!-- Body -->
-            <div style="padding: 32px 24px; border-bottom: 1px solid #f1f5f9; line-height: 1.6;">
-              <p style="color: #0f172a; font-size: 16px; font-weight: 700; margin: 0 0 16px;">Dear ${name || 'Candidate'},</p>
-              <p style="color: #334155; font-size: 14px; margin: 0 0 16px;">
-                Wishing you a very happy birthday and a wonderful, successful year ahead! We are incredibly glad to have you in the Aram family.
-              </p>
-              <p style="color: #334155; font-size: 14px; margin: 0 0 24px;">
-                We look forward to travelling along with you, guiding you, and helping you build a very bright and prosperous future.
-              </p>
-              
-              <div style="background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 16px; text-align: center; color: #92400e; font-weight: bold; font-size: 14px;">
-                Wishing you Joy, Health, and Success! 🎂
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="padding: 24px; background-color: #f1f5f9; text-align: center; font-size: 11px; color: #94a3b8; line-height: 1.5;">
-              <p style="margin: 0 0 6px;">Thank you for being part of our journey.</p>
-              <p style="margin: 0;">© ${new Date().getFullYear()} Aram Fintech Concept. All rights reserved.</p>
-            </div>
-
-          </div>
-        </div>
-      `,
+      text: `Dear ${name || 'Candidate'},\n\nWishing you a very happy birthday and a wonderful, successful year ahead! We are incredibly glad to have you in the Aram family.\n\nBest regards,\nAram Fintech Concept Team`,
+      html: htmlContent,
     });
     logger.info(`📧 Birthday email sent to ${email}`);
   } catch (err) {

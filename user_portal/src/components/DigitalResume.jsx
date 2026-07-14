@@ -1,43 +1,185 @@
 import React from 'react';
-import { Edit, FileText, Download } from 'lucide-react';
+import { Edit, FileText } from 'lucide-react';
 
 export default function DigitalResume({ verifiedPhone, profileData: p, onTriggerEdit }) {
   const safeArr = v => Array.isArray(v) ? v : [];
 
-  const downloadTextResume = () => {
-    const text = `
-DIGITAL RESUME - ${p?.fullName || 'Candidate'}
-Mobile: ${p?.phoneNumber1 ? '+91 ' + p.phoneNumber1 : '—'}
-Email: ${verifiedPhone || p?.emailId || '—'}
-Date of Birth: ${p?.dob ? new Date(p.dob).toLocaleDateString('en-IN') : '—'}
-Gender: ${p?.sex || '—'}
-Marital Status: ${p?.maritalStatus || '—'}
-Present Address: ${[p?.presentAddress, p?.presentDistrict, p?.presentState].filter(Boolean).join(', ')}
-Permanent Address: ${[p?.permanentAddress, p?.permanentDistrict, p?.permanentState].filter(Boolean).join(', ')}
 
-JOB PREFERENCES:
-Expected Monthly Salary: ${p?.expectedSalary || '—'}
-Job Roles: ${safeArr(p?.jobRoles).join(', ') || '—'}
-Preferred Districts: ${safeArr(p?.preferredDistricts).join(', ') || '—'}
-Languages Known: ${safeArr(p?.languagesKnown).join(', ') || '—'}
 
-EDUCATION:
-${safeArr(p?.education).filter(r => r.institution).map((r, i) => `${i + 1}. ${r.institution} - ${r.course}`).join('\n') || 'None'}
+  const downloadWordResume = () => {
+    // Generate education table rows if any
+    const eduRows = safeArr(p?.education)
+      .filter(r => r.institution)
+      .map((edu, idx) => `
+        <tr>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${idx + 1}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${edu.institution}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${edu.course || '—'}</td>
+        </tr>
+      `).join('');
 
-TECHNICAL QUALIFICATIONS:
-${safeArr(p?.technical).filter(r => r.institution).map((r, i) => `${i + 1}. ${r.institution} - ${r.course}`).join('\n') || 'None'}
+    const eduSection = eduRows ? `
+      <h2 style="color: #1e3a8a; border-bottom: 1.5pt solid #1e3a8a; padding-bottom: 3px; margin-top: 22px; margin-bottom: 8px; font-family: Calibri, Arial, sans-serif; font-size: 16px; font-weight: bold; text-transform: uppercase;">Education</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-family: Calibri, Arial, sans-serif; font-size: 13px;">
+        <thead>
+          <tr style="background-color: #f8fafc;">
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold; width: 8%;">#</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold;">Institution</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold;">Course</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${eduRows}
+        </tbody>
+      </table>
+    ` : '';
 
-WORK EXPERIENCE:
-${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r.institution} (${r.role || 'Role'}) - From ${r.fromYear} to ${r.toYear}`).join('\n') || 'None'}
-    `.trim();
+    // Same for technical rows
+    const techRows = safeArr(p?.technical)
+      .filter(r => r.institution)
+      .map((tech, idx) => `
+        <tr>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${idx + 1}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${tech.institution}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${tech.course || '—'}</td>
+        </tr>
+      `).join('');
 
-    const element = document.createElement("a");
-    const file = new Blob([text], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = `${(p?.fullName || 'resume').replace(/\s+/g, '_')}_resume.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const techSection = techRows ? `
+      <h2 style="color: #1e3a8a; border-bottom: 1.5pt solid #1e3a8a; padding-bottom: 3px; margin-top: 22px; margin-bottom: 8px; font-family: Calibri, Arial, sans-serif; font-size: 16px; font-weight: bold; text-transform: uppercase;">Technical / Skills</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-family: Calibri, Arial, sans-serif; font-size: 13px;">
+        <thead>
+          <tr style="background-color: #f8fafc;">
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold; width: 8%;">#</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold;">Institution</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold;">Course / Certification</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${techRows}
+        </tbody>
+      </table>
+    ` : '';
+
+    // Same for experience rows
+    const expRows = safeArr(p?.experience)
+      .filter(r => r.institution)
+      .map((exp, idx) => `
+        <tr>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${idx + 1}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${exp.institution}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${exp.role || '—'}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${exp.fromYear}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">${exp.toYear}</td>
+        </tr>
+      `).join('');
+
+    const expSection = expRows ? `
+      <h2 style="color: #1e3a8a; border-bottom: 1.5pt solid #1e3a8a; padding-bottom: 3px; margin-top: 22px; margin-bottom: 8px; font-family: Calibri, Arial, sans-serif; font-size: 16px; font-weight: bold; text-transform: uppercase;">Experience</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-family: Calibri, Arial, sans-serif; font-size: 13px;">
+        <thead>
+          <tr style="background-color: #f8fafc;">
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold; width: 8%;">#</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold;">Employer</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold;">Role</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold; width: 12%;">From</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: bold; width: 12%;">To</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${expRows}
+        </tbody>
+      </table>
+    ` : '';
+
+    const htmlContent = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>Curriculum Vitae - ${p?.fullName || 'Candidate'}</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.5;
+            color: #1e293b;
+          }
+        </style>
+      </head>
+      <body style="padding: 40px;">
+        <h1 style="color: #1e3a8a; font-family: Calibri, Arial, sans-serif; font-size: 26px; margin-bottom: 2px; font-weight: bold;">${p?.fullName || 'Candidate Profile'}</h1>
+        <div style="font-family: Calibri, Arial, sans-serif; font-size: 13px; color: #475569; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+          <strong>Mobile:</strong> ${p?.phoneNumber1 ? '+91 ' + p.phoneNumber1 : '—'} &nbsp;|&nbsp; 
+          <strong>Email:</strong> ${verifiedPhone || p?.emailId || '—'}
+        </div>
+
+        <h2 style="color: #1e3a8a; border-bottom: 1.5pt solid #1e3a8a; padding-bottom: 3px; margin-top: 22px; margin-bottom: 8px; font-family: Calibri, Arial, sans-serif; font-size: 16px; font-weight: bold; text-transform: uppercase;">Personal Details</h2>
+        <table style="width: 100%; border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 13px; margin-bottom: 15px;">
+          <tr>
+            <td style="width: 25%; font-weight: bold; color: #475569; padding: 4px 0; border: none;">Date of Birth:</td>
+            <td style="padding: 4px 0; border: none;">${p?.dob ? new Date(p.dob).toLocaleDateString('en-IN') : '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Gender:</td>
+            <td style="padding: 4px 0; border: none;">${p?.sex || '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Marital Status:</td>
+            <td style="padding: 4px 0; border: none;">${p?.maritalStatus || '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Present Address:</td>
+            <td style="padding: 4px 0; border: none;">${[p?.presentAddress, p?.presentDistrict, p?.presentState].filter(Boolean).join(', ') || '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Permanent Address:</td>
+            <td style="padding: 4px 0; border: none;">${[p?.permanentAddress, p?.permanentDistrict, p?.permanentState].filter(Boolean).join(', ') || '—'}</td>
+          </tr>
+        </table>
+
+        <h2 style="color: #1e3a8a; border-bottom: 1.5pt solid #1e3a8a; padding-bottom: 3px; margin-top: 22px; margin-bottom: 8px; font-family: Calibri, Arial, sans-serif; font-size: 16px; font-weight: bold; text-transform: uppercase;">Job Preferences</h2>
+        <table style="width: 100%; border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 13px; margin-bottom: 15px;">
+          <tr>
+            <td style="width: 25%; font-weight: bold; color: #475569; padding: 4px 0; border: none;">Expected Salary (Monthly):</td>
+            <td style="padding: 4px 0; border: none;">${p?.expectedSalary || '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Job Roles:</td>
+            <td style="padding: 4px 0; border: none;">${safeArr(p?.jobRoles).join(', ') || '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Preferred Districts:</td>
+            <td style="padding: 4px 0; border: none;">${safeArr(p?.preferredDistricts).join(', ') || '—'}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; color: #475569; padding: 4px 0; border: none;">Languages Known:</td>
+            <td style="padding: 4px 0; border: none;">${safeArr(p?.languagesKnown).join(', ') || '—'}</td>
+          </tr>
+        </table>
+
+        ${eduSection}
+        ${techSection}
+        ${expSection}
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff' + htmlContent], {
+      type: 'application/msword;charset=utf-8'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(p?.fullName || 'resume').replace(/\s+/g, '_')}_resume.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -238,10 +380,11 @@ ${safeArr(p?.experience).filter(r => r.institution).map((r, i) => `${i + 1}. ${r
             <FileText size={16} />
             <span>Download PDF</span>
           </button>
-          <button type="button" className="button button-ghost resume-action" onClick={downloadTextResume} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <Download size={16} />
-            <span>Download TXT</span>
+          <button type="button" className="button button-secondary resume-action" onClick={downloadWordResume} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <FileText size={16} />
+            <span>Download Word</span>
           </button>
+
         </div>
       </div>
     </div>
