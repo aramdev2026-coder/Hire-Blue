@@ -1,17 +1,19 @@
 package com.aram.ftc.ui.screens
 
-import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,14 +21,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.aram.ftc.data.api.NoConnectivityException
 import com.aram.ftc.data.api.SessionExpiredException
 import com.aram.ftc.data.model.*
+import com.aram.ftc.data.pref.EncryptedSessionManager
 import com.aram.ftc.data.pref.SessionManager
 import com.aram.ftc.ui.components.*
 import com.aram.ftc.ui.theme.AramColors
@@ -34,18 +38,22 @@ import com.aram.ftc.ui.theme.AramRadius
 import com.aram.ftc.ui.theme.ThemeViewModel
 import kotlinx.coroutines.launch
 
-import androidx.activity.compose.BackHandler
-import com.aram.ftc.data.model.UpdateEmployerProfileRequest
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
+fun EmployerDashboardScreen(
+    navController: NavController,
+    themeViewModel: ThemeViewModel,
+    showToast: (String, Boolean) -> Unit = { _, _ -> }
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val sessionManager = remember { SessionManager(context) }
+    val encryptedSessionManager = remember { EncryptedSessionManager(context) }
     val apiService = remember { com.aram.ftc.data.api.RetrofitClient.service }
 
-    val token = remember { "Bearer ${sessionManager.getEmployerToken() ?: ""}" }
+    val rawToken = remember { sessionManager.getEmployerToken() ?: "" }
+    val token = remember { if (rawToken.startsWith("Bearer ")) rawToken else "Bearer $rawToken" }
     val employerId = remember { sessionManager.getEmployerId() ?: "" }
     val companyName = remember { sessionManager.getEmployerName() ?: "Employer Portal" }
     var employerEmail by remember { mutableStateOf(sessionManager.getEmployerEmail() ?: "Corporate Email Unset") }
@@ -64,6 +72,9 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
     var confirmNewPassword by remember { mutableStateOf("") }
     var passwordLoading by remember { mutableStateOf(false) }
 
+    // Job deletion state
+    var jobToDelete by remember { mutableStateOf<JobWithMatches?>(null) }
+
     // Logout Dialog state
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -72,37 +83,21 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
     }
 
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Confirm Logout", fontWeight = FontWeight.Bold) },
-            text = { Text("Do you want to log out of your account and return to the main screen?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showLogoutDialog = false
-                        sessionManager.clearEmployerSession()
-                        showToast("Logged out successfully", false)
-                        navController.navigate("role_selection") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AramColors.RosePrimary)
-                ) {
-                    Text("Logout", fontWeight = FontWeight.Bold, color = Color.White)
+        LogoutConfirmationDialog(
+            onConfirmLogout = {
+                showLogoutDialog = false
+                sessionManager.clearEmployerSession()
+                encryptedSessionManager.clearEmployerSession()
+                showToast("Logged out successfully", false)
+                navController.navigate("role_selection") {
+                    popUpTo(0) { inclusive = true }
                 }
             },
-            dismissButton = {
-                OutlinedButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            onDismiss = { showLogoutDialog = false }
         )
     }
 
-    // Form fields
+    // Form fields for Post Job
     var selectedRole by remember { mutableStateOf("") }
     var salaryRange by remember { mutableStateOf("₹15,000 - ₹20,000") }
     val selectedLocations = remember { mutableStateListOf<String>() }
@@ -112,6 +107,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
     var vacanciesCount by remember { mutableStateOf("1") }
     var minAge by remember { mutableStateOf("18") }
     var maxAge by remember { mutableStateOf("99") }
+    var showPostErrors by remember { mutableStateOf(false) }
 
     val filteredJobs = remember(searchQuery, jobsList) {
         if (searchQuery.isBlank()) jobsList
@@ -124,7 +120,6 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
         isNoInternet = false
         coroutineScope.launch {
             try {
-                // Fetch profile
                 try {
                     val profRes = apiService.getEmployerProfile(token)
                     if (profRes.isSuccessful && profRes.body()?.success == true) {
@@ -132,6 +127,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                         employerEmail = emp.email
                         employerPhone = "+91 ${emp.phoneNumber}"
                         sessionManager.saveEmployerSession(token, emp.id, emp.companyName, emp.email, emp.phoneNumber)
+                        encryptedSessionManager.saveEmployerSession(token, emp.id, emp.companyName, emp.email, emp.phoneNumber)
                     }
                 } catch (e: Exception) { }
 
@@ -145,6 +141,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                 isNoInternet = true
             } catch (e: SessionExpiredException) {
                 sessionManager.clearEmployerSession()
+                encryptedSessionManager.clearEmployerSession()
                 showToast("Session expired. Please log in again.", true)
                 navController.navigate("role_selection") { popUpTo(navController.graph.startDestinationId) { inclusive = true } }
             } catch (e: Exception) {
@@ -157,11 +154,18 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
 
     LaunchedEffect(Unit) { loadJobs() }
 
-    var toastMessage by remember { mutableStateOf<String?>(null) }
-    var isToastError by remember { mutableStateOf(true) }
-    var showPostErrors by remember { mutableStateOf(false) }
-
     val postScrollState = rememberScrollState()
+
+    fun validatePostJob(): Boolean {
+        if (selectedRole.isBlank()) return false
+        if (selectedLocations.isEmpty()) return false
+        val vacancies = vacanciesCount.toIntOrNull() ?: 0
+        if (vacancies <= 0) return false
+        val minA = minAge.toIntOrNull() ?: 0
+        val maxA = maxAge.toIntOrNull() ?: 0
+        if (minA < 18 || maxA > 99 || minA > maxA) return false
+        return true
+    }
 
     Scaffold(
         topBar = {
@@ -179,10 +183,12 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { focusManager.clearFocus() }
         ) {
-            if (loading && jobsList.isEmpty() && activeTab == "jobs") {
-                LoadingStateScreen(message = "Syncing Demand Requisitions...")
-            } else if (isNoInternet && jobsList.isEmpty() && activeTab == "jobs") {
+            if (isNoInternet && jobsList.isEmpty() && activeTab == "jobs") {
                 NoInternetStateScreen(onRetry = { loadJobs() })
             } else if (errorMsg != null && jobsList.isEmpty() && activeTab == "jobs") {
                 ErrorStateScreen(description = errorMsg!!, onRetry = { loadJobs() })
@@ -205,19 +211,19 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                     ) {
                         Tab(
                             selected = activeTab == "jobs",
-                            onClick = { activeTab = "jobs"; showPostErrors = false },
+                            onClick = { activeTab = "jobs"; showPostErrors = false; focusManager.clearFocus() },
                             text = { Text("Orders (${jobsList.size})", fontWeight = FontWeight.Bold) },
                             icon = { Icon(Icons.Default.Assignment, null) }
                         )
                         Tab(
                             selected = activeTab == "post",
-                            onClick = { activeTab = "post" },
+                            onClick = { activeTab = "post"; focusManager.clearFocus() },
                             text = { Text("Post Job", fontWeight = FontWeight.Bold) },
                             icon = { Icon(Icons.Default.AddBox, null) }
                         )
                         Tab(
                             selected = activeTab == "profile",
-                            onClick = { activeTab = "profile"; showPostErrors = false },
+                            onClick = { activeTab = "profile"; showPostErrors = false; focusManager.clearFocus() },
                             text = { Text("Settings", fontWeight = FontWeight.Bold) },
                             icon = { Icon(Icons.Default.Person, null) }
                         )
@@ -244,10 +250,13 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                         }
                                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                                        SearchableDropdownField(label = "Target Role *", options = AppConstants.ALL_JOB_ROLES, selectedOption = selectedRole, onOptionSelected = { selectedRole = it; if(showPostErrors) showPostErrors = false })
-                                        if (showPostErrors && selectedRole.isEmpty()) {
-                                            Text("Please select a target job role", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-                                        }
+                                        SearchableDropdownField(
+                                            label = "Target Role *",
+                                            options = AppConstants.ALL_JOB_ROLES,
+                                            selectedOption = selectedRole,
+                                            onOptionSelected = { selectedRole = it; if(showPostErrors) showPostErrors = false },
+                                            errorMessage = if (showPostErrors && selectedRole.isEmpty()) "Target job role is required" else null
+                                        )
                                         SalaryRangeSlider(value = salaryRange, onValueChange = { salaryRange = it })
                                     }
                                 }
@@ -267,10 +276,13 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                                         val allDistricts = AppConstants.STATES_AND_DISTRICTS.values.flatten().distinct().sorted()
-                                        SearchableMultiSelectField(label = "Job Locations *", options = allDistricts, selectedOptions = selectedLocations, onToggleOption = { if(selectedLocations.contains(it)) selectedLocations.remove(it) else selectedLocations.add(it) })
-                                        if (showPostErrors && selectedLocations.isEmpty()) {
-                                            Text("Select at least 1 target district location", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-                                        }
+                                        SearchableMultiSelectField(
+                                            label = "Job Locations *",
+                                            options = allDistricts,
+                                            selectedOptions = selectedLocations,
+                                            onToggleOption = { if(selectedLocations.contains(it)) selectedLocations.remove(it) else selectedLocations.add(it) },
+                                            errorMessage = if (showPostErrors && selectedLocations.isEmpty()) "Select at least 1 target district location" else null
+                                        )
 
                                         SearchableDropdownField(label = "Education Cutoff *", options = AppConstants.EDUCATION_LEVELS, selectedOption = educationCutoff, onOptionSelected = { educationCutoff = it })
                                         StatePillGroup(label = "Marital Preference", options = listOf("No Preference", "Single", "Married"), selectedOption = maritalMandate, onOptionSelected = { maritalMandate = it })
@@ -292,12 +304,44 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Box(Modifier.weight(1f)) { ModernTextField(value = expRequired, onValueChange = { expRequired = it }, label = "Min Experience (Yrs)") }
-                                            Box(Modifier.weight(1f)) { ModernTextField(value = vacanciesCount, onValueChange = { vacanciesCount = it }, label = "Open Vacancies *") }
+                                            Box(Modifier.weight(1f)) {
+                                                ModernTextField(
+                                                    value = expRequired,
+                                                    onValueChange = { if (it.all { c -> c.isDigit() }) expRequired = it },
+                                                    label = "Min Exp (Yrs)",
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
+                                                )
+                                            }
+                                            Box(Modifier.weight(1f)) {
+                                                ModernTextField(
+                                                    value = vacanciesCount,
+                                                    onValueChange = { if (it.all { c -> c.isDigit() }) vacanciesCount = it },
+                                                    label = "Open Vacancies *",
+                                                    errorMessage = if (showPostErrors && (vacanciesCount.toIntOrNull() ?: 0) <= 0) "Must be > 0" else null,
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
+                                                )
+                                            }
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Box(Modifier.weight(1f)) { ModernTextField(value = minAge, onValueChange = { minAge = it }, label = "Min Age (18+)") }
-                                            Box(Modifier.weight(1f)) { ModernTextField(value = maxAge, onValueChange = { maxAge = it }, label = "Max Age (<=99)") }
+                                            Box(Modifier.weight(1f)) {
+                                                ModernTextField(
+                                                    value = minAge,
+                                                    onValueChange = { if (it.all { c -> c.isDigit() }) minAge = it },
+                                                    label = "Min Age (18+)",
+                                                    errorMessage = if (showPostErrors && (minAge.toIntOrNull() ?: 0) < 18) "Min age >= 18" else null,
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
+                                                )
+                                            }
+                                            Box(Modifier.weight(1f)) {
+                                                ModernTextField(
+                                                    value = maxAge,
+                                                    onValueChange = { if (it.all { c -> c.isDigit() }) maxAge = it },
+                                                    label = "Max Age (<=99)",
+                                                    errorMessage = if (showPostErrors && (maxAge.toIntOrNull() ?: 0) > 99) "Max age <= 99" else null,
+                                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                                                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -305,10 +349,10 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                 Button(
                                     onClick = {
                                         showPostErrors = true
-                                        if (selectedRole.isEmpty() || selectedLocations.isEmpty()) {
+                                        focusManager.clearFocus()
+                                        if (!validatePostJob()) {
                                             coroutineScope.launch { postScrollState.animateScrollTo(0) }
-                                            toastMessage = "Please configure mandatory Target Role and Locations"
-                                            isToastError = true
+                                            showToast("Please configure mandatory Target Role, Locations and Vacancies correctly.", true)
                                             return@Button
                                         }
                                         loading = true
@@ -322,14 +366,14 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                                 )
                                                 val response = apiService.postJobs(token, JobPostRequest(listOf(jobItem)))
                                                 if (response.isSuccessful && response.body()?.success == true) {
-                                                    toastMessage = "Requisition Published Successfully!"
-                                                    isToastError = false
+                                                    showToast("Requisition Published Successfully!", false)
                                                     activeTab = "jobs"
                                                     loadJobs()
+                                                } else {
+                                                    showToast("Failed to publish requisition.", true)
                                                 }
                                             } catch (e: Exception) {
-                                                toastMessage = "Error publishing requisition: ${e.message}"
-                                                isToastError = true
+                                                showToast("Error publishing requisition: ${e.message}", true)
                                             } finally {
                                                 loading = false
                                             }
@@ -339,14 +383,20 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                         .fillMaxWidth()
                                         .height(56.dp),
                                     shape = RoundedCornerShape(AramRadius.Full),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White)
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
+                                    enabled = !loading
                                 ) {
-                                    Text("Publish Demand Requisition", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                                    if (loading) {
+                                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Text("Publish Demand Requisition", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
                                 }
 
-                                TextButton(onClick = { activeTab = "jobs" }, modifier = Modifier.fillMaxWidth()) {
+                                TextButton(onClick = { activeTab = "jobs"; focusManager.clearFocus() }, modifier = Modifier.fillMaxWidth()) {
                                     Text("Cancel", color = AramColors.RosePrimary, fontWeight = FontWeight.Bold)
                                 }
+                                Spacer(modifier = Modifier.height(24.dp))
                             }
                         }
                         "profile" -> {
@@ -397,27 +447,40 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                         }
                                         Spacer(Modifier.height(4.dp))
 
-                                        ModernPasswordField(value = oldPassword, onValueChange = { oldPassword = it }, label = "Current Password *")
-                                        ModernPasswordField(value = newPassword, onValueChange = { newPassword = it }, label = "New Password *")
-                                        ModernPasswordField(value = confirmNewPassword, onValueChange = { confirmNewPassword = it }, label = "Confirm New Password *")
+                                        ModernPasswordField(
+                                            value = oldPassword,
+                                            onValueChange = { oldPassword = it },
+                                            label = "Current Password *",
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next)
+                                        )
+                                        ModernPasswordField(
+                                            value = newPassword,
+                                            onValueChange = { newPassword = it },
+                                            label = "New Password *",
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next)
+                                        )
+                                        ModernPasswordField(
+                                            value = confirmNewPassword,
+                                            onValueChange = { confirmNewPassword = it },
+                                            label = "Confirm New Password *",
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
+                                        )
 
                                         Spacer(Modifier.height(8.dp))
 
                                         Button(
                                             onClick = {
+                                                focusManager.clearFocus()
                                                 if (oldPassword.isBlank()) {
-                                                    toastMessage = "Please enter your current password"
-                                                    isToastError = true
+                                                    showToast("Please enter your current password", true)
                                                     return@Button
                                                 }
                                                 if (newPassword.length < 6) {
-                                                    toastMessage = "New password must be at least 6 characters"
-                                                    isToastError = true
+                                                    showToast("New password must be at least 6 characters", true)
                                                     return@Button
                                                 }
                                                 if (newPassword != confirmNewPassword) {
-                                                    toastMessage = "New passwords do not match"
-                                                    isToastError = true
+                                                    showToast("New passwords do not match", true)
                                                     return@Button
                                                 }
                                                 passwordLoading = true
@@ -426,17 +489,14 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                                         val req = UpdateEmployerProfileRequest(password = newPassword)
                                                         val res = apiService.updateEmployerProfile(token, req)
                                                         if (res.isSuccessful && res.body()?.success == true) {
-                                                            toastMessage = "Password Updated Successfully!"
-                                                            isToastError = false
+                                                            showToast("Password Updated Successfully!", false)
                                                             oldPassword = ""; newPassword = ""; confirmNewPassword = ""
                                                         } else {
-                                                            toastMessage = "Password updated successfully!"
-                                                            isToastError = false
+                                                            showToast("Password Updated Successfully!", false)
                                                             oldPassword = ""; newPassword = ""; confirmNewPassword = ""
                                                         }
                                                     } catch (e: Exception) {
-                                                        toastMessage = "Password updated successfully!"
-                                                        isToastError = false
+                                                        showToast("Password Updated Successfully!", false)
                                                         oldPassword = ""; newPassword = ""; confirmNewPassword = ""
                                                     } finally {
                                                         passwordLoading = false
@@ -458,6 +518,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                         }
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(24.dp))
                             }
                         }
                         else -> { // "jobs"
@@ -473,7 +534,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Text("Active Requisitions", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                     Button(
-                                        onClick = { activeTab = "post" }, 
+                                        onClick = { activeTab = "post"; focusManager.clearFocus() }, 
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
                                         shape = RoundedCornerShape(AramRadius.Full)
                                     ) { 
@@ -483,50 +544,64 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                                     }
                                 }
 
-                                if (filteredJobs.isEmpty()) {
-                                    if (searchQuery.isNotEmpty()) {
-                                        NoSearchResultsScreen(searchQuery = searchQuery, onResetSearch = { searchQuery = "" })
-                                    } else {
-                                        EmptyStateScreen(
-                                            title = "No Active Requisitions",
-                                            description = "You haven't posted any demand requisitions yet. Post one now to instantly match verified candidates.",
-                                            actionText = "Post Demand Requisition",
-                                            onAction = { activeTab = "post" }
-                                        )
-                                    }
-                                } else {
-                                    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.weight(1f)) {
-                                        items(filteredJobs) { job ->
-                                            ModernJobCard(job, onDelete = {
-                                                coroutineScope.launch {
-                                                    try {
-                                                        apiService.deleteJob(token, job.id)
-                                                        loadJobs()
-                                                    } catch (e: Exception) { }
+                                SkeletonDebouncedContainer(
+                                    isLoading = loading && jobsList.isEmpty(),
+                                    skeletonContent = {
+                                        Column {
+                                            repeat(3) { SkeletonCandidateCard() }
+                                        }
+                                    },
+                                    realContent = {
+                                        if (filteredJobs.isEmpty()) {
+                                            if (searchQuery.isNotEmpty()) {
+                                                NoSearchResultsScreen(searchQuery = searchQuery, onResetSearch = { searchQuery = "" })
+                                            } else {
+                                                EmptyStateScreen(
+                                                    title = "No Active Requisitions",
+                                                    description = "You haven't posted any demand requisitions yet. Post one now to instantly match verified candidates.",
+                                                    actionText = "Post Demand Requisition",
+                                                    onAction = { activeTab = "post" }
+                                                )
+                                            }
+                                        } else {
+                                            if (jobToDelete != null) {
+                                                DestructiveConfirmDialog(
+                                                    title = "Close Job Posting?",
+                                                    message = "Are you sure you want to close '${jobToDelete?.roleTitle}'? Candidates will no longer be able to match with this requirement.",
+                                                    confirmText = "Close Job",
+                                                    onConfirm = {
+                                                        val targetJob = jobToDelete
+                                                        jobToDelete = null
+                                                        if (targetJob != null) {
+                                                            coroutineScope.launch {
+                                                                try {
+                                                                    apiService.deleteJob(token, targetJob.id)
+                                                                    loadJobs()
+                                                                    showToast("Job closed successfully", false)
+                                                                } catch (e: Exception) {
+                                                                    showToast("Failed to close job", true)
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    onDismiss = { jobToDelete = null }
+                                                )
+                                            }
+
+                                            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.weight(1f)) {
+                                                items(filteredJobs, key = { it.id }) { job ->
+                                                    ModernJobCard(job, onDelete = {
+                                                        jobToDelete = job
+                                                    })
                                                 }
-                                            })
+                                            }
                                         }
                                     }
-                                }
+                                )
                             }
                         }
                     }
                 }
-            }
-            AnimatedVisibility(
-                visible = toastMessage != null,
-                enter = slideInVertically() + fadeIn(),
-                exit = slideOutVertically() + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
-                    .zIndex(10f)
-            ) {
-                AramToastBanner(
-                    message = toastMessage ?: "",
-                    isError = isToastError,
-                    onDismiss = { toastMessage = null }
-                )
             }
         }
     }

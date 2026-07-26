@@ -31,6 +31,7 @@ import com.aram.ftc.ui.theme.AramColors
 import com.aram.ftc.ui.theme.AramRadius
 import com.aram.ftc.ui.theme.ThemeViewModel
 import com.aram.ftc.util.ValidationUtils
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,9 +40,11 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
+    val draftStore = remember { com.aram.ftc.data.pref.WizardDraftStore(context) }
     val apiService = remember { com.aram.ftc.data.api.RetrofitClient.service }
 
-    val token = remember { "Bearer ${sessionManager.getCandidateToken() ?: ""}" }
+    val rawToken = remember { sessionManager.getCandidateToken() ?: "" }
+    val token = remember { if (rawToken.startsWith("Bearer ")) rawToken else "Bearer $rawToken" }
     val candidateId = remember { sessionManager.getCandidateId() }
 
     var step by remember { mutableStateOf(1) }
@@ -49,6 +52,24 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
     var isNewUser by remember { mutableStateOf(false) }
     var isReviewMode by remember { mutableStateOf(false) }
     var showErrors by remember { mutableStateOf(false) }
+    var isNoInternet by remember { mutableStateOf(false) }
+    var showLeaveDialog by remember { mutableStateOf(false) }
+
+    // Intercept Back Press to show confirmation dialog
+    androidx.activity.compose.BackHandler(enabled = !isReviewMode) {
+        if (step > 1) {
+            step--
+        } else {
+            showLeaveDialog = true
+        }
+    }
+
+    if (showLeaveDialog) {
+        WizardBackConfirmationDialog(
+            onConfirmLeave = { navController.popBackStack() },
+            onDismiss = { showLeaveDialog = false }
+        )
+    }
 
     // State Variables
     var fullName by remember { mutableStateOf("") }
@@ -78,45 +99,119 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
     val educationList = remember { mutableStateListOf(EducationItem("", "")) }
     val experienceList = remember { mutableStateListOf(ExperienceItem("", "", "", "")) }
 
+    val pageScrollState = rememberScrollState()
+
+    // Reset scroll state to top whenever step or isReviewMode changes
+    LaunchedEffect(isReviewMode, step) {
+        pageScrollState.scrollTo(0)
+    }
+
+    // Restore profile from API / DataStore draft
     LaunchedEffect(Unit) {
         loading = true
         try {
-            val response = apiService.getCandidateProfile(token, candidateId)
-            if (response.isSuccessful && response.body()?.success == true) {
-                val db = response.body()?.candidate
-                if (db != null) {
-                    if (db.fullName.isNullOrBlank()) isNewUser = true
-                    fullName = db.fullName ?: ""
-                    dob = db.dob ?: ""
-                    sex = db.sex ?: ""
-                    maritalStatus = db.maritalStatus ?: ""
-                    phoneNumber1 = if (db.phoneNumber1?.startsWith("EMAIL_AUTO_") == true) "" else (db.phoneNumber1 ?: "")
-                    phoneNumber2 = db.phoneNumber2 ?: ""
-                    emailId = db.emailId ?: emailId
-                    presentStreet1 = db.presentAddress ?: ""
-                    presentCity = db.presentDistrict ?: ""
-                    presentState = db.presentState ?: "Tamil Nadu"
-                    permanentStreet1 = db.permanentAddress ?: ""
-                    permanentCity = db.permanentDistrict ?: ""
-                    permanentState = db.permanentState ?: "Tamil Nadu"
-                    isPermanentSame = (db.presentAddress == db.permanentAddress && 
-                                     db.presentDistrict == db.permanentDistrict && 
-                                     db.presentState == db.permanentState &&
-                                     db.presentAddress?.isNotEmpty() == true)
-                    selectedRoles.clear(); selectedRoles.addAll(db.jobRoles)
-                    selectedDistricts.clear(); selectedDistricts.addAll(db.preferredDistricts)
-                    selectedLanguages.clear(); selectedLanguages.addAll(db.languagesKnown)
-                    if (db.education.isNotEmpty()) { educationList.clear(); educationList.addAll(db.education) }
-                    if (db.experience.isNotEmpty()) { experienceList.clear(); experienceList.addAll(db.experience) }
-                    expectedSalary = db.expectedSalary ?: "₹15,000 - ₹25,000"
+            var loadedFromApi = false
+            try {
+                val response = apiService.getCandidateProfile(token, candidateId)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val db = response.body()?.candidate
+                    if (db != null && !db.fullName.isNullOrBlank()) {
+                        fullName = db.fullName ?: ""
+                        dob = db.dob ?: ""
+                        sex = db.sex ?: ""
+                        maritalStatus = db.maritalStatus ?: ""
+                        phoneNumber1 = if (db.phoneNumber1?.startsWith("EMAIL_AUTO_") == true) "" else (db.phoneNumber1 ?: "")
+                        phoneNumber2 = db.phoneNumber2 ?: ""
+                        emailId = db.emailId ?: emailId
+                        presentStreet1 = db.presentAddress ?: ""
+                        presentCity = db.presentDistrict ?: ""
+                        presentState = db.presentState ?: "Tamil Nadu"
+                        permanentStreet1 = db.permanentAddress ?: ""
+                        permanentCity = db.permanentDistrict ?: ""
+                        permanentState = db.permanentState ?: "Tamil Nadu"
+                        isPermanentSame = (db.presentAddress == db.permanentAddress && 
+                                         db.presentDistrict == db.permanentDistrict && 
+                                         db.presentState == db.permanentState &&
+                                         db.presentAddress?.isNotEmpty() == true)
+                        selectedRoles.clear(); selectedRoles.addAll(db.jobRoles)
+                        selectedDistricts.clear(); selectedDistricts.addAll(db.preferredDistricts)
+                        selectedLanguages.clear(); selectedLanguages.addAll(db.languagesKnown)
+                        if (db.education.isNotEmpty()) { educationList.clear(); educationList.addAll(db.education) }
+                        if (db.experience.isNotEmpty()) { experienceList.clear(); experienceList.addAll(db.experience) }
+                        expectedSalary = db.expectedSalary ?: "₹15,000 - ₹25,000"
+                        loadedFromApi = true
+                    }
                 }
-            } else if (response.code() == 404) {
-                isNewUser = true
+            } catch (e: Exception) { }
+
+            // If API profile is uninitialized or empty, restore from DataStore draft
+            if (!loadedFromApi) {
+                val draft = draftStore.draftFlow.first()
+                if (draft.fullName.isNotBlank()) {
+                    fullName = draft.fullName
+                    dob = draft.dob
+                    sex = draft.sex
+                    maritalStatus = draft.maritalStatus
+                    phoneNumber1 = draft.phone1
+                    phoneNumber2 = draft.phone2
+                    presentStreet1 = draft.presentStreet
+                    presentCity = draft.presentCity
+                    presentState = draft.presentState
+                    isPermanentSame = draft.isPermanentSame
+                    permanentStreet1 = draft.permanentStreet
+                    permanentCity = draft.permanentCity
+                    permanentState = draft.permanentState
+                    expectedSalary = draft.expectedSalary
+                    if (draft.targetRoles.isNotBlank()) {
+                        selectedRoles.clear()
+                        selectedRoles.addAll(draft.targetRoles.split(", "))
+                    }
+                    if (draft.preferredDistricts.isNotBlank()) {
+                        selectedDistricts.clear()
+                        selectedDistricts.addAll(draft.preferredDistricts.split(", "))
+                    }
+                    if (draft.languagesKnown.isNotBlank()) {
+                        selectedLanguages.clear()
+                        selectedLanguages.addAll(draft.languagesKnown.split(", "))
+                    }
+                } else {
+                    isNewUser = true
+                }
             }
+        } catch (e: com.aram.ftc.data.api.NoConnectivityException) {
+            isNoInternet = true
         } catch (e: Exception) { 
             isNewUser = true
         } finally {
             loading = false
+        }
+    }
+
+    // Auto-save wizard draft on field changes
+    LaunchedEffect(fullName, dob, sex, maritalStatus, phoneNumber1, phoneNumber2, presentStreet1, presentCity, presentState, selectedRoles.toList(), selectedDistricts.toList(), selectedLanguages.toList(), expectedSalary, step) {
+        if (fullName.isNotBlank()) {
+            draftStore.saveDraft(
+                com.aram.ftc.data.pref.WizardDraft(
+                    step = step,
+                    fullName = fullName,
+                    dob = dob,
+                    sex = sex,
+                    maritalStatus = maritalStatus,
+                    phone1 = phoneNumber1,
+                    phone2 = phoneNumber2,
+                    presentStreet = presentStreet1,
+                    presentCity = presentCity,
+                    presentState = presentState,
+                    isPermanentSame = isPermanentSame,
+                    permanentStreet = permanentStreet1,
+                    permanentCity = permanentCity,
+                    permanentState = permanentState,
+                    targetRoles = selectedRoles.joinToString(", "),
+                    preferredDistricts = selectedDistricts.joinToString(", "),
+                    languagesKnown = selectedLanguages.joinToString(", "),
+                    expectedSalary = expectedSalary
+                )
+            )
         }
     }
 
@@ -126,12 +221,14 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
     fun validateStep(): Boolean {
         when (step) {
             1 -> {
-                if (fullName.isBlank()) return false
-                if (dob.isBlank()) return false
-                if (sex.isBlank()) return false
-                if (maritalStatus.isBlank()) return false
-                if (!ValidationUtils.isValidPhone(phoneNumber1)) return false
-                if (presentStreet1.isBlank() || presentCity.isBlank()) return false
+                if (fullName.isBlank() || dob.isBlank() || !ValidationUtils.isAtLeast18(dob) || sex.isBlank() || maritalStatus.isBlank() ||
+                    !ValidationUtils.isValidIndianPhone(phoneNumber1) || presentStreet1.isBlank() || presentCity.isBlank()) {
+                    if (dob.isNotBlank() && !ValidationUtils.isAtLeast18(dob)) {
+                        toastMessage = "Candidate must be at least 18 years old"
+                        isToastError = true
+                    }
+                    return false
+                }
             }
             2 -> {
                 if (selectedRoles.isEmpty()) { toastMessage = "Select at least one job role"; isToastError = true; return false }
@@ -148,6 +245,19 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
             if (step == 1) {
                 toastMessage = "Please fill all required personal & contact details"
                 isToastError = true
+                val firstErrorOffset = when {
+                    fullName.isBlank() -> 0
+                    dob.isBlank() -> 100
+                    sex.isBlank() -> 200
+                    maritalStatus.isBlank() -> 320
+                    !ValidationUtils.isValidIndianPhone(phoneNumber1) -> 440
+                    presentStreet1.isBlank() -> 600
+                    presentCity.isBlank() -> 720
+                    else -> 0
+                }
+                coroutineScope.launch {
+                    pageScrollState.animateScrollTo(firstErrorOffset)
+                }
             }
             return
         }
@@ -210,9 +320,55 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            if (isNoInternet) {
+                NoInternetView(onRetry = {
+                    isNoInternet = false
+                    loading = true
+                    coroutineScope.launch {
+                        try {
+                            val response = apiService.getCandidateProfile(token, candidateId)
+                            if (response.isSuccessful && response.body()?.success == true) {
+                                val db = response.body()?.candidate
+                                if (db != null) {
+                                    if (db.fullName.isNullOrBlank()) isNewUser = true
+                                    fullName = db.fullName ?: ""
+                                    dob = db.dob ?: ""
+                                    sex = db.sex ?: ""
+                                    maritalStatus = db.maritalStatus ?: ""
+                                    phoneNumber1 = if (db.phoneNumber1?.startsWith("EMAIL_AUTO_") == true) "" else (db.phoneNumber1 ?: "")
+                                    phoneNumber2 = db.phoneNumber2 ?: ""
+                                    emailId = db.emailId ?: emailId
+                                    presentStreet1 = db.presentAddress ?: ""
+                                    presentCity = db.presentDistrict ?: ""
+                                    presentState = db.presentState ?: "Tamil Nadu"
+                                    permanentStreet1 = db.permanentAddress ?: ""
+                                    permanentCity = db.permanentDistrict ?: ""
+                                    permanentState = db.permanentState ?: "Tamil Nadu"
+                                    isPermanentSame = (db.presentAddress == db.permanentAddress && 
+                                                     db.presentDistrict == db.permanentDistrict && 
+                                                     db.presentState == db.permanentState &&
+                                                     db.presentAddress?.isNotEmpty() == true)
+                                    selectedRoles.clear(); selectedRoles.addAll(db.jobRoles)
+                                    selectedDistricts.clear(); selectedDistricts.addAll(db.preferredDistricts)
+                                    selectedLanguages.clear(); selectedLanguages.addAll(db.languagesKnown)
+                                    if (db.education.isNotEmpty()) { educationList.clear(); educationList.addAll(db.education) }
+                                    if (db.experience.isNotEmpty()) { experienceList.clear(); experienceList.addAll(db.experience) }
+                                    expectedSalary = db.expectedSalary ?: "₹15,000 - ₹25,000"
+                                }
+                            }
+                        } catch (e: com.aram.ftc.data.api.NoConnectivityException) {
+                            isNoInternet = true
+                        } catch (e: Exception) {
+                            isNewUser = true
+                        } finally {
+                            loading = false
+                        }
+                    }
+                })
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 AnimatedContent(
                     targetState = isReviewMode to step,
                     transitionSpec = {
@@ -222,11 +378,11 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
                     modifier = Modifier.weight(1f),
                     label = "step_animation"
                 ) { (isReview, currentStep) ->
-                    val pageScrollState = rememberScrollState()
+                    val stepScrollState = rememberScrollState()
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(pageScrollState)
+                            .verticalScroll(stepScrollState)
                             .padding(16.dp)
                     ) {
                         if (isReview) {
@@ -254,7 +410,8 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
                                 )
                                 2 -> StepTwo(
                                     selectedRoles, selectedDistricts, selectedLanguages,
-                                    expectedSalary, { expectedSalary = it }
+                                    expectedSalary, { expectedSalary = it },
+                                    showErrors = showErrors
                                 )
                                 3 -> StepThree(educationList, experienceList)
                             }
@@ -289,23 +446,24 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
                     }
                 }
             }
-            AnimatedVisibility(
-                visible = toastMessage != null,
-                enter = slideInVertically() + fadeIn(),
-                exit = slideOutVertically() + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
-                    .zIndex(10f)
-            ) {
-                AramToastBanner(
-                    message = toastMessage ?: "",
-                    isError = isToastError,
-                    onDismiss = { toastMessage = null }
-                )
-            }
+        }
+        AnimatedVisibility(
+            visible = toastMessage != null,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 8.dp)
+                .zIndex(10f)
+        ) {
+            AramToastBanner(
+                message = toastMessage ?: "",
+                isError = isToastError,
+                onDismiss = { toastMessage = null }
+            )
         }
     }
+}
 }
 
 @Composable
@@ -333,9 +491,30 @@ fun StepOne(
             label = "Full Name *",
             errorMessage = if (showErrors && fullName.isBlank()) "Full Name is required" else null
         )
-        DatePickerField(label = "Date of Birth *", value = dob, onValueChange = onDobChange)
-        StatePillGroup(label = "Gender *", options = AppConstants.GENDER_OPTIONS, selectedOption = sex, onOptionSelected = onSexChange)
-        StatePillGroup(label = "Marital Status *", options = AppConstants.MARITAL_OPTIONS, selectedOption = maritalStatus, onOptionSelected = onMaritalStatusChange)
+        DatePickerField(
+            label = "Date of Birth *",
+            value = dob,
+            onValueChange = onDobChange,
+            errorMessage = when {
+                showErrors && dob.isBlank() -> "Date of Birth is required"
+                showErrors && !ValidationUtils.isAtLeast18(dob) -> "Candidate must be at least 18 years old"
+                else -> null
+            }
+        )
+        StatePillGroup(
+            label = "Gender *",
+            options = AppConstants.GENDER_OPTIONS,
+            selectedOption = sex,
+            onOptionSelected = onSexChange,
+            errorMessage = if (showErrors && sex.isBlank()) "Gender selection is required" else null
+        )
+        StatePillGroup(
+            label = "Marital Status *",
+            options = AppConstants.MARITAL_OPTIONS,
+            selectedOption = maritalStatus,
+            onOptionSelected = onMaritalStatusChange,
+            errorMessage = if (showErrors && maritalStatus.isBlank()) "Marital status is required" else null
+        )
     }
 
     Spacer(modifier = Modifier.height(8.dp))
@@ -343,20 +522,35 @@ fun StepOne(
     WizardSection(title = "Contact Details", icon = Icons.Default.Call) {
         ModernTextField(
             value = phoneNumber1,
-            onValueChange = onPhone1Change,
+            onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) onPhone1Change(it) },
             label = "Primary Mobile *",
-            errorMessage = if (showErrors && !ValidationUtils.isValidPhone(phoneNumber1)) "Enter valid 10-digit mobile number" else null,
+            errorMessage = if (showErrors && !ValidationUtils.isValidIndianPhone(phoneNumber1)) "Enter valid 10-digit mobile number" else null,
             leadingIcon = { Text("+91", modifier = Modifier.padding(start = 12.dp), fontWeight = FontWeight.Bold) }
         )
-        ModernTextField(value = phoneNumber2, onValueChange = onPhone2Change, label = "Alternate Mobile")
+        ModernTextField(
+            value = phoneNumber2,
+            onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) onPhone2Change(it) },
+            label = "Alternate Mobile"
+        )
         ModernTextField(value = emailId, onValueChange = {}, label = "Primary Email *", readOnly = true, enabled = false)
     }
 
     Spacer(modifier = Modifier.height(8.dp))
 
     WizardSection(title = "Address Details", icon = Icons.Default.Home) {
-        SearchableDropdownField(label = "Present State *", options = AppConstants.STATES_AND_DISTRICTS.keys.toList(), selectedOption = presentState, onOptionSelected = onPresentStateChange)
-        SearchableDropdownField(label = "Present District *", options = AppConstants.STATES_AND_DISTRICTS[presentState] ?: emptyList(), selectedOption = presentCity, onOptionSelected = onPresentCityChange)
+        SearchableDropdownField(
+            label = "Present State *",
+            options = AppConstants.STATES_AND_DISTRICTS.keys.toList(),
+            selectedOption = presentState,
+            onOptionSelected = onPresentStateChange
+        )
+        SearchableDropdownField(
+            label = "Present District *",
+            options = AppConstants.STATES_AND_DISTRICTS[presentState] ?: emptyList(),
+            selectedOption = presentCity,
+            onOptionSelected = onPresentCityChange,
+            errorMessage = if (showErrors && presentCity.isBlank()) "Present District is required" else null
+        )
         ModernTextField(
             value = presentStreet1,
             onValueChange = onPresentStreetChange,
@@ -391,15 +585,34 @@ fun StepTwo(
     selectedDistricts: MutableList<String>,
     selectedLanguages: MutableList<String>,
     expectedSalary: String,
-    onSalaryChange: (String) -> Unit
+    onSalaryChange: (String) -> Unit,
+    showErrors: Boolean = false
 ) {
     WizardSection(title = "Work Preferences", icon = Icons.Default.Work) {
-        SearchableMultiSelectField(label = "Target Job Roles *", options = AppConstants.ALL_JOB_ROLES, selectedOptions = selectedRoles, onToggleOption = { if (selectedRoles.contains(it)) selectedRoles.remove(it) else selectedRoles.add(it) })
+        SearchableMultiSelectField(
+            label = "Target Job Roles *",
+            options = AppConstants.ALL_JOB_ROLES,
+            selectedOptions = selectedRoles,
+            onToggleOption = { if (selectedRoles.contains(it)) selectedRoles.remove(it) else selectedRoles.add(it) },
+            errorMessage = if (showErrors && selectedRoles.isEmpty()) "Select at least one target job role" else null
+        )
         
         val allDistricts = AppConstants.STATES_AND_DISTRICTS.values.flatten().distinct().sorted()
-        SearchableMultiSelectField(label = "Preferred Districts *", options = allDistricts, selectedOptions = selectedDistricts, onToggleOption = { if (selectedDistricts.contains(it)) selectedDistricts.remove(it) else selectedDistricts.add(it) })
+        SearchableMultiSelectField(
+            label = "Preferred Districts *",
+            options = allDistricts,
+            selectedOptions = selectedDistricts,
+            onToggleOption = { if (selectedDistricts.contains(it)) selectedDistricts.remove(it) else selectedDistricts.add(it) },
+            errorMessage = if (showErrors && selectedDistricts.isEmpty()) "Select at least one preferred district" else null
+        )
         
-        SearchableMultiSelectField(label = "Languages Known *", options = AppConstants.LANGUAGES, selectedOptions = selectedLanguages, onToggleOption = { if (selectedLanguages.contains(it)) selectedLanguages.remove(it) else selectedLanguages.add(it) })
+        SearchableMultiSelectField(
+            label = "Languages Known *",
+            options = AppConstants.LANGUAGES,
+            selectedOptions = selectedLanguages,
+            onToggleOption = { if (selectedLanguages.contains(it)) selectedLanguages.remove(it) else selectedLanguages.add(it) },
+            errorMessage = if (showErrors && selectedLanguages.isEmpty()) "Select at least one language" else null
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
         SalaryRangeSlider(value = expectedSalary, onValueChange = onSalaryChange)
@@ -414,6 +627,18 @@ fun StepThree(
     WizardSection(title = "Education History", icon = Icons.Default.School) {
         educationList.forEachIndexed { index, item ->
             Column(Modifier.padding(vertical = 8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Education #${index + 1}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    if (educationList.size > 1) {
+                        IconButton(onClick = { educationList.removeAt(index) }) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = "Remove Education", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
                 SearchableDropdownField(label = "School/College Name", options = AppConstants.TN_COLLEGES, selectedOption = item.institution ?: "", onOptionSelected = { educationList[index] = item.copy(institution = it) })
                 StatePillGroup(label = "Degree", options = listOf("SSLC (10th)", "HSC (12th)", "ITI", "Diploma", "Degree"), selectedOption = item.course ?: "", onOptionSelected = { educationList[index] = item.copy(course = it) })
                 if (index < educationList.size - 1) HorizontalDivider(Modifier.padding(vertical = 8.dp), color = AramColors.Divider)
@@ -431,6 +656,18 @@ fun StepThree(
     WizardSection(title = "Work Experience", icon = Icons.Default.History) {
         experienceList.forEachIndexed { index, item ->
             Column(Modifier.padding(vertical = 8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Experience #${index + 1}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    if (experienceList.size > 1) {
+                        IconButton(onClick = { experienceList.removeAt(index) }) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = "Remove Experience", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
                 ModernTextField(value = item.institution ?: "", onValueChange = { experienceList[index] = item.copy(institution = it) }, label = "Company Name")
                 ModernTextField(value = item.role ?: "", onValueChange = { experienceList[index] = item.copy(role = it) }, label = "Designation")
                 Row {
@@ -461,7 +698,7 @@ fun ReviewPage(
 ) {
     ReviewSection(title = "Personal & Contact", icon = Icons.Default.Person) {
         ReviewRow(label = "Full Name", value = fullName)
-        ReviewRow(label = "Date of Birth", value = dob)
+        ReviewRow(label = "Date of Birth", value = ValidationUtils.formatCleanDob(dob))
         ReviewRow(label = "Gender", value = sex)
         ReviewRow(label = "Marital Status", value = maritalStatus)
         ReviewRow(label = "Primary Mobile", value = "+91 $phoneNumber1")

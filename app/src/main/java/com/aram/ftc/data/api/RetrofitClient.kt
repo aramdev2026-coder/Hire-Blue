@@ -1,15 +1,12 @@
 package com.aram.ftc.data.api
 
+import android.content.Context
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-import android.content.Context
 
-/**
- * Centralized Retrofit client configuration.
- */
 object RetrofitClient {
     private const val BASE_URL = "http://localhost:5000/api/"
     
@@ -40,9 +37,9 @@ object RetrofitClient {
                 }
                 response
             }
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
             .build()
     }
 

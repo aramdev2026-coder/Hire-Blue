@@ -1,3 +1,30 @@
 <resources>
-    <string name="app_name" translatable="false">Aram FTC</string>
+    <string name="app_name" translatable="false">ARAM</string>
+    <string name="app_full_name">Aram HR &amp; Manpower Services</string>
+
+    <!-- Navigation & Common -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="done">Done</string>
+    <string name="next">Next</string>
+    <string name="submit">Submit</string>
+    <string name="retry">Retry</string>
+    <string name="logout">Logout</string>
+    <string name="search">Search</string>
+
+    <!-- Offline & Network -->
+    <string name="no_internet_title">No Internet Connection</string>
+    <string name="no_internet_msg">Check your internet connection and try again.</string>
+
+    <!-- Auth & Wizard -->
+    <string name="candidate_portal">Candidate Portal</string>
+    <string name="employer_portal">Employer Portal</string>
+    <string name="verify_code">Verify Code</string>
+    <string name="send_otp">Send OTP</string>
+    <string name="resend_code">Resend Code</string>
+
+    <!-- Privacy Policy -->
+    <string name="privacy_policy_title">Privacy Policy</string>
+    <string name="privacy_policy_url">https://aramhr.com/privacy-policy</string>
 </resources>

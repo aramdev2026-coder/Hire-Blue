@@ -1,11 +1,14 @@
 package com.aram.ftc.ui.screens
 
-import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,19 +16,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.aram.ftc.data.api.NoConnectivityException
 import com.aram.ftc.data.model.EmployerLoginRequest
 import com.aram.ftc.data.model.EmployerSignupRequest
+import com.aram.ftc.data.pref.EncryptedSessionManager
 import com.aram.ftc.data.pref.SessionManager
 import com.aram.ftc.ui.components.AramHeader
-import com.aram.ftc.ui.components.AramToastBanner
 import com.aram.ftc.ui.components.ModernPasswordField
 import com.aram.ftc.ui.components.ModernTextField
 import com.aram.ftc.ui.theme.AramColors
@@ -36,10 +39,16 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
+fun EmployerAuthScreen(
+    navController: NavController,
+    themeViewModel: ThemeViewModel,
+    showToast: (String, Boolean) -> Unit = { _, _ -> }
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val sessionManager = remember { SessionManager(context) }
+    val encryptedSessionManager = remember { EncryptedSessionManager(context) }
     val apiService = remember { com.aram.ftc.data.api.RetrofitClient.service }
 
     var mode by remember { mutableStateOf("login") } // "login" | "signup"
@@ -52,13 +61,11 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var showErrors by remember { mutableStateOf(false) }
-    var toastMessage by remember { mutableStateOf<String?>(null) }
-    var isToastError by remember { mutableStateOf(true) }
 
     fun validate(): Boolean {
         if (mode == "signup") {
             if (companyName.isBlank()) return false
-            if (!ValidationUtils.isValidPhone(phoneNumber)) return false
+            if (!ValidationUtils.isValidIndianPhone(phoneNumber)) return false
             if (!ValidationUtils.isValidEmail(email)) return false
             if (password.length < 6) return false
             if (password != confirmPassword) return false
@@ -67,6 +74,57 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
             if (password.isBlank()) return false
         }
         return true
+    }
+
+    fun submitAuth() {
+        showErrors = true
+        focusManager.clearFocus()
+        if (!validate()) {
+            showToast("Please fill all required partner fields correctly.", true)
+            return
+        }
+        loading = true
+        coroutineScope.launch {
+            try {
+                if (mode == "signup") {
+                    val res = apiService.signupEmployer(
+                        EmployerSignupRequest(companyName.trim(), email.trim(), phoneNumber.trim(), password)
+                    )
+                    if (res.isSuccessful && res.body()?.success == true) {
+                        showToast("Registration Success! Please sign in with your credentials.", false)
+                        mode = "login"
+                        identifier = phoneNumber
+                        password = ""
+                        confirmPassword = ""
+                        showErrors = false
+                    } else {
+                        val msg = res.body()?.message ?: res.message()
+                        showToast("Registration Error: $msg", true)
+                    }
+                } else {
+                    val res = apiService.loginEmployer(
+                        EmployerLoginRequest(identifier.trim(), password)
+                    )
+                    if (res.isSuccessful && res.body()?.success == true) {
+                        val body = res.body()!!
+                        sessionManager.saveEmployerSession(body.token, body.employerId, body.companyName, body.email, body.phoneNumber)
+                        encryptedSessionManager.saveEmployerSession(body.token, body.employerId, body.companyName ?: "", body.email ?: "", body.phoneNumber ?: "")
+                        showToast("Welcome back, ${body.companyName ?: "Employer"}!", false)
+                        navController.navigate("employer_dashboard") {
+                            popUpTo("role_selection") { inclusive = false }
+                        }
+                    } else {
+                        showToast("Invalid email/phone or password. Please try again.", true)
+                    }
+                }
+            } catch (e: NoConnectivityException) {
+                showToast("No Internet Connection.", true)
+            } catch (e: Exception) {
+                showToast("Error: ${e.message}", true)
+            } finally {
+                loading = false
+            }
+        }
     }
 
     Scaffold(
@@ -83,6 +141,10 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { focusManager.clearFocus() }
         ) {
             Column(
                 modifier = Modifier
@@ -125,7 +187,7 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
                                 .padding(bottom = 20.dp)
                         ) {
                             Button(
-                                onClick = { mode = "login"; showErrors = false },
+                                onClick = { mode = "login"; showErrors = false; focusManager.clearFocus() },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(50.dp),
@@ -145,7 +207,7 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
                             }
 
                             Button(
-                                onClick = { mode = "signup"; showErrors = false },
+                                onClick = { mode = "signup"; showErrors = false; focusManager.clearFocus() },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(50.dp),
@@ -170,94 +232,65 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
                                 value = companyName,
                                 onValueChange = { companyName = it },
                                 label = "Company Name *",
-                                errorMessage = if (showErrors && companyName.isBlank()) "Company Name is required" else null
+                                errorMessage = if (showErrors && companyName.isBlank()) "Company Name is required" else null,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             ModernTextField(
                                 value = email,
                                 onValueChange = { email = it },
                                 label = "Official Email *",
-                                errorMessage = if (showErrors && !ValidationUtils.isValidEmail(email)) "Valid official email required" else null
+                                errorMessage = if (showErrors && !ValidationUtils.isValidEmail(email)) "Valid official email required" else null,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             ModernTextField(
                                 value = phoneNumber,
-                                onValueChange = { phoneNumber = it },
+                                onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) phoneNumber = it },
                                 label = "Contact Phone Number *",
-                                errorMessage = if (showErrors && !ValidationUtils.isValidPhone(phoneNumber)) "Valid 10-digit phone required" else null
+                                errorMessage = if (showErrors && !ValidationUtils.isValidIndianPhone(phoneNumber)) "Valid 10-digit phone required" else null,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             ModernPasswordField(
                                 value = password,
                                 onValueChange = { password = it },
                                 label = "Password *",
-                                errorMessage = if (showErrors && password.length < 6) "At least 6 characters required" else null
+                                errorMessage = if (showErrors && password.length < 6) "At least 6 characters required" else null,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             ModernPasswordField(
                                 value = confirmPassword,
                                 onValueChange = { confirmPassword = it },
                                 label = "Confirm Password *",
-                                errorMessage = if (showErrors && password != confirmPassword) "Passwords do not match" else null
+                                errorMessage = if (showErrors && password != confirmPassword) "Passwords do not match" else null,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { submitAuth() })
                             )
                         } else {
                             ModernTextField(
                                 value = identifier,
                                 onValueChange = { identifier = it },
                                 label = "Official Email or Phone *",
-                                errorMessage = if (showErrors && identifier.isBlank()) "Email or Phone is required" else null
+                                errorMessage = if (showErrors && identifier.isBlank()) "Email or Phone is required" else null,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             ModernPasswordField(
                                 value = password,
                                 onValueChange = { password = it },
                                 label = "Password *",
-                                errorMessage = if (showErrors && password.isBlank()) "Password is required" else null
+                                errorMessage = if (showErrors && password.isBlank()) "Password is required" else null,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { submitAuth() })
                             )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
-                            onClick = {
-                                showErrors = true
-                                if (!validate()) return@Button
-                                loading = true
-                                coroutineScope.launch {
-                                    try {
-                                        if (mode == "signup") {
-                                            val res = apiService.signupEmployer(EmployerSignupRequest(companyName.trim(), email.trim(), phoneNumber.trim(), password))
-                                            if (res.isSuccessful && res.body()?.success == true) {
-                                                toastMessage = "Registration Success! Welcome email sent to your inbox."
-                                                isToastError = false
-                                                mode = "login"; identifier = phoneNumber; password = ""; confirmPassword = ""
-                                            } else {
-                                                toastMessage = "Error: ${res.message()}"
-                                                isToastError = true
-                                            }
-                                        } else {
-                                            val res = apiService.loginEmployer(EmployerLoginRequest(identifier.trim(), password))
-                                            if (res.isSuccessful && res.body()?.success == true) {
-                                                val body = res.body()!!
-                                                sessionManager.saveEmployerSession(body.token, body.employerId, body.companyName, body.email, body.phoneNumber)
-                                                showToast("Welcome back, ${body.companyName ?: "Employer"}!", false)
-                                                navController.navigate("employer_dashboard") { popUpTo("role_selection") { inclusive = false } }
-                                            } else {
-                                                toastMessage = "Invalid email/phone or password. Please try again."
-                                                isToastError = true
-                                            }
-                                        }
-                                    } catch (e: NoConnectivityException) {
-                                        toastMessage = "No Internet Connection."
-                                        isToastError = true
-                                    } catch (e: Exception) {
-                                        toastMessage = "Error: ${e.message}"
-                                        isToastError = true
-                                    } finally {
-                                        loading = false
-                                    }
-                                }
-                            },
+                            onClick = { submitAuth() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -282,21 +315,6 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-            }
-            AnimatedVisibility(
-                visible = toastMessage != null,
-                enter = slideInVertically() + fadeIn(),
-                exit = slideOutVertically() + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
-                    .zIndex(10f)
-            ) {
-                AramToastBanner(
-                    message = toastMessage ?: "",
-                    isError = isToastError,
-                    onDismiss = { toastMessage = null }
-                )
             }
         }
     }

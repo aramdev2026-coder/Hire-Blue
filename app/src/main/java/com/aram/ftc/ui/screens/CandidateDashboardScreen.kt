@@ -32,6 +32,7 @@ import com.aram.ftc.ui.components.*
 import com.aram.ftc.ui.theme.AramColors
 import com.aram.ftc.ui.theme.AramRadius
 import com.aram.ftc.ui.theme.ThemeViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,6 +87,8 @@ fun CandidateDashboardScreen(navController: NavController, themeViewModel: Theme
         )
     }
 
+    val draftStore = remember { com.aram.ftc.data.pref.WizardDraftStore(context) }
+
     fun loadProfile() {
         loading = true
         errorMsg = null
@@ -93,15 +96,57 @@ fun CandidateDashboardScreen(navController: NavController, themeViewModel: Theme
         coroutineScope.launch {
             try {
                 val res = apiService.getCandidateProfile(token, candidateId)
-                if (res.isSuccessful && res.body()?.success == true) {
+                if (res.isSuccessful && res.body()?.success == true && res.body()?.candidate != null) {
                     profile = res.body()?.candidate
-                } else if (res.code() == 404) {
-                    errorMsg = "Profile not found. Please complete your registration."
                 } else {
-                    errorMsg = "Failed to fetch profile: ${res.message()}"
+                    val draft = draftStore.draftFlow.first()
+                    if (draft.fullName.isNotBlank()) {
+                        profile = CandidatePayload(
+                            fullName = draft.fullName,
+                            dob = draft.dob,
+                            sex = draft.sex,
+                            maritalStatus = draft.maritalStatus,
+                            phoneNumber1 = draft.phone1,
+                            phoneNumber2 = draft.phone2,
+                            emailId = sessionManager.getCandidateEmail() ?: "",
+                            presentAddress = draft.presentStreet,
+                            presentDistrict = draft.presentCity,
+                            presentState = draft.presentState,
+                            expectedSalary = draft.expectedSalary,
+                            jobRoles = if (draft.targetRoles.isNotBlank()) draft.targetRoles.split(", ") else emptyList(),
+                            preferredDistricts = if (draft.preferredDistricts.isNotBlank()) draft.preferredDistricts.split(", ") else emptyList(),
+                            languagesKnown = if (draft.languagesKnown.isNotBlank()) draft.languagesKnown.split(", ") else emptyList()
+                        )
+                    } else {
+                        errorMsg = "Profile incomplete. Please tap below to set up your profile."
+                    }
                 }
             } catch (e: NoConnectivityException) {
-                isNoInternet = true
+                try {
+                    val draft = draftStore.draftFlow.first()
+                    if (draft.fullName.isNotBlank()) {
+                        profile = CandidatePayload(
+                            fullName = draft.fullName,
+                            dob = draft.dob,
+                            sex = draft.sex,
+                            maritalStatus = draft.maritalStatus,
+                            phoneNumber1 = draft.phone1,
+                            phoneNumber2 = draft.phone2,
+                            emailId = sessionManager.getCandidateEmail() ?: "",
+                            presentAddress = draft.presentStreet,
+                            presentDistrict = draft.presentCity,
+                            presentState = draft.presentState,
+                            expectedSalary = draft.expectedSalary,
+                            jobRoles = if (draft.targetRoles.isNotBlank()) draft.targetRoles.split(", ") else emptyList(),
+                            preferredDistricts = if (draft.preferredDistricts.isNotBlank()) draft.preferredDistricts.split(", ") else emptyList(),
+                            languagesKnown = if (draft.languagesKnown.isNotBlank()) draft.languagesKnown.split(", ") else emptyList()
+                        )
+                    } else {
+                        isNoInternet = true
+                    }
+                } catch (ex: Exception) {
+                    isNoInternet = true
+                }
             } catch (e: SessionExpiredException) {
                 sessionManager.clearCandidateSession()
                 showToast("Session expired. Please log in again.", true)
@@ -109,7 +154,31 @@ fun CandidateDashboardScreen(navController: NavController, themeViewModel: Theme
                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
             } catch (e: Exception) {
-                errorMsg = "Error: ${e.message}"
+                try {
+                    val draft = draftStore.draftFlow.first()
+                    if (draft.fullName.isNotBlank()) {
+                        profile = CandidatePayload(
+                            fullName = draft.fullName,
+                            dob = draft.dob,
+                            sex = draft.sex,
+                            maritalStatus = draft.maritalStatus,
+                            phoneNumber1 = draft.phone1,
+                            phoneNumber2 = draft.phone2,
+                            emailId = sessionManager.getCandidateEmail() ?: "",
+                            presentAddress = draft.presentStreet,
+                            presentDistrict = draft.presentCity,
+                            presentState = draft.presentState,
+                            expectedSalary = draft.expectedSalary,
+                            jobRoles = if (draft.targetRoles.isNotBlank()) draft.targetRoles.split(", ") else emptyList(),
+                            preferredDistricts = if (draft.preferredDistricts.isNotBlank()) draft.preferredDistricts.split(", ") else emptyList(),
+                            languagesKnown = if (draft.languagesKnown.isNotBlank()) draft.languagesKnown.split(", ") else emptyList()
+                        )
+                    } else {
+                        errorMsg = "Profile setup pending."
+                    }
+                } catch (ex: Exception) {
+                    errorMsg = "Error: ${e.message}"
+                }
             } finally {
                 loading = false
             }

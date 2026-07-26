@@ -20,6 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import com.aram.ftc.ui.theme.ThemeViewModel
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -210,14 +212,16 @@ fun StatePillGroup(
     label: String,
     options: List<String>,
     selectedOption: String?,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String) -> Unit,
+    errorMessage: String? = null
 ) {
     val safeSelected = selectedOption ?: ""
+    val hasError = !errorMessage.isNullOrBlank()
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
             text = label, 
             style = MaterialTheme.typography.labelLarge, 
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
         
@@ -234,7 +238,11 @@ fun StatePillGroup(
                     label = "bg"
                 )
                 val borderColor by animateColorAsState(
-                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    when {
+                        isSelected -> MaterialTheme.colorScheme.primary
+                        hasError -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    },
                     label = "border"
                 )
                 val textColor by animateColorAsState(
@@ -247,7 +255,7 @@ fun StatePillGroup(
                         .clip(RoundedCornerShape(AramRadius.SM))
                         .clickable { onOptionSelected(option) },
                     color = backgroundColor,
-                    border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
+                    border = BorderStroke(if (isSelected || hasError) 2.dp else 1.dp, borderColor),
                     shape = RoundedCornerShape(AramRadius.SM)
                 ) {
                     Text(
@@ -259,6 +267,14 @@ fun StatePillGroup(
                     )
                 }
             }
+        }
+        if (hasError) {
+            Text(
+                text = errorMessage!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            )
         }
     }
 }
@@ -276,7 +292,11 @@ fun ModernTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     placeholder: String? = null,
     textAlign: TextAlign = TextAlign.Start,
-    visualTransformation: VisualTransformation = VisualTransformation.None
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    maxLength: Int? = null,
+    singleLine: Boolean = true
 ) {
     val safeValue = value ?: ""
     val interactionSource = remember { MutableInteractionSource() }
@@ -295,7 +315,11 @@ fun ModernTextField(
     Column(modifier = modifier.padding(vertical = 6.dp)) {
         OutlinedTextField(
             value = safeValue,
-            onValueChange = onValueChange,
+            onValueChange = { newValue ->
+                if (maxLength == null || newValue.length <= maxLength) {
+                    onValueChange(newValue)
+                }
+            },
             label = { Text(label) },
             placeholder = placeholder?.let { { Text(it) } },
             modifier = Modifier.fillMaxWidth(),
@@ -303,9 +327,12 @@ fun ModernTextField(
             readOnly = readOnly,
             enabled = enabled,
             isError = hasError,
+            singleLine = singleLine,
             interactionSource = interactionSource,
             textStyle = LocalTextStyle.current.copy(textAlign = textAlign, color = MaterialTheme.colorScheme.onSurface),
             visualTransformation = visualTransformation,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
@@ -315,9 +342,9 @@ fun ModernTextField(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 disabledContainerColor = MaterialTheme.colorScheme.surface,
-                disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                disabledBorderColor = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                 disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                disabledLabelColor = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 disabledTrailingIconColor = MaterialTheme.colorScheme.primary,
                 errorBorderColor = MaterialTheme.colorScheme.error,
                 errorLabelColor = MaterialTheme.colorScheme.error
@@ -325,13 +352,32 @@ fun ModernTextField(
             trailingIcon = trailingIcon,
             leadingIcon = leadingIcon
         )
-        if (hasError) {
-            Text(
-                text = errorMessage!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
-            )
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (hasError) {
+                Text(
+                    text = errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            if (maxLength != null) {
+                val currentLength = safeValue.length
+                val isNearLimit = currentLength >= (maxLength * 0.9)
+                Text(
+                    text = "$currentLength / $maxLength",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isNearLimit) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }
@@ -342,7 +388,9 @@ fun ModernPasswordField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     var isPasswordVisible by remember { mutableStateOf(false) }
     ModernTextField(
@@ -351,6 +399,8 @@ fun ModernPasswordField(
         label = label,
         modifier = modifier,
         errorMessage = errorMessage,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         visualTransformation = if (isPasswordVisible) VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
@@ -364,41 +414,36 @@ fun ModernPasswordField(
     )
 }
 
-
 @Composable
 fun DatePickerField(
     label: String,
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    errorMessage: String? = null
 ) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
 
     val displayValue = remember(value) {
-        try {
-            if (value.contains("T")) {
-                val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-                isoFormat.timeZone = TimeZone.getTimeZone("UTC")
-                val date = isoFormat.parse(value)
-                SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date!!)
-            } else {
-                value
-            }
-        } catch (ignored: Exception) {
-            value
-        }
+        com.aram.ftc.util.ValidationUtils.formatCleanDob(value)
     }
-    
+
+    val maxDateCalendar = Calendar.getInstance().apply {
+        add(Calendar.YEAR, -18) // Candidate must be at least 18 years old
+    }
+
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
             val formattedDate = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
             onValueChange(formattedDate)
         },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
+        maxDateCalendar.get(Calendar.YEAR),
+        maxDateCalendar.get(Calendar.MONTH),
+        maxDateCalendar.get(Calendar.DAY_OF_MONTH)
+    ).apply {
+        datePicker.maxDate = maxDateCalendar.timeInMillis
+    }
 
     ModernTextField(
         value = displayValue,
@@ -406,10 +451,11 @@ fun DatePickerField(
         label = label,
         readOnly = true,
         enabled = false,
+        errorMessage = errorMessage,
         modifier = Modifier.clickable { datePickerDialog.show() },
         trailingIcon = {
             IconButton(onClick = { datePickerDialog.show() }) {
-                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = if (!errorMessage.isNullOrBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             }
         }
     )
@@ -421,7 +467,8 @@ fun SearchableDropdownField(
     label: String,
     options: List<String>,
     selectedOption: String?,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String) -> Unit,
+    errorMessage: String? = null
 ) {
     val safeSelected = selectedOption ?: ""
     var showSheet by remember { mutableStateOf(false) }
@@ -436,9 +483,10 @@ fun SearchableDropdownField(
         label = label,
         readOnly = true,
         enabled = false,
+        errorMessage = errorMessage,
         modifier = Modifier.clickable { showSheet = true },
         trailingIcon = {
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = if (!errorMessage.isNullOrBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
         }
     )
 
@@ -451,7 +499,8 @@ fun SearchableDropdownField(
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).fillMaxHeight(0.8f)) {
                 Text(
                     text = "Select $label", 
-                    style = MaterialTheme.typography.headlineLarge,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
@@ -508,10 +557,12 @@ fun SearchableMultiSelectField(
     label: String,
     options: List<String>,
     selectedOptions: List<String>,
-    onToggleOption: (String) -> Unit
+    onToggleOption: (String) -> Unit,
+    errorMessage: String? = null
 ) {
     var showSheet by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    val hasError = !errorMessage.isNullOrBlank()
     val filteredOptions = remember(searchQuery) {
         options.filter { it.contains(searchQuery, ignoreCase = true) }
     }
@@ -520,7 +571,7 @@ fun SearchableMultiSelectField(
         Text(
             text = label, 
             style = MaterialTheme.typography.labelLarge, 
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
         
@@ -529,11 +580,17 @@ fun SearchableMultiSelectField(
             modifier = Modifier.fillMaxWidth().wrapContentHeight().defaultMinSize(minHeight = 56.dp),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+            border = BorderStroke(
+                if (hasError) 2.dp else 1.dp,
+                if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            )
         ) {
             Box(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
                 if (selectedOptions.isEmpty()) {
-                    Text("Select options...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    Text(
+                        "Select options...", 
+                        color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
                 } else {
                     androidx.compose.foundation.layout.FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -557,6 +614,14 @@ fun SearchableMultiSelectField(
                 }
             }
         }
+        if (hasError) {
+            Text(
+                text = errorMessage!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            )
+        }
     }
 
     if (showSheet) {
@@ -565,9 +630,25 @@ fun SearchableMultiSelectField(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).fillMaxHeight(0.8f)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Select $label", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
-                    Button(onClick = { showSheet = false }, shape = RoundedCornerShape(12.dp)) { Text("Done") }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Select $label",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    )
+                    Button(
+                        onClick = { showSheet = false },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text("Done", maxLines = 1, fontWeight = FontWeight.Bold)
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(20.dp))

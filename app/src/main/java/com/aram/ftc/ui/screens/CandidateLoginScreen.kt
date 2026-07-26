@@ -23,10 +23,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
 import com.aram.ftc.data.api.NoConnectivityException
@@ -47,6 +51,8 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
     val apiService = remember { com.aram.ftc.data.api.RetrofitClient.service }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val emailFocusRequester = remember { FocusRequester() }
 
     var step by remember { mutableStateOf("send") } // "send" | "verify"
     var email by remember { mutableStateOf("") }
@@ -56,10 +62,31 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
     var toastMessage by remember { mutableStateOf<String?>(null) }
     var isToastError by remember { mutableStateOf(true) }
 
+    // 45s OTP Resend Cooldown Timer
+    var resendCooldown by remember { mutableStateOf(45) }
+    var isResendEnabled by remember { mutableStateOf(false) }
+
+    LaunchedEffect(step) {
+        if (step == "send") {
+            emailFocusRequester.requestFocus()
+        } else if (step == "verify") {
+            resendCooldown = 45
+            isResendEnabled = false
+            while (resendCooldown > 0) {
+                kotlinx.coroutines.delay(1000L)
+                resendCooldown--
+            }
+            isResendEnabled = true
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AramColors.SlateDeep)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
     ) {
         Column(
             modifier = Modifier
@@ -153,7 +180,10 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
                                     label = "Email Address *",
                                     placeholder = "name@example.com",
                                     errorMessage = if (showErrors && !ValidationUtils.isValidEmail(email.trim())) "Please enter a valid email address" else null,
-                                    leadingIcon = { Icon(Icons.Default.Mail, contentDescription = null, tint = AramColors.IndigoPrimary) }
+                                    leadingIcon = { Icon(Icons.Default.Mail, contentDescription = null, tint = AramColors.IndigoPrimary) },
+                                    modifier = Modifier.focusRequester(emailFocusRequester),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                                 )
 
                                 Spacer(modifier = Modifier.height(24.dp))
@@ -235,7 +265,40 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
                                     onOtpChanged = { otpCode = it }
                                 )
 
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (isResendEnabled) {
+                                        TextButton(onClick = {
+                                            coroutineScope.launch {
+                                                apiService.sendOtp(OtpRequest(email.trim().lowercase()))
+                                                toastMessage = "OTP resent!"
+                                                isToastError = false
+                                                resendCooldown = 45
+                                                isResendEnabled = false
+                                                while (resendCooldown > 0) {
+                                                    kotlinx.coroutines.delay(1000L)
+                                                    resendCooldown--
+                                                }
+                                                isResendEnabled = true
+                                            }
+                                        }) {
+                                            Text("Resend Code", color = AramColors.IndigoMedium, fontWeight = FontWeight.Bold)
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "Resend code in ${resendCooldown}s",
+                                            color = AramColors.TextOnDarkMuted,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
 
                                 Button(
                                     onClick = {
@@ -252,7 +315,7 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
                                                     sessionManager.saveCandidateSession("dummy-token", 1001, email, "PENDING_ADMIN_CALL")
                                                     showToast("Verification Successful! Welcome.", false)
                                                     navController.navigate("candidate_dashboard") {
-                                                        popUpTo("role_selection") { inclusive = false }
+                                                        popUpTo("role_selection") { inclusive = true }
                                                     }
                                                     return@launch
                                                 }
@@ -264,10 +327,12 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
                                                     showToast("Verification Successful! Welcome.", false)
                                                     if (body.profileStatus == "PENDING_ADMIN_CALL") {
                                                         navController.navigate("candidate_dashboard") {
-                                                            popUpTo("role_selection") { inclusive = false }
+                                                            popUpTo("role_selection") { inclusive = true }
                                                         }
                                                     } else {
-                                                        navController.navigate("candidate_wizard")
+                                                        navController.navigate("candidate_wizard") {
+                                                            popUpTo("role_selection") { inclusive = true }
+                                                        }
                                                     }
                                                 } else {
                                                     toastMessage = "Invalid OTP code. Please try again."
