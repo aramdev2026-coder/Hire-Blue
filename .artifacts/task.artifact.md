@@ -1,0 +1,5 @@
+- [x] Fix Gradle configuration in `app/build.gradle.kts`
+- [x] Fix `CardDefaults.cardCardElevation` typo in all UI screens
+- [x] Update `SessionManager.kt` to modern `MasterKey` API
+- [x] Replace `toLowerCase()` with `lowercase()` in auth flows
+- [x] Run Gradle Sync and Build verification

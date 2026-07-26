@@ -1,0 +1,15 @@
+- `[x]` Theme Synchronization & Logic
+    - `[x]` Update `ThemeViewModel.kt` to prevent `null` state desync
+    - `[x]` Initialize theme state from `MainActivity` correctly
+- `[x]` Premium UI Components
+    - `[x]` Create `ThemeSwitch.kt` (sliding pill animation)
+    - `[x]` Create `AramHeader.kt` (standardized branding + switch)
+- `[x]` Screen Refactoring
+    - `[x]` Integrate `AramHeader` in `RoleSelectionScreen.kt`
+    - `[x]` Integrate `AramHeader` in `CandidateLoginScreen.kt`
+    - `[x]` Update `CandidateWizardScreen.kt` with fixed header
+    - `[x]` Standardize Dashboards headers
+- `[x]` Visual Audit & Polish
+    - `[x]` Check `ModernTextField` readability in Dark Mode
+    - `[x]` Ensure card surface contrast is consistent
+    - `[x]` Final build and verification
