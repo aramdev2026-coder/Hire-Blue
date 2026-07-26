@@ -80,7 +80,7 @@ function Err({ msg }) {
 }
 function Field({ label, req, error, children, span2 }) {
   return (
-    <div className={`field${span2 ? ' span-full' : ''}`}>
+    <div className={`field${span2 ? ' span-full' : ''}${error ? ' has-error' : ''}`}>
       <Lbl req={req}>{label}</Lbl>
       {children}
       <Err msg={error} />
@@ -221,8 +221,23 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     return savedStep ? parseInt(savedStep, 10) : 1;
   });
 
+  const checkAddressMatch = (f) => {
+    if (!f) return false;
+    const p1 = (f.presentStreet1 || '').trim();
+    const p2 = (f.presentStreet2 || '').trim();
+    const c1 = (f.presentCity || '').trim();
+    const s1 = (f.presentState || 'Tamil Nadu').trim();
+
+    const perm1 = (f.permanentStreet1 || '').trim();
+    const perm2 = (f.permanentStreet2 || '').trim();
+    const permC = (f.permanentCity || '').trim();
+    const permS = (f.permanentState || 'Tamil Nadu').trim();
+
+    return p1 !== '' && p1 === perm1 && p2 === perm2 && c1 === permC && s1 === permS;
+  };
+
   const [reviewing, setReviewing] = React.useState(false);
-  const [sameAddr, setSameAddr] = React.useState(false);
+  const [sameAddr, setSameAddr] = React.useState(() => checkAddressMatch(form));
   const [errors, setErrors] = React.useState({});
   const [serverErr, setServerErr] = React.useState('');
   const [saving, setSaving] = React.useState(false);
@@ -267,7 +282,46 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     }
   }, [step]);
 
-  const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  // Smart Address Sync effect: auto-check sameAddr when present & permanent fields match
+  React.useEffect(() => {
+    if (step === 1) {
+      if (checkAddressMatch(form)) {
+        if (!sameAddr) setSameAddr(true);
+      }
+    }
+  }, [step, form.presentStreet1, form.presentStreet2, form.presentCity, form.presentState, form.permanentStreet1, form.permanentStreet2, form.permanentCity, form.permanentState]);
+
+  const upd = (k, v) => {
+    setForm(p => ({ ...p, [k]: v }));
+    setErrors(e => e[k] ? { ...e, [k]: undefined } : e);
+  };
+
+  const updPresentAddr = (key, val) => {
+    setForm(p => {
+      const next = { ...p, [key]: val };
+      if (sameAddr) {
+        if (key === 'presentStreet1') next.permanentStreet1 = val;
+        if (key === 'presentStreet2') next.permanentStreet2 = val;
+        if (key === 'presentCity') next.permanentCity = val;
+        if (key === 'presentState') next.permanentState = val;
+      }
+      return next;
+    });
+    setErrors(e => e[key] ? { ...e, [key]: undefined } : e);
+  };
+
+  const updPermanentAddr = (key, val) => {
+    setForm(p => {
+      const next = { ...p, [key]: val };
+      if (checkAddressMatch(next)) {
+        setSameAddr(true);
+      } else if (sameAddr) {
+        setSameAddr(false);
+      }
+      return next;
+    });
+    setErrors(e => e[key] ? { ...e, [key]: undefined } : e);
+  };
 
   const syncAddr = (checked) => {
     setSameAddr(checked);
@@ -323,6 +377,22 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     setRoleQuery('');
   };
 
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const errorEl = document.querySelector(
+        '.input-error, .select-error, .field-error, .error-copy, .has-error, .alert-box.error'
+      );
+      if (errorEl) {
+        const target = errorEl.closest('.field') || errorEl;
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusable = target.querySelector('input, select, textarea, button') || (typeof errorEl.focus === 'function' ? errorEl : null);
+        if (focusable && typeof focusable.focus === 'function') {
+          focusable.focus({ preventScroll: true });
+        }
+      }
+    }, 50);
+  };
+
   const validate = () => {
     const e = {};
     if (step === 1) {
@@ -353,12 +423,12 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       } else if (!/^[6-9]\d{9}$/.test(form.phoneNumber1)) {
         e.phoneNumber1 = 'Enter a valid 10-digit mobile number';
       }
-      if (!form.phoneNumber2) {
-        e.phoneNumber2 = 'Alternate mobile number is required';
-      } else if (!/^[6-9]\d{9}$/.test(form.phoneNumber2)) {
-        e.phoneNumber2 = 'Enter a valid 10-digit mobile number';
-      } else if (form.phoneNumber2 === form.phoneNumber1) {
-        e.phoneNumber2 = 'Alternate mobile number must be different from primary mobile';
+      if (form.phoneNumber2) {
+        if (!/^[6-9]\d{9}$/.test(form.phoneNumber2)) {
+          e.phoneNumber2 = 'Enter a valid 10-digit mobile number';
+        } else if (form.phoneNumber2 === form.phoneNumber1) {
+          e.phoneNumber2 = 'Alternate mobile number must be different from primary mobile';
+        }
       }
       const emailTrimmed = String(form.emailId || '').trim().toLowerCase();
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -409,7 +479,11 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
       if (!form.languagesKnown.length) e.languagesKnown = 'Select at least one language';
     }
     setErrors(e);
-    return Object.keys(e).length === 0;
+    if (Object.keys(e).length > 0) {
+      scrollToFirstError();
+      return false;
+    }
+    return true;
   };
 
   const handleNext = async (e) => {
@@ -464,6 +538,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
     } catch (err) {
       setServerErr(err.message || 'Could not connect to server. Check your backend.');
       setSaving(false);
+      scrollToFirstError();
       return;
     }
     setSaving(false);
@@ -583,7 +658,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
         </div>
       </div>
 
-      <form onSubmit={handleNext}>
+      <form onSubmit={handleNext} noValidate>
         <div className="panel-body">
           {serverErr && <div className="alert-box error">{serverErr}</div>}
 
@@ -620,7 +695,7 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
                 <input className="input" type="tel" maxLength={10} placeholder="Optional"
                   value={form.familyPhonePrimary} onChange={e => upd('familyPhonePrimary', e.target.value.replace(/\D/g, ''))} />
               </Field>
-              <Field label="Alternate Mobile" req error={errors.phoneNumber2}>
+              <Field label="Alternate Mobile" error={errors.phoneNumber2}>
                 <input className={`input${errors.phoneNumber2 ? ' input-error' : ''}`} type="tel" maxLength={10} placeholder="e.g. 9876543210"
                   value={form.phoneNumber2} onChange={e => upd('phoneNumber2', e.target.value.replace(/\D/g, ''))} />
               </Field>
@@ -634,25 +709,25 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
             <Field label="Street Address 1" req error={errors.presentStreet1}>
               <input className={`input${errors.presentStreet1 ? ' input-error' : ''}`} type="text"
                 placeholder="House/Building Number and Street Name"
-                value={form.presentStreet1} onChange={e => upd('presentStreet1', e.target.value)} />
+                value={form.presentStreet1} onChange={e => updPresentAddr('presentStreet1', e.target.value)} />
             </Field>
             <Field label="Street Address 2">
               <input className="input" type="text"
                 placeholder="Apartment, Suite, Unit, or Floor Number (Optional)"
-                value={form.presentStreet2} onChange={e => upd('presentStreet2', e.target.value)} />
+                value={form.presentStreet2} onChange={e => updPresentAddr('presentStreet2', e.target.value)} />
             </Field>
             <div className="responsive-grid">
               <Field label="State" req>
                 <select className="select" value={form.presentState || 'Tamil Nadu'} onChange={e => {
-                  upd('presentState', e.target.value);
-                  upd('presentCity', '');
+                  updPresentAddr('presentState', e.target.value);
+                  updPresentAddr('presentCity', '');
                 }}>
                   {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
                 </select>
               </Field>
               <Field label="District / City" req error={errors.presentCity}>
                 <select className={`select${errors.presentCity ? ' select-error' : ''}`}
-                  value={form.presentCity} onChange={e => upd('presentCity', e.target.value)}>
+                  value={form.presentCity} onChange={e => updPresentAddr('presentCity', e.target.value)}>
                   <option value="">Select district</option>
                   {(STATES_AND_DISTRICTS[form.presentState || 'Tamil Nadu'] || []).map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
@@ -671,25 +746,25 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <Field label="Street Address 1" req error={errors.permanentStreet1}>
                 <input className={`input${errors.permanentStreet1 ? ' input-error' : ''}`} type="text"
                   placeholder="House/Building Number and Street Name"
-                  value={form.permanentStreet1} onChange={e => upd('permanentStreet1', e.target.value)} />
+                  value={form.permanentStreet1} onChange={e => updPermanentAddr('permanentStreet1', e.target.value)} />
               </Field>
               <Field label="Street Address 2">
                 <input className="input" type="text"
                   placeholder="Apartment, Suite, Unit, or Floor Number (Optional)"
-                  value={form.permanentStreet2} onChange={e => upd('permanentStreet2', e.target.value)} />
+                  value={form.permanentStreet2} onChange={e => updPermanentAddr('permanentStreet2', e.target.value)} />
               </Field>
               <div className="responsive-grid">
                 <Field label="State" req>
                   <select className="select" value={form.permanentState || 'Tamil Nadu'} onChange={e => {
-                    upd('permanentState', e.target.value);
-                    upd('permanentCity', '');
+                    updPermanentAddr('permanentState', e.target.value);
+                    updPermanentAddr('permanentCity', '');
                   }}>
                     {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
                   </select>
                 </Field>
                 <Field label="District / City" req error={errors.permanentCity}>
                   <select className={`select${errors.permanentCity ? ' select-error' : ''}`}
-                    value={form.permanentCity} onChange={e => upd('permanentCity', e.target.value)}>
+                    value={form.permanentCity} onChange={e => updPermanentAddr('permanentCity', e.target.value)}>
                     <option value="">Select district</option>
                     {(STATES_AND_DISTRICTS[form.permanentState || 'Tamil Nadu'] || []).map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
@@ -843,27 +918,27 @@ export default function ProfileWizard({ backendUrl, candidateId, verifiedPhone, 
               <Err msg={errors.jobRoles} />
             </div>
 
-             <div className="field-label-row mt-16">
-               <Lbl req>Preferred Districts</Lbl>
-               <div className="field-inline-actions">
-                 <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [...new Set([...form.preferredDistricts, ...(STATES_AND_DISTRICTS[preferredState] || [])])])}>Add All for {preferredState}</button>
-                 <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [])}>Clear All</button>
-               </div>
-             </div>
-             <div className="responsive-grid" style={{ marginBottom: '10px' }}>
-               <Field label="Filter by State">
-                 <select className="select" value={preferredState} onChange={e => setPreferredState(e.target.value)}>
-                   {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
-                 </select>
-               </Field>
-               <Field label="Choose District" error={errors.preferredDistricts}>
-                 <select className="select" value=""
-                   onChange={e => e.target.value && toggle('preferredDistricts', e.target.value)}>
-                   <option value="">Select District…</option>
-                   {(STATES_AND_DISTRICTS[preferredState] || []).filter(d => !form.preferredDistricts.includes(d)).map(d => <option key={d} value={d}>{d}</option>)}
-                 </select>
-               </Field>
-             </div>
+            <div className="field-label-row mt-16">
+              <Lbl req>Preferred Districts</Lbl>
+              <div className="field-inline-actions">
+                <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [...new Set([...form.preferredDistricts, ...(STATES_AND_DISTRICTS[preferredState] || [])])])}>Add All for {preferredState}</button>
+                <button type="button" className="button button-ghost button-small" onClick={() => upd('preferredDistricts', [])}>Clear All</button>
+              </div>
+            </div>
+            <div className="responsive-grid" style={{ marginBottom: '10px' }}>
+              <Field label="Filter by State">
+                <select className="select" value={preferredState} onChange={e => setPreferredState(e.target.value)}>
+                  {Object.keys(STATES_AND_DISTRICTS).map(st => <option key={st} value={st}>{st}</option>)}
+                </select>
+              </Field>
+              <Field label="Choose District" error={errors.preferredDistricts}>
+                <select className="select" value=""
+                  onChange={e => e.target.value && toggle('preferredDistricts', e.target.value)}>
+                  <option value="">Select District…</option>
+                  {(STATES_AND_DISTRICTS[preferredState] || []).filter(d => !form.preferredDistricts.includes(d)).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </Field>
+            </div>
             <div className={`tag-panel${errors.preferredDistricts ? ' has-error' : ''}`}>
               {form.preferredDistricts.length === 0
                 ? <span className="field-note">No districts added yet</span>

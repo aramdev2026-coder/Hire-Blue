@@ -1,0 +1,15 @@
+# Android
+*.hprof
+.gradle/
+build/
+**/build/
+*.apk
+*.aar
+
+# Node
+node_modules/
+dist/
+.env
+
+# Logs
+*.log

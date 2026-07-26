@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Loader, Search, Briefcase, Building2, MapPin, BadgePercent } from 'lucide-react';
+import CandidateDetailsModal from './CandidateDetailsModal';
 
 export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matchedCandidates, loading, fetchJobMatches, onUpdateStatus }) {
   const [companySearch, setCompanySearch] = useState('');
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   const filteredJobs = jobs.filter(job => {
     const name = (job.employerName || job.employer?.companyName || '').toLowerCase();
@@ -108,7 +110,12 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
                     return (
                       <div key={candidate.id} className="border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between sm:items-center bg-indigo-50/40 border-indigo-100 hover:shadow-md transition-shadow">
                         <div className="space-y-0.5">
-                          <p className="text-sm font-semibold text-slate-900">{candidate.fullName || 'Candidate'}</p>
+                          <p 
+                            onClick={() => setSelectedCandidate(candidate)} 
+                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer transition-colors"
+                          >
+                            {candidate.fullName || 'Candidate'}
+                          </p>
                           <p className="text-xs text-slate-500">
                             {candidate.experience && candidate.experience.length > 0 
                               ? `Exp: ${candidate.experience[0].institution || 'Experience'}`
@@ -162,6 +169,13 @@ export default function MatchEngine({ jobs, selectedJob, setSelectedJob, matched
             </div>
           )}
         </>
+      )}
+
+      {selectedCandidate && (
+        <CandidateDetailsModal
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
+        />
       )}
     </div>
   );

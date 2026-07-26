@@ -20,21 +20,21 @@ export default function AdminAccountForm({
   };
 
   return (
-    <form onSubmit={onSubmit} className="bg-white border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <form onSubmit={onSubmit} noValidate className="bg-white border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label className="text-xs font-semibold text-slate-600 uppercase">Name <span className="text-rose-500">*</span></label>
-        <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls('name')} />
+        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls('name')} />
         {errors.name && <p className="text-xs text-rose-600 mt-0.5">{errors.name}</p>}
       </div>
 
       <div>
         <label className="text-xs font-semibold text-slate-600 uppercase">Email <span className="text-rose-500">*</span></label>
-        <input type="email" required autoComplete="new-email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls('email')} />
+        <input type="email" autoComplete="new-email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls('email')} />
         {errors.email && <p className="text-xs text-rose-600 mt-0.5">{errors.email}</p>}
       </div>
 
       <div>
-        <label className="text-xs font-semibold text-slate-600 uppercase">Phone</label>
+        <label className="text-xs font-semibold text-slate-600 uppercase">Phone <span className="text-rose-500">*</span></label>
         <input type="tel" maxLength={10} placeholder="10-digit mobile" value={form.phone}
           onChange={(e) => handlePhoneChange(e.target.value)} className={inputCls('phone')} />
         {errors.phone && <p className="text-xs text-rose-600 mt-0.5">{errors.phone}</p>}
@@ -45,7 +45,7 @@ export default function AdminAccountForm({
           Password {!editing && <span className="text-rose-500">*</span>}
         </label>
         <div className="relative mt-1">
-          <input type={showPassword ? "text" : "password"} required={!editing} autoComplete="new-password" value={form.password}
+          <input type={showPassword ? "text" : "password"} autoComplete="new-password" value={form.password}
             placeholder={editing ? 'Leave blank to keep current' : ''}
             onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${inputCls('password').replace('mt-1', '')} pr-10`} />
           <button
@@ -63,7 +63,7 @@ export default function AdminAccountForm({
         <>
           <div>
             <label className="text-xs font-semibold text-slate-600 uppercase">State <span className="text-rose-500">*</span></label>
-            <select required value={subAdminState} onChange={(e) => {
+            <select value={subAdminState} onChange={(e) => {
               setSubAdminState(e.target.value);
               setForm({ ...form, region: '' });
             }} className={inputCls('region')}>
@@ -72,7 +72,7 @@ export default function AdminAccountForm({
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-600 uppercase">District / Region <span className="text-rose-500">*</span></label>
-            <select required value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className={inputCls('region')}>
+            <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className={inputCls('region')}>
               <option value="">Select district</option>
               {(STATES_AND_DISTRICTS[subAdminState] || []).map((d) => <option key={d} value={d}>{d}</option>)}
             </select>

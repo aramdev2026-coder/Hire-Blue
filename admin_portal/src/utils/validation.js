@@ -32,7 +32,9 @@ export function validateAdminAccount({ name, email, phone, password, region }, {
   if (!name?.trim()) errors.name = 'Name is required';
   if (!email?.trim()) errors.email = 'Email is required';
   else if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
-  if (phone?.trim() && !isValidPhone(phone)) {
+  if (!phone?.trim()) {
+    errors.phone = 'Phone number is required';
+  } else if (!isValidPhone(phone)) {
     errors.phone = 'Enter a valid 10-digit Indian mobile number';
   }
   if (!editing && !password?.trim()) errors.password = 'Password is required';

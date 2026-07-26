@@ -76,6 +76,7 @@ export default function App() {
   const [candidates_minAge, setCandidatesMinAge] = useState('');
   const [candidates_maxAge, setCandidatesMaxAge] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [jobs, setJobs] = useState([]);
   const [matchedCandidates, setMatchedCandidates] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -171,7 +172,7 @@ export default function App() {
         list = [...list].sort((a, b) => {
           const aVal = parseSalaryValue(a.expectedSalary);
           const bVal = parseSalaryValue(b.expectedSalary);
-          return bVal - aVal;
+          return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
         });
       }
       setCandidates(list);
@@ -181,7 +182,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, candidates_filter, candidates_district, candidates_role, candidates_minAge, candidates_maxAge, searchQuery, sortBy, isSubAdmin]);
+  }, [activeTab, candidates_filter, candidates_district, candidates_role, candidates_minAge, candidates_maxAge, searchQuery, sortBy, sortDirection, isSubAdmin]);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -382,6 +383,7 @@ export default function App() {
       if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
         handleLogout();
       }
+      throw err;
     }
   };
 
@@ -422,6 +424,7 @@ export default function App() {
       if (err.message.includes('Session expired') || err.message.includes('insufficient permissions')) {
         handleLogout();
       }
+      throw err;
     }
   };
 
@@ -602,6 +605,8 @@ export default function App() {
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}
               setSortBy={setSortBy}
+              sortDirection={sortDirection}
+              setSortDirection={setSortDirection}
               loading={loading}
               onUpdateStatus={updateCandidateStatus}
               onAssignToSubAdmin={(ids, subAdminId) => handleAssign({ candidateIds: ids, subAdminId })}

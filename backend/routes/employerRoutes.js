@@ -82,7 +82,14 @@ export default function createEmployerRoutes(prisma) {
     }
 
     const token = jwt.sign({ id: employer.id, role: 'EMPLOYER' }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.status(200).json({ success: true, token, employerId: employer.id, companyName: employer.companyName });
+    res.status(200).json({
+      success: true,
+      token,
+      employerId: employer.id,
+      companyName: employer.companyName,
+      email: employer.email,
+      phoneNumber: employer.phoneNumber
+    });
   }));
 
   // ─────────────────────────────────────────────────────────────────

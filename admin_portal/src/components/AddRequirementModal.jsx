@@ -10,8 +10,8 @@ export default function AddRequirementModal({ isOpen, onClose, onRequirementAdde
     salaryRange: '',
     location: '',
     educationLevel: '',
-    expRequired: 0,
-    vacanciesCount: 1,
+    expRequired: '0',
+    vacanciesCount: '1',
     maritalStatus: 'No Preference'
   });
   const [loading, setLoading] = useState(false);
@@ -53,6 +53,8 @@ export default function AddRequirementModal({ isOpen, onClose, onRequirementAdde
       const payload = {
         jobs: [{
           ...form,
+          expRequired: parseInt(form.expRequired, 10) || 0,
+          vacanciesCount: parseInt(form.vacanciesCount, 10) || 1,
           location: form.location.split(',').map(l => l.trim()).filter(Boolean)
         }]
       };
@@ -66,7 +68,7 @@ export default function AddRequirementModal({ isOpen, onClose, onRequirementAdde
       onClose();
       // Reset form
       setForm({
-        employerId: '', roleTitle: '', salaryRange: '', location: '', educationLevel: '', expRequired: 0, vacanciesCount: 1, maritalStatus: 'No Preference'
+        employerId: '', roleTitle: '', salaryRange: '', location: '', educationLevel: '', expRequired: '0', vacanciesCount: '1', maritalStatus: 'No Preference'
       });
     } catch (err) {
       setError(err.message);
@@ -137,7 +139,12 @@ export default function AddRequirementModal({ isOpen, onClose, onRequirementAdde
                 type="number" 
                 min="1"
                 value={form.vacanciesCount} 
-                onChange={e => setForm({...form, vacanciesCount: parseInt(e.target.value, 10) || 1})} 
+                onChange={e => setForm({...form, vacanciesCount: e.target.value})} 
+                onFocus={e => e.target.select()}
+                onBlur={e => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!val || val < 1) setForm({...form, vacanciesCount: '1'});
+                }}
                 className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                 required 
               />
@@ -175,7 +182,12 @@ export default function AddRequirementModal({ isOpen, onClose, onRequirementAdde
                 type="number" 
                 min="0"
                 value={form.expRequired} 
-                onChange={e => setForm({...form, expRequired: parseInt(e.target.value, 10) || 0})} 
+                onChange={e => setForm({...form, expRequired: e.target.value})} 
+                onFocus={e => e.target.select()}
+                onBlur={e => {
+                  const val = parseInt(e.target.value, 10);
+                  if (isNaN(val) || val < 0) setForm({...form, expRequired: '0'});
+                }}
                 className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
               />
               <p className="text-[10px] text-slate-500 mt-1">Use 0 for Fresher</p>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Users, Loader, AlertTriangle } from 'lucide-react';
 import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass } from '../constants';
+import CandidateDetailsModal from './CandidateDetailsModal';
 
 import { useConfirm } from '../context/ConfirmContext';
 
@@ -18,6 +19,7 @@ export default function AssignmentScreen({
   const [subAdminId, setSubAdminId] = useState('');
   const [roundRobin, setRoundRobin] = useState(false);
   const [selectedSubAdmins, setSelectedSubAdmins] = useState([]);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   const duplicatePhones = useMemo(() => {
     const set = new Set();
@@ -163,7 +165,12 @@ export default function AssignmentScreen({
                 <tr key={c.id} className="hover:bg-slate-50">
                   <td className="p-3"><input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} /></td>
                   <td className="p-3 font-medium">
-                    {c.fullName || 'N/A'}
+                    <span 
+                      onClick={() => setSelectedCandidate(c)} 
+                      className="hover:underline hover:text-indigo-650 cursor-pointer text-indigo-600 transition-colors"
+                    >
+                      {c.fullName || 'N/A'}
+                    </span>
                     {duplicatePhones.has(c.phoneNumber1) && (
                       <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 ml-1" title="Duplicate phone" />
                     )}
@@ -182,6 +189,13 @@ export default function AssignmentScreen({
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedCandidate && (
+        <CandidateDetailsModal
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
+        />
       )}
     </div>
   );

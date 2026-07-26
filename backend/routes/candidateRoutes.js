@@ -297,10 +297,15 @@ export default function createCandidateRoutes(prisma) {
   router.post('/finalize', authenticateCandidate, asyncHandler(async (req, res) => {
     const candidate = await prisma.candidate.findUnique({
       where: { id: req.candidate.id },
-      select: { fullName: true, emailId: true }
+      select: { fullName: true, emailId: true, status: true }
     });
+    
+    // Only send welcome email if profile is brand new (first-time submission)
+    const isFirstTime = candidate && (candidate.status === 'NEW' || req.body?.shouldSendWelcomeEmail === true);
+    
     await prisma.candidate.update({ where: { id: req.candidate.id }, data: { status: 'PENDING_ADMIN_CALL' } });
-    if (candidate && candidate.emailId) {
+    
+    if (isFirstTime && candidate && candidate.emailId) {
       sendWelcomeCandidateEmail(candidate.emailId, candidate.fullName).catch(err => {
         logger.error(`Failed sending welcome candidate email async: ${err.message}`);
       });

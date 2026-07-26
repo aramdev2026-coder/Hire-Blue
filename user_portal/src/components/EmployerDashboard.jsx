@@ -78,7 +78,8 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
   const [emailSuccess, setEmailSuccess] = useState('');
   const [isSavingEmail, setIsSavingEmail] = useState(false);
 
-  const [passwordError, setPasswordError] = useState('');
+  const [newPasswordError, setNewPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
@@ -176,23 +177,29 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
 
   const handleSavePassword = async (e) => {
     e.preventDefault();
-    setPasswordError('');
+    setNewPasswordError('');
+    setConfirmPasswordError('');
     setPasswordSuccess('');
 
+    let hasErr = false;
+
     if (!settingsPassword.trim()) {
-      setPasswordError('New password is required.');
-      return;
+      setNewPasswordError('New password is required.');
+      hasErr = true;
+    } else if (settingsPassword.length < 6) {
+      setNewPasswordError('Password must be at least 6 characters.');
+      hasErr = true;
     }
 
-    if (settingsPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters.');
-      return;
+    if (!settingsConfirmPassword.trim()) {
+      setConfirmPasswordError('Please confirm your new password.');
+      hasErr = true;
+    } else if (settingsPassword.trim() && settingsPassword !== settingsConfirmPassword) {
+      setConfirmPasswordError('Passwords do not match.');
+      hasErr = true;
     }
 
-    if (settingsPassword !== settingsConfirmPassword) {
-      setPasswordError('Passwords do not match.');
-      return;
-    }
+    if (hasErr) return;
 
     setIsSavingPassword(true);
     try {
@@ -200,8 +207,10 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
       setPasswordSuccess('Password changed successfully.');
       setSettingsPassword('');
       setSettingsConfirmPassword('');
+      setNewPasswordError('');
+      setConfirmPasswordError('');
     } catch (err) {
-      setPasswordError(err.message || 'Failed to change password.');
+      setNewPasswordError(err.message || 'Failed to change password.');
     } finally {
       setIsSavingPassword(false);
     }
@@ -1340,6 +1349,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                                           <option key={opt} value={opt}>{opt}</option>
                                         ))}
                                       </select>
+                                      {validationErrors?.educationLevel && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px' }}>{validationErrors.educationLevel}</p>}
                                     </div>
                                   </div>
 
@@ -1363,7 +1373,6 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                                     <div className="emp-field">
                                       <label className="emp-field-label">Number of Vacancies <span style={{ color: '#ef4444' }}>*</span></label>
                                       <input
-                                        required
                                         className="emp-input"
                                         type="number"
                                         min="1"
@@ -1655,20 +1664,26 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                   </div>
 
                   <div className="emp-card-body">
-                    <form onSubmit={handleSaveEmail} className="emp-form-stack">
-                      {emailError && <div className="alert-box error" style={{ padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem' }}>⚠️ {emailError}</div>}
+                    <form onSubmit={handleSaveEmail} className="emp-form-stack" noValidate>
                       {emailSuccess && <div className="alert-box success" style={{ padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem' }}>✅ {emailSuccess}</div>}
 
                       <div className="emp-field">
                         <label className="emp-field-label">Account Email Address</label>
                         <input
                           type="email"
-                          required
-                          className="emp-input"
+                          className={`emp-input${emailError ? ' input-error' : ''}`}
                           value={settingsEmail}
-                          onChange={(e) => setSettingsEmail(e.target.value)}
+                          onChange={(e) => {
+                            setSettingsEmail(e.target.value);
+                            if (emailError) setEmailError('');
+                          }}
                           placeholder="hr@company.com"
                         />
+                        {emailError && (
+                          <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '6px', fontWeight: '500' }}>
+                            {emailError}
+                          </p>
+                        )}
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1695,8 +1710,7 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                   </div>
 
                   <div className="emp-card-body">
-                    <form onSubmit={handleSavePassword} className="emp-form-stack">
-                      {passwordError && <div className="alert-box error" style={{ padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem' }}>⚠️ {passwordError}</div>}
+                    <form onSubmit={handleSavePassword} className="emp-form-stack" noValidate>
                       {passwordSuccess && <div className="alert-box success" style={{ padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem' }}>✅ {passwordSuccess}</div>}
                       
                       <div className="emp-field">
@@ -1704,10 +1718,15 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                           <input
                             type={showPassword ? "text" : "password"}
-                            required
-                            className="emp-input"
+                            className={`emp-input${newPasswordError ? ' input-error' : ''}`}
                             value={settingsPassword}
-                            onChange={(e) => setSettingsPassword(e.target.value)}
+                            onChange={(e) => {
+                              setSettingsPassword(e.target.value);
+                              if (newPasswordError) setNewPasswordError('');
+                              if (confirmPasswordError && settingsConfirmPassword && e.target.value === settingsConfirmPassword) {
+                                setConfirmPasswordError('');
+                              }
+                            }}
                             placeholder="Set new password"
                             style={{ paddingRight: '40px' }}
                           />
@@ -1719,6 +1738,11 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
+                        {newPasswordError && (
+                          <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '6px', fontWeight: '500' }}>
+                            {newPasswordError}
+                          </p>
+                        )}
                       </div>
  
                       <div className="emp-field">
@@ -1726,10 +1750,12 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                           <input
                             type={showConfirmPassword ? "text" : "password"}
-                            required
-                            className="emp-input"
+                            className={`emp-input${confirmPasswordError ? ' input-error' : ''}`}
                             value={settingsConfirmPassword}
-                            onChange={(e) => setSettingsConfirmPassword(e.target.value)}
+                            onChange={(e) => {
+                              setSettingsConfirmPassword(e.target.value);
+                              if (confirmPasswordError) setConfirmPasswordError('');
+                            }}
                             placeholder="Confirm new password"
                             style={{ paddingRight: '40px' }}
                           />
@@ -1741,6 +1767,11 @@ export default function EmployerDashboard({ backendUrl, employerId, companyName,
                             {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
+                        {confirmPasswordError && (
+                          <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '6px', fontWeight: '500' }}>
+                            {confirmPasswordError}
+                          </p>
+                        )}
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

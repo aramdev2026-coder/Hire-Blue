@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ArrowUpDown, Loader, Send, AlertTriangle, Download } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Loader, Send, AlertTriangle, Download } from 'lucide-react';
 import { ALL_CANDIDATE_STATUSES, formatStatus, sourceBadgeClass, JOB_ROLES } from '../constants';
 import { STATES_AND_DISTRICTS } from '../utils/locationData';
 const TN_DISTRICTS = STATES_AND_DISTRICTS["Tamil Nadu"];
@@ -8,7 +8,7 @@ import ShortlistJobModal from './ShortlistJobModal';
 import CandidateDetailsModal from './CandidateDetailsModal';
 
 export default function CandidatesDirectory({ 
-  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, minAge, setMinAge, maxAge, setMaxAge, searchQuery, setSearchQuery, sortBy, setSortBy, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [], statusCounts = {},
+  candidates, filter, setFilter, districtFilter, setDistrictFilter, roleFilter, setRoleFilter, minAge, setMinAge, maxAge, setMaxAge, searchQuery, setSearchQuery, sortBy, setSortBy, sortDirection, setSortDirection, loading, onUpdateStatus, onAssignToSubAdmin, subAdmins, jobs = [], duplicates = [], statusCounts = {},
 }) {
   const { showConfirm, showAlert } = useConfirm();
   const [selectedStateFilter, setSelectedStateFilter] = useState('Tamil Nadu');
@@ -96,10 +96,28 @@ export default function CandidatesDirectory({
         </div>
         <div className="flex gap-2 justify-end">
           <button 
-            onClick={() => setSortBy(sortBy === 'salary' ? 'name' : 'salary')}
+            onClick={() => {
+              if (sortBy === 'name') {
+                setSortBy('salary');
+                setSortDirection('desc');
+              } else if (sortDirection === 'desc') {
+                setSortDirection('asc');
+              } else {
+                setSortBy('name');
+                setSortDirection('desc');
+              }
+            }}
             className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 px-3 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 transition-colors cursor-pointer whitespace-nowrap"
           >
-            <ArrowUpDown className="w-3.5 h-3.5" /> Sort {sortBy === 'salary' ? 'Salary' : 'Name'}
+            {sortBy === 'salary' ? (
+              sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+            ) : (
+              <ArrowUpDown className="w-3.5 h-3.5" />
+            )}
+            {sortBy === 'salary' 
+              ? `Salary: ${sortDirection === 'asc' ? 'Low → High' : 'High → Low'}` 
+              : 'Sort: Name'
+            }
           </button>
         </div>
       </div>

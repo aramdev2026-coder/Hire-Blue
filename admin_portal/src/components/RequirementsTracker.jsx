@@ -219,7 +219,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         password: empForm.password.trim(),
         status: 'ACTIVE'
       });
-      
+
       // Look up recently added company to auto-select
       const recentlyAdded = employers.find(
         emp => emp.companyName.toLowerCase() === empForm.companyName.trim().toLowerCase()
@@ -256,9 +256,9 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-4 border border-slate-200 rounded-xl shadow-xs">
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search across company folders..." 
+            <input
+              type="text"
+              placeholder="Search across company folders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -289,13 +289,22 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
         </div>
       )}
 
+      {/* Action Bar */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+        >
+          <Plus size={16} /> Add Requirement
+        </button>
+      </div>
 
       {!selectedCompany ? (
         <div className="space-y-4">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Corporate Demand Directory ({companyFolders.length} Folders Matching Criteria)
           </p>
-          
+
           {companyFolders.length === 0 ? (
             <div className="bg-white border border-slate-200 border-dashed rounded-xl p-12 text-center text-slate-400 text-sm">
               No corporate folders match your current search or filter combinations.
@@ -317,7 +326,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
                     <h4 className="font-bold text-slate-900 text-base tracking-tight truncate group-hover:text-indigo-700 transition-colors">
                       {folder.companyName}
                     </h4>
-                    
+
                     <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
                       <span className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-md">
                         <Briefcase className="w-3.5 h-3.5 text-slate-500" />
@@ -347,13 +356,13 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
               <div>
                 <h3 className="text-lg font-bold text-slate-900">{selectedCompany}</h3>
                 <p className="text-xs text-slate-500">
-                  {roleFilter !== 'ALL_ROLES' 
-                    ? `Showing order parameters matching specified role: ${roleFilter}` 
+                  {roleFilter !== 'ALL_ROLES'
+                    ? `Showing order parameters matching specified role: ${roleFilter}`
                     : 'Displaying complete profile deployment requisitions'}
                 </p>
               </div>
             </div>
-            
+
             <button
               onClick={() => {
                 const targetCompanyEmp = employers.find(
@@ -376,7 +385,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
               <div key={job.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 border-l-4 border-l-indigo-500">
                 <div className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-lg text-sm flex-wrap gap-2">
                   <div>
-                    <span className="font-bold text-slate-900 text-base">{job.roleTitle}</span> 
+                    <span className="font-bold text-slate-900 text-base">{job.roleTitle}</span>
                     <span className="text-slate-500 text-xs ml-2 font-medium bg-slate-200 px-2 py-0.5 rounded-full">
                       {job.vacanciesCount} Positions Open
                     </span>
@@ -385,7 +394,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
                     Salary Range: {job.salaryRange}
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-semibold text-slate-500 px-1 pt-1">
                   <div>
                     <span className="text-slate-400 block mb-0.5 font-bold uppercase tracking-wider text-[10px]">📍 Locations</span>
@@ -418,7 +427,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all flex flex-col my-8 border border-slate-100">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
               <h3 className="text-base font-extrabold text-slate-900">Post Corporate Job Requirement</h3>
@@ -443,7 +452,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Target Company / Employer <span className="text-rose-500">*</span>
                 </label>
-                
+
                 {selectedEmployer ? (
                   <div className="flex items-center justify-between bg-indigo-50 border border-indigo-150 p-2.5 rounded-lg">
                     <div className="flex flex-col">
@@ -858,7 +867,7 @@ export default function RequirementsTracker({ jobs, loading, employers = [], onC
       {showAddEmployerModal && (
         <div className="fixed inset-0 z-[60] overflow-y-auto flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-100">
-            
+
             <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
               <h3 className="text-sm font-extrabold text-slate-900">Register New Employer</h3>
               <button
