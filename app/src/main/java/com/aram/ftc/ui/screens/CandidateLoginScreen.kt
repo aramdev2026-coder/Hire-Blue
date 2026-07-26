@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeViewModel) {
+fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
@@ -250,6 +250,7 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
                                                 // DEV BYPASS
                                                 if (otpCode == "123456") {
                                                     sessionManager.saveCandidateSession("dummy-token", 1001, email, "PENDING_ADMIN_CALL")
+                                                    showToast("Verification Successful! Welcome.", false)
                                                     navController.navigate("candidate_dashboard") {
                                                         popUpTo("role_selection") { inclusive = false }
                                                     }
@@ -260,6 +261,7 @@ fun CandidateLoginScreen(navController: NavController, themeViewModel: ThemeView
                                                 if (res.isSuccessful && res.body()?.success == true) {
                                                     val body = res.body()!!
                                                     sessionManager.saveCandidateSession(body.token, body.candidateId, email, body.profileStatus)
+                                                    showToast("Verification Successful! Welcome.", false)
                                                     if (body.profileStatus == "PENDING_ADMIN_CALL") {
                                                         navController.navigate("candidate_dashboard") {
                                                             popUpTo("role_selection") { inclusive = false }

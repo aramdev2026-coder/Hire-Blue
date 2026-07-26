@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CandidateDashboardScreen(navController: NavController, themeViewModel: ThemeViewModel) {
+fun CandidateDashboardScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
@@ -65,6 +65,7 @@ fun CandidateDashboardScreen(navController: NavController, themeViewModel: Theme
                     onClick = {
                         showLogoutDialog = false
                         sessionManager.clearCandidateSession()
+                        showToast("Logged out successfully", false)
                         navController.navigate("role_selection") {
                             popUpTo(0) { inclusive = true }
                         }
@@ -103,6 +104,7 @@ fun CandidateDashboardScreen(navController: NavController, themeViewModel: Theme
                 isNoInternet = true
             } catch (e: SessionExpiredException) {
                 sessionManager.clearCandidateSession()
+                showToast("Session expired. Please log in again.", true)
                 navController.navigate("role_selection") {
                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }

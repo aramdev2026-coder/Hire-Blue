@@ -39,7 +39,7 @@ import com.aram.ftc.data.model.UpdateEmployerProfileRequest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeViewModel) {
+fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
@@ -81,6 +81,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                     onClick = {
                         showLogoutDialog = false
                         sessionManager.clearEmployerSession()
+                        showToast("Logged out successfully", false)
                         navController.navigate("role_selection") {
                             popUpTo(0) { inclusive = true }
                         }
@@ -144,6 +145,7 @@ fun EmployerDashboardScreen(navController: NavController, themeViewModel: ThemeV
                 isNoInternet = true
             } catch (e: SessionExpiredException) {
                 sessionManager.clearEmployerSession()
+                showToast("Session expired. Please log in again.", true)
                 navController.navigate("role_selection") { popUpTo(navController.graph.startDestinationId) { inclusive = true } }
             } catch (e: Exception) {
                 errorMsg = e.message

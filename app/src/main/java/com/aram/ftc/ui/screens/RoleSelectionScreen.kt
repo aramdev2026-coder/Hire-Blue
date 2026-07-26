@@ -32,7 +32,7 @@ import com.aram.ftc.ui.theme.AramRadius
 import com.aram.ftc.ui.theme.ThemeViewModel
 
 @Composable
-fun RoleSelectionScreen(navController: NavController, themeViewModel: ThemeViewModel) {
+fun RoleSelectionScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
     var selectedRole by remember { mutableStateOf<String?>(null) } // "candidate" or "employer"
     var selectedLanguage by remember { mutableStateOf("English") }
 

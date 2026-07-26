@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewModel) {
+fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
@@ -240,6 +240,7 @@ fun EmployerAuthScreen(navController: NavController, themeViewModel: ThemeViewMo
                                             if (res.isSuccessful && res.body()?.success == true) {
                                                 val body = res.body()!!
                                                 sessionManager.saveEmployerSession(body.token, body.employerId, body.companyName, body.email, body.phoneNumber)
+                                                showToast("Welcome back, ${body.companyName ?: "Employer"}!", false)
                                                 navController.navigate("employer_dashboard") { popUpTo("role_selection") { inclusive = false } }
                                             } else {
                                                 toastMessage = "Invalid email/phone or password. Please try again."

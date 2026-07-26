@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeViewModel) {
+fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeViewModel, showToast: (String, Boolean) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sessionManager = remember { SessionManager(context) }
@@ -179,8 +179,7 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
                 val fin = apiService.finalizeWizard(token, FinalizeWizardRequest(candidateId, isNewUser))
                 if (fin.isSuccessful) {
                     sessionManager.clearWizardDraft()
-                    toastMessage = "Profile Secured! Welcome to ARAM."
-                    isToastError = false
+                    showToast("Profile Secured! Welcome to ARAM.", false)
                     navController.navigate("candidate_dashboard") { popUpTo("role_selection") { inclusive = false } }
                 }
             } catch (e: Exception) {
