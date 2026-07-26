@@ -123,8 +123,6 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
     var toastMessage by remember { mutableStateOf<String?>(null) }
     var isToastError by remember { mutableStateOf(true) }
 
-    val scrollState = rememberScrollState()
-
     fun validateStep(): Boolean {
         when (step) {
             1 -> {
@@ -147,7 +145,6 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
     fun handleNext() {
         showErrors = true
         if (!validateStep()) {
-            coroutineScope.launch { scrollState.animateScrollTo(0) }
             if (step == 1) {
                 toastMessage = "Please fill all required personal & contact details"
                 isToastError = true
@@ -226,10 +223,11 @@ fun CandidateWizardScreen(navController: NavController, themeViewModel: ThemeVie
                     modifier = Modifier.weight(1f),
                     label = "step_animation"
                 ) { (isReview, currentStep) ->
+                    val pageScrollState = rememberScrollState()
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(scrollState)
+                            .verticalScroll(pageScrollState)
                             .padding(16.dp)
                     ) {
                         if (isReview) {
@@ -531,5 +529,5 @@ fun ReviewPage(
     TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Text("Go back to edit", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
     }
-    Spacer(modifier = Modifier.height(140.dp))
+    Spacer(modifier = Modifier.height(24.dp))
 }
