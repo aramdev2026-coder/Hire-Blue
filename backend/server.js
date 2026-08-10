@@ -46,7 +46,7 @@ app.use(helmet({
 const defaultOrigins = [
   'https://aramftc.com',
   'https://www.aramftc.com',
-  'https://aramadmin.netlify.app/',
+  'https://aramadmin.netlify.app',
   'https://aramftcadmin.netlify.app',
   'http://localhost:5173',
   'http://localhost:3000',
