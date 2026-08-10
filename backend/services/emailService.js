@@ -179,23 +179,41 @@ export const startBirthdayScheduler = (prisma) => {
 
       const currentYear = today.getFullYear();
       logger.info('🎂 Birthday Scheduler: Checking candidate birthdays...');
-      const candidates = await prisma.candidate.findMany({
-        where: {
-          dob: { not: null },
-          status: { notIn: ['BLACKLISTED', 'INACTIVE'] },
-          emailId: { not: null },
-          OR: [
-            { lastBirthdayWishYear: null },
-            { lastBirthdayWishYear: { not: currentYear } }
-          ]
-        },
-        select: {
-          id: true,
-          fullName: true,
-          emailId: true,
-          dob: true,
-        }
-      });
+      let candidates = [];
+      try {
+        candidates = await prisma.candidate.findMany({
+          where: {
+            dob: { not: null },
+            status: { notIn: ['BLACKLISTED', 'INACTIVE'] },
+            emailId: { not: null },
+            OR: [
+              { lastBirthdayWishYear: null },
+              { lastBirthdayWishYear: { not: currentYear } }
+            ]
+          },
+          select: {
+            id: true,
+            fullName: true,
+            emailId: true,
+            dob: true,
+          }
+        });
+      } catch (findErr) {
+        logger.warn(`Birthday query fallback (database schema sync required): ${findErr.message}`);
+        candidates = await prisma.candidate.findMany({
+          where: {
+            dob: { not: null },
+            status: { notIn: ['BLACKLISTED', 'INACTIVE'] },
+            emailId: { not: null },
+          },
+          select: {
+            id: true,
+            fullName: true,
+            emailId: true,
+            dob: true,
+          }
+        });
+      }
 
       const todayMonth = today.getMonth();
       const todayDate = today.getDate();
