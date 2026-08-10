@@ -14,7 +14,6 @@ const env = {
 if (env.NODE_ENV === 'production') {
   const missing = [];
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET === '__DEV_ONLY_INSECURE_FALLBACK__') missing.push('JWT_SECRET');
-  if (!process.env.TWO_FACTOR_API_KEY) missing.push('TWO_FACTOR_API_KEY');
   if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
 
   if (missing.length > 0) {

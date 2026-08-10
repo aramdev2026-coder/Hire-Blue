@@ -224,7 +224,7 @@ export default function createCandidateRoutes(prisma) {
     const { candidateId, sectionIndex, updatedPayload: p } = req.body;
     const effectiveId = candidateId || req.candidate.id;
 
-    if (parseInt(effectiveId, 10) !== req.candidate.id) {
+    if (parseInt(effectiveId, 10) !== parseInt(req.candidate.id, 10)) {
       throw new AppError('You can only update your own profile', 403);
     }
 

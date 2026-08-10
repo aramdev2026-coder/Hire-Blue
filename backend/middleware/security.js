@@ -90,8 +90,9 @@ export function enforceCandidateOwnership(req, res, next) {
   const paramId = req.params.candidateId ? parseInt(req.params.candidateId, 10) : null;
   const bodyId = req.body?.candidateId ? parseInt(req.body.candidateId, 10) : null;
   const candidateId = paramId || bodyId;
+  const reqCandidateId = req.candidate?.id ? parseInt(req.candidate.id, 10) : null;
 
-  if (candidateId && candidateId !== req.candidate.id) {
+  if (candidateId && reqCandidateId && candidateId !== reqCandidateId) {
     return res.status(403).json({ error: 'You can only access your own data' });
   }
   next();
