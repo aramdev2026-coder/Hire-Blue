@@ -51,7 +51,7 @@ export default function App() {
 
   useEffect(() => {
     if (!candToken || !candId) return;
-    
+
     fetchCandidateProfile(candId, candToken)
       .then((data) => {
         if (data?.candidate) setProfile(data.candidate);

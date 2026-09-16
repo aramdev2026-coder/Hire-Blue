@@ -150,6 +150,7 @@ model CandidateExperience {
   candidateId Int
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   institution String
+  role        String?
   fromYear    String
   toYear      String
 }

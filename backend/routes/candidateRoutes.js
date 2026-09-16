@@ -286,7 +286,7 @@ export default function createCandidateRoutes(prisma) {
 
       if (education.length) await prisma.candidateEducation.createMany({ data: education.map(item => ({ candidateId: req.candidate.id, institution: sanitizeString(item.institution, 200) || '', course: sanitizeString(item.course, 200) || '' })) });
       if (technical.length) await prisma.candidateTechnical.createMany({ data: technical.map(item => ({ candidateId: req.candidate.id, institution: sanitizeString(item.institution, 200) || '', course: sanitizeString(item.course, 200) || '' })) });
-      if (experience.length) await prisma.candidateExperience.createMany({ data: experience.map(item => ({ candidateId: req.candidate.id, institution: sanitizeString(item.institution, 200) || '', fromYear: sanitizeString(item.fromYear, 10) || '', toYear: sanitizeString(item.toYear, 10) || '' })) });
+      if (experience.length) await prisma.candidateExperience.createMany({ data: experience.map(item => ({ candidateId: req.candidate.id, institution: sanitizeString(item.institution, 200) || '', role: sanitizeString(item.role || item.designation, 100) || null, fromYear: sanitizeString(item.fromYear, 10) || '', toYear: sanitizeString(item.toYear, 10) || '' })) });
     }
     res.json({ success: true, message: 'Section baseline checkpoint saved successfully' });
   }));

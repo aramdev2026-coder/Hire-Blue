@@ -64,6 +64,7 @@ export async function createFullCandidate(prisma, data, meta) {
         data: experience.map((item) => ({
           candidateId: created.id,
           institution: item.institution || '',
+          role: item.role || item.designation || null,
           fromYear: String(item.fromYear || ''),
           toYear: String(item.toYear || ''),
         })),
