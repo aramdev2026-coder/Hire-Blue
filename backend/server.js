@@ -46,17 +46,18 @@ app.use(helmet({
 const defaultOrigins = [
   'https://aramftc.com',
   'https://www.aramftc.com',
-  'https://aramadmin.netlify.app/',
+  'https://aramadmin.netlify.app',
   'https://aramftcadmin.netlify.app',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:5174',
+  'http://localhost:5175',
 ];
 
-let allowedOrigins = [...defaultOrigins];
+let allowedOrigins = defaultOrigins.map(o => o.replace(/\/$/, ''));
 
 if (env.CORS_ORIGINS) {
-  const envOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+  const envOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, '')).filter(Boolean);
   allowedOrigins = Array.from(new Set([...allowedOrigins, ...envOrigins]));
 }
 
@@ -67,15 +68,23 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    const cleanOrigin = origin.trim().replace(/\/$/, '');
+    const isAllowed = allowedOrigins.includes(cleanOrigin) ||
+                      cleanOrigin.endsWith('.aramftc.com') ||
+                      cleanOrigin.endsWith('.netlify.app') ||
+                      cleanOrigin.endsWith('.vercel.app');
+
+    if (isAllowed) {
       return callback(null, true);
     }
 
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    logger.warn(`⚠️ [CORS BLOCKED] Request from origin: ${origin}`);
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-client-platform', 'x-app-version', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-client-platform', 'x-app-version', 'Accept', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
 }));
 
 // Body parser with payload limit
