@@ -71,12 +71,6 @@ export default function createCandidateRoutes(prisma) {
       }
     });
 
-    // Log the OTP code immediately in dev environment for quick access
-    if (env.NODE_ENV !== 'production') {
-      console.log('\n=========================================');
-      console.log(`🔑 DEV OTP CODE FOR ${emailLower}: ${otp}`);
-      console.log('=========================================\n');
-    }
 
     // Fire email sending in the background (does not block client response)
     sendOTPEmail(emailLower, otp).catch((err) => {
@@ -96,44 +90,40 @@ export default function createCandidateRoutes(prisma) {
     const emailLower = String(email).trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) throw new AppError('Invalid email format', 400);
 
-    const isBypass = env.NODE_ENV !== 'production' && String(otpCode) === '123456';
+    // Find the latest OTP token record
+    const record = await prisma.otpToken.findFirst({
+      where: { email: emailLower },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    if (!isBypass) {
-      // Find the latest OTP token record
-      const record = await prisma.otpToken.findFirst({
-        where: { email: emailLower },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      if (!record) {
-        throw new AppError('OTP not found. Please request a new one.', 400);
-      }
-
-      // Too many attempts
-      if (record.attempts >= 5) {
-        await cleanupOldOTPs(prisma, emailLower);
-        throw new AppError('Too many failed attempts. Please press Resend OTP to request a new code.', 400);
-      }
-
-      // Expired
-      if (new Date() > record.expiresAt) {
-        await cleanupOldOTPs(prisma, emailLower);
-        throw new AppError('OTP expired. Please request a new one.', 400);
-      }
-
-      // Incorrect code
-      if (record.otp !== String(otpCode)) {
-        await prisma.otpToken.update({
-          where: { id: record.id },
-          data: { attempts: record.attempts + 1 }
-        });
-        const remaining = 6 - (record.attempts + 1);
-        throw new AppError(`Invalid OTP. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`, 400);
-      }
-
-      // OTP is valid - clean it up
-      await cleanupOldOTPs(prisma, emailLower);
+    if (!record) {
+      throw new AppError('OTP not found. Please request a new one.', 400);
     }
+
+    // Too many attempts
+    if (record.attempts >= 5) {
+      await cleanupOldOTPs(prisma, emailLower);
+      throw new AppError('Too many failed attempts. Please press Resend OTP to request a new code.', 400);
+    }
+
+    // Expired
+    if (new Date() > record.expiresAt) {
+      await cleanupOldOTPs(prisma, emailLower);
+      throw new AppError('OTP expired. Please request a new one.', 400);
+    }
+
+    // Incorrect code
+    if (record.otp !== String(otpCode)) {
+      await prisma.otpToken.update({
+        where: { id: record.id },
+        data: { attempts: record.attempts + 1 }
+      });
+      const remaining = 6 - (record.attempts + 1);
+      throw new AppError(`Invalid OTP. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`, 400);
+    }
+
+    // OTP is valid - clean it up
+    await cleanupOldOTPs(prisma, emailLower);
 
     let candidate = await prisma.candidate.findUnique({
       where: { emailId: emailLower }
@@ -202,12 +192,6 @@ export default function createCandidateRoutes(prisma) {
       data: { email: emailLower, otp, expiresAt, attempts: 0 }
     });
 
-    // Log the OTP code immediately in dev environment for quick access
-    if (env.NODE_ENV !== 'production') {
-      console.log('\n=========================================');
-      console.log(`🔑 DEV RESEND OTP CODE FOR ${emailLower}: ${otp}`);
-      console.log('=========================================\n');
-    }
 
     // Fire email sending in the background (does not block client response)
     sendOTPEmail(emailLower, otp).catch((err) => {

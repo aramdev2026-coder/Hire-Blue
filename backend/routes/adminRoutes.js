@@ -625,6 +625,7 @@ export default function createAdminRoutes(prisma) {
             data: body.experience.map((item) => ({
               candidateId,
               institution: item.institution || '',
+              role: item.role || item.designation || null,
               fromYear: String(item.fromYear || ''),
               toYear: String(item.toYear || ''),
             })),
