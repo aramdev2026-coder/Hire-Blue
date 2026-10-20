@@ -61,6 +61,11 @@ if (emailUser && emailPass) {
 export const getSmtpStatus = () => ({ healthy: smtpHealthy, error: smtpError });
 
 export const sendOTPEmail = async (email, otp) => {
+  if (!emailUser || !emailPass) {
+    logger.error('❌ Cannot send OTP email: GREETING_EMAIL_USER or GREETING_EMAIL_PASS is not set in environment!');
+    throw new Error('Email credentials missing on server');
+  }
+
   const htmlContent = loadEmailTemplate('otp.html', {
     OTP: otp,
     YEAR: new Date().getFullYear().toString()
@@ -68,13 +73,16 @@ export const sendOTPEmail = async (email, otp) => {
 
   const fromUser = emailUser || 'no-reply@aramftc.com';
 
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from: `"AramFTC" <${fromUser}>`,
     to: email,
     subject: 'Your OTP for AramFTC Login',
     text: `Dear User,\n\nUse the following One-Time Password (OTP) to log in to your Candidate Portal: ${otp}.\n\nThis code is valid for 10 minutes.\n\nBest regards,\nAram Fintech Concept`,
     html: htmlContent || undefined,
   });
+
+  logger.info(`📧 OTP email successfully sent to ${email} (Message ID: ${info.messageId})`);
+  return info;
 };
 
 export const sendWelcomeCandidateEmail = async (email, name) => {
