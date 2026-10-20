@@ -21,31 +21,42 @@ const loadEmailTemplate = (templateName, replacements) => {
   }
 };
 
+const emailUser = process.env.GREETING_EMAIL_USER || process.env.EMAIL_USER;
+const emailPass = process.env.GREETING_EMAIL_PASS || process.env.EMAIL_PASS;
+
+// Unified transporter using Gmail (Greeting Email settings)
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587', 10),
-  secure: process.env.EMAIL_SECURE === 'true',  // true for 465, false for 587
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: emailUser,
+    pass: emailPass,
   },
+  connectionTimeout: 15000,
 });
+
+// Alias for backwards compatibility
+const greetingTransporter = transporter;
 
 let smtpHealthy = false;
 let smtpError = null;
 
-// Verify transporter connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    logger.error(`❌ Email transporter error: ${error.message || error}`);
-    smtpHealthy = false;
-    smtpError = error.message || String(error);
-  } else {
-    logger.info('📧 Email server is ready to send messages');
-    smtpHealthy = true;
-    smtpError = null;
-  }
-});
+// Verify transporter connection on startup only if configured
+if (emailUser && emailPass) {
+  transporter.verify((error, success) => {
+    if (error) {
+      logger.error(`❌ Email transporter error: ${error.message || error}`);
+      smtpHealthy = false;
+      smtpError = error.message || String(error);
+    } else {
+      logger.info(`📧 Email server is ready to send messages via Gmail (${emailUser})`);
+      smtpHealthy = true;
+      smtpError = null;
+    }
+  });
+} else {
+  smtpError = 'GREETING_EMAIL_USER / GREETING_EMAIL_PASS is not configured';
+  logger.warn('⚠️ Email credentials not set: Please set GREETING_EMAIL_USER and GREETING_EMAIL_PASS in your environment.');
+}
 
 export const getSmtpStatus = () => ({ healthy: smtpHealthy, error: smtpError });
 
@@ -55,23 +66,16 @@ export const sendOTPEmail = async (email, otp) => {
     YEAR: new Date().getFullYear().toString()
   });
 
+  const fromUser = emailUser || 'no-reply@aramftc.com';
+
   await transporter.sendMail({
-    from: `"AramFTC" <${process.env.EMAIL_USER}>`,
+    from: `"AramFTC" <${fromUser}>`,
     to: email,
     subject: 'Your OTP for AramFTC Login',
     text: `Dear User,\n\nUse the following One-Time Password (OTP) to log in to your Candidate Portal: ${otp}.\n\nThis code is valid for 10 minutes.\n\nBest regards,\nAram Fintech Concept`,
-    html: htmlContent,
+    html: htmlContent || undefined,
   });
 };
-
-// ─── Greeting / Welcome Transporter (Gmail) ───────────────────────────
-const greetingTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GREETING_EMAIL_USER || process.env.EMAIL_USER,
-    pass: process.env.GREETING_EMAIL_PASS || process.env.EMAIL_PASS,
-  },
-});
 
 export const sendWelcomeCandidateEmail = async (email, name) => {
   if (!email || email.endsWith('@aramftc.com')) return;

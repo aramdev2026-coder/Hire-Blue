@@ -18,3 +18,7 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: GREETING_EMAIL_USER
+        sync: false
+      - key: GREETING_EMAIL_PASS
+        sync: false

@@ -34,6 +34,7 @@ COPY --from=builder /app/services ./services
 COPY --from=builder /app/utils ./utils
 COPY --from=builder /app/middleware ./middleware
 COPY --from=builder /app/config ./config
+COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/server.js ./
 
 # Set environment to production
